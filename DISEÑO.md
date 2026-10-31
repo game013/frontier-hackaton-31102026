@@ -166,7 +166,20 @@ encuentra algo, lo reemplaza y lo registra. La corrida termina con 0 fugas conoc
   cliente HTTP propio. Modelo configurable por `LLM_MODEL`; caché por hash de entrada en SQLite.
 - **PDF:** las librerías de Go pierden espacios en celdas partidas. Decisión: un ayudante en Python con pdfplumber
   invocado como subproceso solo para extraer texto y metadata (ver D7).
-- **Railway** con Dockerfile y volumen montado en `/data` (bóveda, caché LLM, output).
+- **Railway** con Dockerfile y volumen montado en `/data` (bóveda, caché LLM, output). Configuración probada en la
+  hackathon anterior: una réplica, Serverless apagado, reinicio `ON_FAILURE`, `PORT=8080`, healthcheck en
+  `/v1/health` sin autenticación.
+
+### 6.4 Reuso de la hackathon anterior (`../10102026`, 97/100)
+
+Detalle en `analisis/05_reuso_10102026.md`.
+- Arranque y apagado limpio (`cmd/replacement/main.go`), con `WriteTimeout` subido: 10 s cortaría `/anonymize`.
+- `Open()` de SQLite con migraciones por `user_version` y sus pruebas de reapertura; prueba de proceso con SIGKILL.
+- **Captura de lo que manda el evaluador** (`internal/capture`): guardar cada lote que llega a `/anonymize` y cada
+  `/run`, con el token redactado y sin escribir PII en stdout. Allá convirtió el 97/100 en tres casos concretos que
+  se corrigieron; aquí convierte las pruebas en vivo ocultas en casos de regresión locales.
+- Lecciones: todo estado en SQLite, nunca solo en memoria; timeout en cada paso; secretos redactados en logs;
+  ningún test en verde sin comparar contra un esperado.
 
 ## 7. Decisiones y alternativas descartadas
 
