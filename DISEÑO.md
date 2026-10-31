@@ -229,6 +229,14 @@ Detalle en `analisis/05_reuso_10102026.md`.
 | D18| Catálogo embebido de nombres colombianos por género       | Faker o nombres al azar                         | Conserva género, región y estructura; permite excluir toda forma real del corpus              |
 | D19| Empate sin LLM → persona nueva dudosa                     | Escoger el candidato más probable               | Fusionar a dos personas rompe homónimos y estructura; separar se corrige luego sin fuga        |
 | D20| Regla y confianza por mención; cola de dudosos en SQLite  | Revisar logs                                    | Los logs no llevan PII; la cola se convierte en casos del catálogo                             |
+| D21| Corrida 1 (15:30) con corte mínimo: reglas + LLM, sin cuasi-identificadores en texto, juez base | Esperar el diseño completo | La corrida 1 vale el 30 % y tiene hora fija; lo demás entra para las corridas 2 y 3 |
+| D22| Resolución consulta primero la bóveda; la llave `p_t_` se emite una vez (`HMAC(secreto, nombre normalizado + ancla)`) y se guarda | Recalcular la llave desde el contexto | El ancla solo sirve para emitir; recalcular cambia la llave cuando el corpus crece |
+| D23| Tercero que reaparece: mismo nombre completo sin evidencia en contra = misma persona; evidencia dura distinta = otra; nombre suelto solo dentro del mismo hilo o doc | Unir siempre por nombre / nunca unir | Equilibra consistencia y homónimos con la evidencia disponible |
+| D24| Personas de `/anonymize` en tabla aparte: reservan seudónimo, no entran al registro de `/run` ni a `entities.json` | Persistirlas en el registro | Sin registros en `output/` rompen el validador y pueden pegarse a personas reales nuevas |
+| D25| Compuerta: forma con un dueño → su perfil y se agrega a `records`; ambigua → llave menor y dudosa; no barre nombres de pila sueltos | Reemplazo genérico | Una fuga cuesta más que un seudónimo equivocado; el validador también exime nombres sueltos |
+| D26| El LLM desempata con la mención enmascarada y fichas abstractas de candidatos (ids, ciudad, PQR, tx), respuesta cerrada `A`/`B`/`ninguna` | Mandar nombres reales / sin LLM en resolución | Los homónimos comparten nombre: lo que desempata es la evidencia, y así no viaja el nombre |
+| D27| Preguntas semánticas al modelo: solo `genero` (M/F/indeterminado → unisex) y `origen_del_nombre` | Etnia y edad | Ningún test las pide; inferir etnia es sensible y poco confiable; la edad sale de la fecha real |
+| D28| `/anonymize`: una llamada al modelo por lote (JSON con todas las preguntas), timeout 40 s, respaldo determinista, decisiones guardadas en caché y bóveda | Una llamada por mención | Cabe en 60 s y una decisión tomada no cambia en la corrida siguiente |
 
 ## 8. Plan para medir
 
