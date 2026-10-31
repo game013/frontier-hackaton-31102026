@@ -13,6 +13,7 @@ import (
 type boveda struct {
 	propio    *modelo.Perfil
 	nombres   map[string]struct{}
+	cortos    map[string]struct{}
 	correos   map[string]struct{}
 	cedulas   map[string]struct{}
 	celulares map[string]struct{}
@@ -22,6 +23,7 @@ type boveda struct {
 func nuevaBoveda() *boveda {
 	return &boveda{
 		nombres:   map[string]struct{}{},
+		cortos:    map[string]struct{}{},
 		correos:   map[string]struct{}{},
 		cedulas:   map[string]struct{}{},
 		celulares: map[string]struct{}{},
@@ -32,6 +34,9 @@ func nuevaBoveda() *boveda {
 func (b *boveda) agrega(p modelo.Perfil) {
 	if p.Nombre != "" {
 		b.nombres[norm.Norm(p.Nombre)] = struct{}{}
+		if corto := nombreCorto(p.Nombre); corto != "" {
+			b.cortos[norm.Norm(corto)] = struct{}{}
+		}
 	}
 	if p.Correo != "" {
 		b.correos[strings.ToLower(p.Correo)] = struct{}{}
@@ -53,6 +58,13 @@ func (b *boveda) repite(p modelo.Perfil) bool {
 	if _, ocupado := b.nombres[norm.Norm(p.Nombre)]; ocupado {
 		return true
 	}
+	// El nombre corto es el que se escribe en el chat y se declara: dos
+	// perfiles que solo difieren en el último apellido chocan (CE-51).
+	if corto := nombreCorto(p.Nombre); corto != "" {
+		if _, ocupado := b.cortos[norm.Norm(corto)]; ocupado {
+			return true
+		}
+	}
 	if _, ocupado := b.correos[strings.ToLower(p.Correo)]; ocupado {
 		return true
 	}
@@ -67,4 +79,14 @@ func (b *boveda) repite(p modelo.Perfil) bool {
 		}
 	}
 	return false
+}
+
+// nombreCorto es la forma corta del nombre como la escribe formas: todas las
+// palabras menos el último apellido.
+func nombreCorto(nombre string) string {
+	palabras := strings.Fields(nombre)
+	if len(palabras) < 3 {
+		return strings.Join(palabras, " ")
+	}
+	return strings.Join(palabras[:len(palabras)-1], " ")
 }
