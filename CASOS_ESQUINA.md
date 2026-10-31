@@ -72,20 +72,22 @@ bloquea la corrida oficial.
 | CE-36 | Placa que parte una palabra                       | Nombre de archivo con `sep2026`                  | `sep202` dentro de `sep2026` no es placa: se rechaza por bordes y por minúsculas | J-FP         |
 | CE-37 | Persona nueva con formas sin indexar              | Persona añadida a mitad de corrida               | Sus formas entran al índice y se reemplazan (`AgregaForma`) | J-DIR, J-CON |
 | CE-38 | Fecha de negocio detrás de un "desde" suelto            | «Kipu Pay opera desde 2020», «la empresa abrió desde 2019» | El año se conserva; solo se generaliza con ancla de relación ("llevo con ustedes desde", "cliente desde") | J-PAR, J-FP  |
+| CE-39 | Oficio y año sin verbo, en el acta de un comité            | «Antecedentes de la afectada: ingeniera de sistemas, vinculada en 2023» (`acta_comite_credito_2026-08`, `acta_comite_fraude_2026-10-09`) | Oficio → sector y año → «hace unos años»: el acta ya presenta a la persona («la afectada») y «vinculada en» ancla la relación | J-IND        |
 | CE-34 | Test público `pub_04` pide dos entidades con una forma completa que solo tiene una fila | `fuentes/tests_public.json` `pub_04` | No se cumple declarando una forma que no es de la persona; el criterio propio es dos personas, dos seudónimos, separadas por uid | J-HOM        |
 
 ## Aceptados con motivo
 
 Casos que el juez mide en rojo y que se aceptan a sabiendas, con el número y la razón. No bloquean la corrida oficial.
 
-- **CE-33 · J-GLO 99,8 % sobre `fuentes/` (3909 de 3917 formas).** Quedan 8 formas de tipo `nombre_pila`
+- **CE-33 · J-GLO 99,8 % sobre `fuentes/` (3883 de 3891 formas tras la ola 3; eran 3909 de 3917 antes
+  de C19).** Quedan 8 formas de tipo `nombre_pila`
   declaradas en `entities.json` que siguen en el texto. Son 4 nombres de pila, cada uno compartido por dos personas:
   dos pares coinciden en `doc_22` (un cliente y un empleado con el mismo nombre de pila) y dos pares en 20 y 7
   mensajes de chats (dos empleados con el mismo nombre de pila). D25 dice que un nombre de pila suelto no se barre:
   la sustitución del nombre completo es la que hace irreversible la salida, y borrar cada aparición de un nombre de
   pila rompería el texto sin ganar nada (el jurado además exime esas formas cuando van en mayúscula y sin dígitos).
   El detector no las ve en la salida limpia porque ahí no son menciones con dueño. Criterio medible:
-  `go run ./cmd/juez --salida … --publico fuentes → J-GLO 3909/3917`; lo que sí está en verde son las fugas duras
+  `go run ./cmd/juez --salida … --publico fuentes → J-GLO 3883/3891`; lo que sí está en verde son las fugas duras
   (J-DIR y J-OCU 100 %) y J-DIC 100 %.
 - **CE-34 · `pub_04` no es satisfacible sin mentir.** El test pide dos entidades que declaren exactamente la misma
   forma completa (nombre y dos apellidos). En el corpus esa forma completa la tiene una sola fila del maestro; la
