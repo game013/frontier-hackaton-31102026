@@ -71,6 +71,7 @@ bloquea la corrida oficial.
 | CE-35 | Fecha de negocio tomada como nacimiento            | Tabla `transacciones` (fecha 2026-09-08) y chats | La fecha de negocio se conserva; sin dueño no se crea persona ni se barre (289 fechas) | J-FP, J-PAR  |
 | CE-36 | Placa que parte una palabra                       | Nombre de archivo con `sep2026`                  | `sep202` dentro de `sep2026` no es placa: se rechaza por bordes y por minúsculas | J-FP         |
 | CE-37 | Persona nueva con formas sin indexar              | Persona añadida a mitad de corrida               | Sus formas entran al índice y se reemplazan (`AgregaForma`) | J-DIR, J-CON |
+| CE-38 | Fecha de negocio detrás de un "desde" suelto            | «Kipu Pay opera desde 2020», «la empresa abrió desde 2019» | El año se conserva; solo se generaliza con ancla de relación ("llevo con ustedes desde", "cliente desde") | J-PAR, J-FP  |
 | CE-34 | Test público `pub_04` pide dos entidades con una forma completa que solo tiene una fila | `fuentes/tests_public.json` `pub_04` | No se cumple declarando una forma que no es de la persona; el criterio propio es dos personas, dos seudónimos, separadas por uid | J-HOM        |
 
 ## Aceptados con motivo

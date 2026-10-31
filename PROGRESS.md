@@ -5,9 +5,8 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Estado ahora
 
-- **Fase:** olas 0–2 cerradas (C0–C18), más C25, C26 y C29 de la pista paralela. C27 (fixtures) sigue abierta.
-- **Próximo paso:** C19 (cuasi-identificadores, incluido `sample_08`), C20, C22 y C24; C23 llena las cifras de
-  `DECISIONS.md`. Pendiente menor de C18: `cost.tokens_in/tokens_out` de `/run/{id}` van en 0 (solo segundos).
+- **Fase:** ola 3, sobre `integracion/ola3`. C19, C21 y C24 integradas; C23 espera las cifras de la corrida 1.
+- **Próximo paso:** C23, que solo necesita la corrida 1; C20 y C22 siguen en `espera` de C27 (fixtures).
 - **Corrida 1:** 15:30 (Bogotá). El usuario la lanza con VALIDAR ENTRYPOINT; el agente solo la propone.
 - **Pendientes de decisión:** ninguno (P1 → D13, P2 → D29).
 - **Bloqueos:** ninguno.
@@ -25,22 +24,23 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Reglas de coordinación
 
-0. **Rama de integración.** Desde la ola 2 el trabajo entra a `integracion/ola2`, no a `master`. Las tareas se cortan
-   de esa rama, se integran ahí y `master` solo se mueve cuando el usuario lo pida (merge de la rama completa o PR).
-   Motivo: aísla el trabajo de la ola 0–1, permite revisar el conjunto antes de publicar y deja `master` desplegable.
+0. **Rama de integración.** El trabajo entra a `integracion/ola3`, no a `master` ni a las ramas de las olas
+   anteriores (`integracion/ola2`, `integracion/c0-c11`). Las tareas se cortan de esa rama, se integran ahí y `master`
+   solo se mueve cuando el usuario lo pida (merge de la rama completa o PR). Motivo: aísla el trabajo de la ola 0–1,
+   permite revisar el conjunto antes de publicar y deja `master` desplegable.
 1. **Tomar una tarea.** Solo se toma una tarea en estado `lista`. Se toma editando su fila (Estado `en curso`,
-   Responsable, hora) y haciendo commit inmediato en `integracion/c0-c11` con `chore: toma Cn` (solo `PROGRESS.md`). Si
+   Responsable, hora) y haciendo commit inmediato en `integracion/ola3` con `chore: toma Cn` (solo `PROGRESS.md`). Si
    el commit choca con otro agente que la tomó primero, se suelta y se elige otra.
 2. **Aislamiento.** Cada tarea trabaja en su worktree `../31102026-wt/Cn` sobre la rama `cn-<slug>`
-   (`git worktree add ../31102026-wt/Cn -b cn-<slug> integracion/c0-c11`). Nunca dos agentes en el mismo worktree.
+   (`git worktree add ../31102026-wt/Cn -b cn-<slug> integracion/ola3`). Nunca dos agentes en el mismo worktree.
 3. **Propiedad de rutas.** Cada tarea solo escribe en las rutas de su columna *Toca*. Si necesita cambiar una ruta
    de otra tarea, escribe en la bitácora y espera; no la edita.
 4. **Contratos.** `internal/modelo` (tipos e interfaces compartidos) es de C0. Después de C0, un cambio de contrato
    se pide en la bitácora con `CONTRATO:`; lo aplica quien orquesta en un commit aparte y avisa a los afectados.
    Mientras tanto, la tarea usa un adaptador local, no edita `internal/modelo`.
 5. **Terminar.** Una tarea está `hecha` cuando: `go test ./...` en verde, su criterio de *Hecha cuando* se cumple
-   con una prueba que compara contra un esperado, merge de la punta de `integracion/c0-c11` a su rama, y merge a
-   `integracion/c0-c11`. La fila (Estado `hecha`, hash del commit) la actualiza quien integra, no cada tarea, para
+   con una prueba que compara contra un esperado, merge de la punta de `integracion/ola3` a su rama, y merge a
+   `integracion/ola3`. La fila (Estado `hecha`, hash del commit) la actualiza quien integra, no cada tarea, para
    evitar conflictos en este archivo. Commits atómicos y convencionales (ver `AGENTS.md`).
 6. **Abrir dependientes.** Al cerrar una tarea, quien la cierra pasa a `lista` toda tarea cuyas dependencias quedaron
    todas `hecha`, en el mismo commit que actualiza su fila.
@@ -95,16 +95,20 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C19 | Cuasi-identificadores en texto y maestro: ocupación → sector, barrio → ciudad, año → "hace unos años", en el texto y en la fila del maestro. Incluye `sample_08` (movido aquí desde C17 por decisión del usuario: la corrida 1 no lleva cuasi en texto, D21). | `internal/cuasi/` | C17 | CE-12, CE-13 con J-IND en verde; `sample_08` en verde | orquestador | en curso | — |
+| C19 | Cuasi-identificadores en texto y maestro: ocupación → sector, barrio → ciudad, año de la relación → "hace unos años", en el texto y en la fila del maestro. Incluye `sample_08` (movido aquí desde C17 por decisión del usuario: la corrida 1 no lleva cuasi en texto, D21). | `internal/cuasi/` | C17 | CE-12, CE-13 con J-IND en verde; `sample_08` en verde | orquestador | hecha | 8cd99e5 |
 | C20 | Jueces especializados restantes (J-DIR, J-OCU, J-IND, J-FP, J-CAT, J-EST, J-PAR, J-CON, J-HOM, J-REP, J-CRE, J-VIV) que corren los fixtures de C27. | `internal/juez/` | C11, C18, C27 | Todos los casos corren; reporte por juez | — | espera | — |
-| C21 | Monitor de crecimiento: `record_index` con `If-None-Match`; avisa cuando cambia. | `cmd/monitor/` | C4 | Detecta un cambio simulado | orquestador | en curso | — |
+| C21 | Monitor de crecimiento: `record_index` con `If-None-Match`; avisa cuando cambia. | `cmd/monitor/` | C4 | Detecta un cambio simulado | orquestador | hecha | 8019a54 |
 | C22 | Hold-out 80/20 y prueba de crecimiento (J-CRE). | `internal/juez/`, `scripts/` | C18, C20 | 0 seudónimos viejos cambian | — | espera | — |
 | C23 | `DECISIONS.md`: llenar las cifras de costo en tokens y tiempo sobre el esqueleto de C29; guion de demo. | `DECISIONS.md`, `docs/demo/` | C18, C29 | Responde las 3 preguntas del enunciado con cifras de la corrida | orquestador | en curso | — |
-| C24 | Respaldo de la bóveda a disco local fuera de git tras cada corrida. | `scripts/` | C2, C18 | Restaurar el respaldo reproduce `entities.json` | orquestador | en curso | — |
+| C24 | Respaldo de la bóveda a disco local fuera de git tras cada corrida. | `scripts/` | C2, C18 | Restaurar el respaldo reproduce `entities.json` | orquestador | hecha | 2de54bd |
+
+C23 sigue `en curso` y le falta una sola cosa: las seis cifras de `DECISIONS.md` §3.4 con la corrida 1 (tokens de
+entrada y de salida, llamadas y aciertos de caché, dólares, segundos de `/run` y segundos del lote de 50 en
+`/anonymize`). El esqueleto, la tabla de comandos y el guion de demo ya están escritos.
 
 ### Pista paralela · sin dependencias (lista desde ya)
 
-No dependen de la ola 1 y acortan la ola 2 o desbloquean hitos. Se cortan de `integracion/c0-c11` como cualquier
+No dependen de la ola 1 y acortan la ola 2 o desbloquean hitos. Se cortan de `integracion/ola3` como cualquier
 tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `DECISIONS.md`).
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
@@ -127,6 +131,31 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 16:35 · C19 · worker · `CASO:` CE-38: una fecha de negocio detrás de un "desde" suelto se conservaba por casualidad.
+  El año del texto ahora exige ancla de relación ("llevo con ustedes", "cliente desde", "vinculado desde", "con
+  nosotros"); "Kipu Pay opera desde 2020" y "la empresa abrió desde 2019" se quedan. La puntuación no ASCII dejó de
+  pegar palabras, así que "desde 2024…" también se reconoce. Sobre `fuentes/` la salida es byte a byte igual que la
+  punta de la rama: los cinco registros de CE-13 siguen generalizados y no se perdió ninguna fecha de negocio.
+- 16:32 · — · worker · Revisión de la rama atendida: los arreglos entran en commits atómicos sobre
+  `integracion/ola3`; `go build`, `go vet` y `go test ./...` en verde, muestra 13/13 con J-GLO y J-REC 100 % y
+  validador OK, corpus con el mismo cuadro que la punta de la rama. Quedaron fuera los olores opcionales del review
+  (`cargaEntorno` repetido, el switch de ETag de `cmd/monitor`, el switch sobre `modelo.Registro`).
+- 16:28 · C23 · worker · El costo de `/run/{id}` es el de esa corrida: el ejecutor fotografía la contabilidad antes de
+  la primera llamada y publica la diferencia al terminar, porque el mismo cliente de Jev también carga
+  `/anonymize`. Prueba con acumulado creciente: 1000/100 en la primera corrida, 500/80 en la segunda y 0/0 en la que
+  sirvió todo de caché.
+- 16:22 · C19 · worker · `DECISIÓN:` los cuasi-identificadores quedan como están —barrio alterno de la misma ciudad
+  en `clientes`, barrio → ciudad y año → "hace unos años" en el texto— y las tres afirmaciones se estrechan al código
+  real: `clientes.ocupacion` y no "todas las filas", con `empleados.cargo` conservado como rol del empleado en la
+  organización. `DECISIONS.md` §1.3, D9 y CE-12 dicen ahora lo mismo.
+- 16:18 · C23 · worker · `DECISIONS.md` §3.4 ya no tiene huecos de comentario HTML: cada celda dice "pendiente de la
+  corrida 1", así el entregable del jurado no muestra una columna en blanco.
+- 16:12 · — · worker · `AGENTS.md`: la tabla de directorios nombra `cmd/servidor/`, `cmd/pipeline/`, `cmd/juez/`,
+  `cmd/monitor/`, `cmd/respaldo/`, `internal/cuasi/`, `internal/juez/` e `internal/respaldo/`, y `docs/demo/` entra a
+  la excepción de solo lectura de `docs/`. `tests/` todavía no existe: se agrega cuando llegue con C27.
+- 16:05 · C19 · worker · El cableado de cuasi tiene prueba de punta a punta en `internal/nucleo`: un lote sintético
+  con la ocupación de una persona y el año de su relación sale generalizado y la fecha de negocio del mismo texto se
+  conserva. Antes, C19 solo se ejercía a mano.
 - 15:55 · C19, C21, C23, C24 · pi · Ola 3 tomada sobre `integracion/ola3` (cortada de `master` `ef6b879`): la
   frontera que deja la corrida 1. Cuatro implementadores en paralelo, cada uno en su worktree `../31102026-wt/Cn`
   sobre su rama; C20 y C22 siguen en espera de C27 (fixtures). C23 incluye el pendiente de C18
