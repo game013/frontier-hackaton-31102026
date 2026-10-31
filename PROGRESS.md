@@ -110,7 +110,7 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | C25 | **Calibrar los umbrales de Jev (D31).** Etiquetar candidatos de `sample/` con su verdad (`expected_output/entities.json`: persona o no, género), incluir negativos (marcas, bancos, lugares, apellido-lugar, "Claro"), pasarlos por `typesafe/jev-1.14-20261014` y medir precisión y cobertura por umbral para persona, desempate y género. Solo ids y conteos en el informe. | `scripts/calibrar_jev.py`, `analisis/06_calibracion.md` | — | Informe con la curva por umbral y un valor recomendado por decisión; si difiere de D31, propuesta `DECISIÓN:` en la bitácora | claude | hecha | 10a87e5 |
-| C26 | **Allowlist como datos.** Las ~30 entidades a conservar (`analisis/00_resumen.md`) con `reason`, más las reglas genéricas (sufijos `S.A.S.`, "Banco …", mayúscula sin nombre de pila delante, apellido-lugar). C14 solo la carga; no edita este archivo. | `internal/detecta/allowlist.json` | — | JSON válido con prueba de esquema; cubre todas las entidades de `analisis/00_resumen.md` y los `kept` de `sample/expected_output/entities.json` | — | lista | — |
+| C26 | **Allowlist como datos.** Las ~30 entidades a conservar (`analisis/00_resumen.md`) con `reason`, más las reglas genéricas (sufijos `S.A.S.`, "Banco …", mayúscula sin nombre de pila delante, apellido-lugar). C14 solo la carga; no edita este archivo. | `internal/detecta/allowlist.json` | — | JSON válido con prueba de esquema; cubre todas las entidades de `analisis/00_resumen.md` y los `kept` de `sample/expected_output/entities.json` | pista 2 | hecha | ca001d0 |
 | C27 | **Fixtures de los casos esquina.** Cada caso de `CASOS_ESQUINA.md` (CE-01 a CE-32) como archivo con id de registro, campo, entrada y esperado (qué debe desaparecer, qué debe quedar, qué juez lo mide). Es la parte de datos de C20. | `tests/casos/` | — | Un fixture por caso, legible por `cmd/juez`; ningún dato real fuera de los ids y de lo estrictamente necesario para el esperado | pi | en curso | — |
 | C28 | **Railway listo.** Proyecto, volumen en `/data`, una réplica, Serverless apagado, reinicio `ON_FAILURE`, healthcheck `/v1/health`; variables `LLM_MODEL=typesafe/jev-1.14-20261014`, `OPENROUTER_API_KEY`, secreto del HMAC. | Panel de Railway (fuera del repo) | — | C1 solo tiene que desplegar; variables verificadas sin mostrarlas | usuario | lista | — |
 | C29 | **Esqueleto de `DECISIONS.md`.** Las tres preguntas del enunciado: qué es PII, qué se conservó y por qué, costo. Declara D15 (filtración al modelo) y que `provider.data_collection: deny` se acepta pero no está probado que se cumpla. Deja huecos marcados para las cifras de la corrida. | `DECISIONS.md` | — | Las tres secciones escritas; solo faltan cifras (las llena C23) | pi | en curso | — |
@@ -127,6 +127,10 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 14:15 · — · pi · Estado para el relevo: muestra con validador OK, 12/13 (sólo `sample_08`, cuasi, va con C19),
+  J-GLO 100 %, J-REC 100 %, J-DIC 100 %; corpus con validador OK, 4/5 públicos (`pub_04` es dato del test) y
+  J-GLO 99,8 % (8 nombres de pila compartidos en `doc_22`). `/v1/anonymize` ya anonimiza de verdad; `/run` sigue con
+  `EjecutorPendiente`. Juez completo: 320 s → 10 s tras indexar la salida en `internal/norm`.
 - 13:35 · — · pi · Ola 2 tomada (C12–C18) sobre `integracion/ola2` desde `master` (`dbb4bef`), más C27 y C29 de la
   pista paralela. C26 no se toca: la trabaja otro agente. `DECISIÓN:` C17 ya no exige 13/13: `sample_08` mide
   cuasi-identificadores (`fotógrafa`/`Granada`/`2025`) y pasa a C19, en línea con D21 (corrida 1 sin cuasi en texto).
