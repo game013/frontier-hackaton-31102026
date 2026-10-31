@@ -42,6 +42,9 @@ type Candidato struct {
 	Fin       int
 	Valor     string
 	Generador string
+	// Contexto es la ventana alrededor del candidato: lo único que viaja al
+	// modelo además del fragmento (D15).
+	Contexto string
 }
 
 // Detector busca formas conocidas y patrones.
@@ -152,6 +155,7 @@ func (d *Detector) Candidatos(recs []modelo.Registro) []Candidato {
 						Fin:       c.fin,
 						Valor:     campo.Valor[c.inicio:c.fin],
 						Generador: generador.nombre,
+						Contexto:  ventanaDe(campo.Valor, c.inicio, c.fin),
 					})
 				}
 			}
@@ -401,6 +405,20 @@ func solapaAlguna(menciones []modelo.Mencion, inicio, fin int) bool {
 		}
 	}
 	return false
+}
+
+// ventanaDe recorta el contexto del candidato: 80 bytes a cada lado alcanzan
+// para que el modelo vea la frase, sin mandar el registro entero (D15).
+func ventanaDe(valor string, inicio, fin int) string {
+	desde := inicio - 80
+	if desde < 0 {
+		desde = 0
+	}
+	hasta := fin + 80
+	if hasta > len(valor) {
+		hasta = len(valor)
+	}
+	return valor[desde:hasta]
 }
 
 func textoDe(r modelo.Registro) string {
