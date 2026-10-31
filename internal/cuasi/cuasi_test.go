@@ -348,6 +348,52 @@ func TestConservaTextoQueNoEsCuasiIdentificador(t *testing.T) {
 	}
 }
 
+// CE-41: el barrio solo se generaliza cuando es el de la persona. El lugar de
+// una cosa —la sede, la oficina, el consultorio— se conserva (D1, DECISIONS
+// §1.4), aunque el texto tenga la ocupación de alguien.
+func TestCE41BarrioSolamenteSiEsDeLaPersona(t *testing.T) {
+	casos := []struct {
+		nombre string
+		texto  string
+		quiero string
+	}{
+		{
+			"sede de la empresa tras un locativo",
+			"Soy contadora y la sede de Kipu Pay queda en Envigado.",
+			"Soy profesional de finanzas y la sede de Kipu Pay queda en Envigado.",
+		},
+		{
+			"oficina como sujeto de cosa",
+			"no!! yo estaba trabajando, soy diseñadora, estaba en la oficina en Buenos Aires todo el dia",
+			"no!! yo estaba trabajando, soy profesional de las industrias creativas, estaba en la oficina en Buenos Aires todo el dia",
+		},
+		{
+			"consultorio que queda en el barrio",
+			"soy odontóloga, el consultorio queda en Castilla y casi todo el día atiendo ahí",
+			"soy profesional de la salud, el consultorio queda en Castilla y casi todo el día atiendo ahí",
+		},
+		{
+			"sample_08: trabajo cerca del barrio",
+			"De una. Yo soy fotógrafa, trabajo cerca, en Granada, y entré con ustedes en 2025, así que paso cualquier tarde.",
+			"De una. Yo soy profesional de las industrias creativas, trabajo cerca, en Cali, y entré con ustedes en hace unos años, así que paso cualquier tarde.",
+		},
+		{
+			"vive en el barrio",
+			"soy veterinaria, vivo en Sotomayor.",
+			"soy profesional de la salud, vivo en Bucaramanga.",
+		},
+	}
+	for _, c := range casos {
+		t.Run(c.nombre, func(t *testing.T) {
+			rec := chatDePrueba(c.texto)
+			out := generaliza(t, []modelo.Registro{rec})
+			if got := textoDe(t, out[0]); got != c.quiero {
+				t.Fatalf("texto =\n %q\nquiero\n %q", got, c.quiero)
+			}
+		})
+	}
+}
+
 // Una fila con datos que el catálogo no conoce se queda como está: aquí no se
 // inventan sectores ni barrios (D18).
 func TestConservaFilaFueraDelCatalogo(t *testing.T) {

@@ -36,6 +36,30 @@ var verbosVivienda = conjunto(
 	"vivo", "vive", "vives", "vivimos", "viven", "vivia", "resido", "reside", "residia",
 )
 
+// verboTrabajo ata el barrio al trabajo de la propia persona: «trabajo cerca, en
+// Granada» (sample_08). Solo la primera persona del singular: «trabajaba» y
+// «trabajé» se confunden con la tercera persona y el lugar se conserva (D1).
+const verboTrabajo = "trabajo"
+
+// antesDeTrabajo convierten «trabajo» en sustantivo: «el trabajo en Granada»,
+// «su lugar de trabajo en El Prado»; detrás de ellas no ata barrio.
+var antesDeTrabajo = conjunto(
+	"el", "la", "los", "las", "un", "una", "mi", "mis", "su", "sus", "tu", "tus",
+	"de", "del", "nuestro", "nuestra",
+)
+
+// locativosDeCosa atan el lugar a una cosa, no a una persona: la sede «queda»,
+// la oficina «está», la empresa «opera» o «abrió» en un barrio. Ese barrio es el
+// de la empresa y se conserva (D1, CE-41).
+var locativosDeCosa = conjunto("queda", "quedan", "esta", "estan", "opera", "abrio", "encuentra")
+
+// sujetosDeCosa nombran lo que no es una persona detrás de un locativo: «en la
+// oficina en Buenos Aires» (CE-41).
+var sujetosDeCosa = conjunto("sede", "oficina", "empresa", "compania")
+
+// topeBarrio acota cuántas palabras atrás se busca el verbo que ata el barrio.
+const topeBarrio = 5
+
 // verbosEntrada anclan el año de la relación con la empresa: «entré con ustedes
 // en 2025», «vinculada en 2023» (CE-40). Se comparan con tildes para no
 // confundirlos con la preposición «entre».
@@ -188,9 +212,9 @@ func ligadaAPersona(ps []palabra, i int) bool {
 // barrio es un tramo de texto que es un barrio del catálogo.
 type barrio struct {
 	tramo
-	// vivienda marca «vivo en», que basta por sí solo para generalizar; «en»
-	// genérico solo generaliza dentro de la plantilla (D9).
-	vivienda bool
+	// deLaPersona marca el barrio donde vive o trabaja una persona; solo esos se
+	// generalizan a su ciudad (D9, CE-41).
+	deLaPersona bool
 }
 
 // barriosEn encuentra los barrios del catálogo escritos con mayúscula inicial
@@ -214,12 +238,33 @@ func barriosEn(ps []palabra, preferida string) []barrio {
 			continue
 		}
 		out = append(out, barrio{
-			tramo:    tramo{desde: i, hasta: i + n, nuevo: ciudad},
-			vivienda: j > 0 && verbosVivienda[norm.Norm(ps[j-1].texto)],
+			tramo:       tramo{desde: i, hasta: i + n, nuevo: ciudad},
+			deLaPersona: barrioDeLaPersona(ps, j),
 		})
 		i += n - 1
 	}
 	return out
+}
+
+// barrioDeLaPersona dice si el lugar que sigue al «en» de la posición j es el
+// barrio de una persona y no el de una cosa (D1, CE-41). Lo es detrás de un
+// verbo de vivienda («vivo en Castilla») o de un verbo de trabajo en primera
+// persona dentro de la misma oración («trabajo cerca, en Granada»); si el verbo
+// más cercano es locativo de una cosa («la sede queda en Envigado») o el sujeto
+// es la sede, la oficina o la empresa, el lugar se conserva.
+func barrioDeLaPersona(ps []palabra, j int) bool {
+	for k := j - 1; k >= 0 && j-k <= topeBarrio; k-- {
+		clave := norm.Norm(ps[k].texto)
+		switch {
+		case sujetosDeCosa[clave], locativosDeCosa[clave]:
+			return false
+		case verbosVivienda[clave]:
+			return true
+		case clave == verboTrabajo:
+			return k == 0 || !antesDeTrabajo[norm.Norm(ps[k-1].texto)]
+		}
+	}
+	return false
 }
 
 // barrioEn busca el barrio más largo del catálogo que empieza en i y devuelve su

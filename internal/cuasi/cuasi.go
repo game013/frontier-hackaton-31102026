@@ -60,19 +60,18 @@ func edicionesDe(r modelo.Registro, indice *registro.Indice) []campos.Edicion {
 }
 
 // edicionesTexto generaliza los cuasi-identificadores de un campo de texto: la
-// ocupación ligada a una persona va a su sector, el barrio a su ciudad y el año
-// de la relación a "hace unos años" (D9). Un barrio detrás de «en» genérico
-// solo se generaliza dentro de la plantilla, es decir, cuando el mismo texto ya
-// declara la ocupación de alguien: así un lugar suelto se conserva.
+// ocupación ligada a una persona va a su sector, el barrio de la persona a su
+// ciudad y el año de la relación a "hace unos años" (D9). Un barrio que no es
+// de la persona —el de la sede, la oficina o el consultorio— se conserva: los
+// lugares no son datos personales (D1, CE-41).
 func edicionesTexto(campo modelo.CampoTexto, texto, preferida string) []campos.Edicion {
 	if texto == "" {
 		return nil
 	}
 	ps := palabras(texto)
-	ocupaciones := ocupacionesEn(ps)
-	tramos := append([]tramo{}, ocupaciones...)
+	tramos := append([]tramo{}, ocupacionesEn(ps)...)
 	for _, barrio := range barriosEn(ps, preferida) {
-		if barrio.vivienda || len(ocupaciones) > 0 {
+		if barrio.deLaPersona {
 			tramos = append(tramos, barrio.tramo)
 		}
 	}
