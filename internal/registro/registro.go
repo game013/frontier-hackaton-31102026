@@ -302,7 +302,7 @@ func (i *Indice) cliente(r modelo.TableRecord) error {
 		return fmt.Errorf("registro: cliente %s sin nombre", id)
 	}
 	i.agregaPersona(llave, modelo.RolCliente, perfil, col(r, "ciudad"), col(r, "ocupacion"), []string{
-		id, perfil.Cedula, perfil.Correo, perfil.Celular,
+		id, r.ID, perfil.Cedula, perfil.Correo, perfil.Celular,
 	})
 	return nil
 }
@@ -325,7 +325,7 @@ func (i *Indice) empleado(r modelo.TableRecord) error {
 		return fmt.Errorf("registro: empleado %s sin nombre", id)
 	}
 	i.agregaPersona(llave, modelo.RolEmpleado, perfil, col(r, "ciudad"), col(r, "cargo"), []string{
-		id, perfil.Cedula, perfil.Correo, perfil.Celular, perfil.Handle,
+		id, r.ID, perfil.Cedula, perfil.Correo, perfil.Celular, perfil.Handle,
 	})
 	// reporta_a es el nombre corto del jefe (CE-25): no es una forma de la
 	// persona, es una referencia que la resolución usa.
