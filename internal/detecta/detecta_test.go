@@ -166,7 +166,7 @@ func TestPatronesConContexto(t *testing.T) {
 		valor string
 		forma modelo.TipoForma
 	}{
-		{"¿Cuál es tu cédula? 1022649507", "1022649507", modelo.FormaCedula},
+		{"¿Cuál es tu cédula? 1000264950", "1000264950", modelo.FormaCedula},
 		{"¿Me confirmas tu cédula? 10.226.495", "10.226.495", modelo.FormaCedulaPuntos},
 		{"Mi correo es ana punto perez arroba gmail punto com", "ana punto perez arroba gmail punto com", modelo.FormaCorreoDeletreado},
 		{"Me llamo de nuevo, mi celular es 314 872 9552", "314 872 9552", modelo.FormaCelular},
@@ -197,10 +197,10 @@ func TestContextoDelHiloClasificaRespuestas(t *testing.T) {
 	}
 	recs := []modelo.Registro{
 		modelo.ChatRecord{ID: "m1", ThreadID: "hilo", Author: "Ana", Text: "¿Me confirmas tu cédula para validar?"},
-		modelo.ChatRecord{ID: "m2", ThreadID: "hilo", Author: "Bea", Text: "1022649507"},
+		modelo.ChatRecord{ID: "m2", ThreadID: "hilo", Author: "Bea", Text: "1000264950"},
 	}
 	menciones, _ := d.Detecta(context.Background(), recs)
-	if _, ok := halla(menciones, "m2", "1022649507"); !ok {
+	if _, ok := halla(menciones, "m2", "1000264950"); !ok {
 		t.Fatalf("no clasifiqué la respuesta de solo dígitos: %+v", menciones)
 	}
 }

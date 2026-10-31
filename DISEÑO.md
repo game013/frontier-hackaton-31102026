@@ -55,10 +55,10 @@ registros que no hemos visto.
 | Cuasi-identificador sin nombre                            | "contadora, Barranquilla, desde 2024" (CL-50124)              | Generalización en el texto **y** en la fila del maestro |
 | Apellido que es lugar o marca                             | "PSE de Luis Santander desde Santander", "Mariana Carulla … compra en Carulla" | Persona si va precedido de un nombre de pila o coincide con una forma conocida; si no, se conserva |
 | Nombre común que es palabra                               | "Claro" (39 veces) frente a la empleada Clara                 | El nombre de pila suelto solo se reemplaza si el hilo o documento lo ata a una persona |
-| Respuestas de solo dígitos                                | "1022649507" después de "¿me confirmas tu cédula?"            | Se clasifican con la pregunta anterior del hilo          |
+| Respuestas de solo dígitos                                | "##########" (10 dígitos) después de "¿me confirmas tu cédula?"            | Se clasifican con la pregunta anterior del hilo          |
 | Usuario borrado                                           | U07HF5JVK sin `real_name`                                     | Se identifica por la cédula que da en el texto (CL-58402) |
-| Persona fuera del maestro                                 | CL-55481 (Felipe Castilla): PQR y usuario de chat             | Entidad creada a partir de la evidencia, con llave `CL-55481` |
-| Terceros sin fila                                         | Hernando Gómez, Kelly Marulanda, Pamela Agudelo, Jesús Sánchez | Entidad nueva con llave de contexto, persistida         |
+| Persona fuera del maestro                                 | CL-55481 (cliente sin fila): PQR y usuario de chat            | Entidad creada a partir de la evidencia, con llave `CL-55481` |
+| Terceros sin fila                                         | Cuatro nombres que solo aparecen en chats y notas              | Entidad nueva con llave de contexto, persistida         |
 | Documentos en inglés                                      | Security report, contrato Veloz, memo a inversionistas        | Mismos detectores más los marcadores "Prepared by", "ID No."; el LLM cubre el residuo |
 
 ## 5. Qué dejamos fuera

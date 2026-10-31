@@ -235,9 +235,6 @@ func formasReales(p modelo.Persona, sinDueno map[string]bool) []string {
 	vistas := map[string]bool{}
 	var out []string
 	for _, f := range p.Formas {
-		if os.Getenv("SALIDA_DEBUG") != "" && sinDueno[norm.Norm(f.Valor)] {
-			fmt.Fprintf(os.Stderr, "DEBUG omito tipo=%s len=%d\n", f.Tipo, len(f.Valor))
-		}
 		if f.Valor == "" || vistas[f.Valor] || sinDueno[norm.Norm(f.Valor)] {
 			continue
 		}
