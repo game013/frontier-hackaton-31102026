@@ -1,0 +1,754 @@
+{
+  "fuente": "docs/validar.mjs",
+  "comando": "node internal/norm/gen_fixture.mjs > internal/norm/testdata/casos.json",
+  "contiene": [
+    {
+      "haystack": "González Pérez",
+      "needle": "gonzalez perez",
+      "resultado": true,
+      "nota": "mayúsculas sin tildes"
+    },
+    {
+      "haystack": "GONZÁLEZ PÉREZ",
+      "needle": "González Pérez",
+      "resultado": true,
+      "nota": "needle con tildes"
+    },
+    {
+      "haystack": "González Pérez",
+      "needle": "González Pérez",
+      "resultado": true,
+      "nota": "needle descompuesto"
+    },
+    {
+      "haystack": "Muñoz Ríos",
+      "needle": "munoz rios",
+      "resultado": true,
+      "nota": "eñe y tildes"
+    },
+    {
+      "haystack": "Ana   María",
+      "needle": "ana maria",
+      "resultado": true,
+      "nota": "espacios repetidos en el haystack"
+    },
+    {
+      "haystack": "Ana\tMaría",
+      "needle": "ana maria",
+      "resultado": true,
+      "nota": "tabulador"
+    },
+    {
+      "haystack": "Ana\nMaría",
+      "needle": "ana maria",
+      "resultado": true,
+      "nota": "salto de línea"
+    },
+    {
+      "haystack": "Ana María",
+      "needle": "ana maria",
+      "resultado": true,
+      "nota": "espacio duro"
+    },
+    {
+      "haystack": "Ana María",
+      "needle": "ana maria",
+      "resultado": true,
+      "nota": "espacio em"
+    },
+    {
+      "haystack": "Ana​María",
+      "needle": "anamaría",
+      "resultado": true,
+      "nota": "formato Cf eliminado"
+    },
+    {
+      "haystack": "Anastasia",
+      "needle": "ana",
+      "resultado": false,
+      "nota": "palabra dentro de otra palabra"
+    },
+    {
+      "haystack": "Ana",
+      "needle": "ana",
+      "resultado": true,
+      "nota": "igual"
+    },
+    {
+      "haystack": "ANA_PEREZ",
+      "needle": "ana_perez",
+      "resultado": true,
+      "nota": "guion bajo es carácter de palabra"
+    },
+    {
+      "haystack": "anaperez",
+      "needle": "ana_perez",
+      "resultado": false,
+      "nota": "guion bajo ausente"
+    },
+    {
+      "haystack": "juan.perez@kipupay.co",
+      "needle": "JUAN.PEREZ@KIPUPAY.CO",
+      "resultado": true,
+      "nota": "correo completo"
+    },
+    {
+      "haystack": "Juan.Pérez",
+      "needle": "juan.perez",
+      "resultado": true,
+      "nota": "punto entre nombre y apellido"
+    },
+    {
+      "haystack": "juan.perezr",
+      "needle": "juan.perez",
+      "resultado": false,
+      "nota": "el punto es prefijo de otra palabra"
+    },
+    {
+      "haystack": "escribió: juan.perez@kipupay.co",
+      "needle": "juan.perez",
+      "resultado": true,
+      "nota": "el correo no cierra la palabra"
+    },
+    {
+      "haystack": "s.a.s. kipu",
+      "needle": "S.A.S.",
+      "resultado": true,
+      "nota": "siglas con puntos"
+    },
+    {
+      "haystack": "folio #12345",
+      "needle": "#12345",
+      "resultado": true,
+      "nota": "símbolo fuera de RX_TEXTO"
+    },
+    {
+      "haystack": "WEIß",
+      "needle": "weiss",
+      "resultado": true,
+      "nota": "eszett a dos eses"
+    },
+    {
+      "haystack": "Straße",
+      "needle": "strasse",
+      "resultado": true,
+      "nota": "eszett con mayúscula inicial"
+    },
+    {
+      "haystack": "ΟΔΥΣΣΕΥΣ",
+      "needle": "οδυσσευσ",
+      "resultado": false,
+      "nota": "sigma final del griego"
+    },
+    {
+      "haystack": "ΣΟΦΙΑ",
+      "needle": "σοφια",
+      "resultado": false,
+      "nota": "griego con mayúsculas"
+    },
+    {
+      "haystack": "Vasyl",
+      "needle": "Vаsyl",
+      "resultado": true,
+      "nota": "confusable cirílico а en el needle"
+    },
+    {
+      "haystack": "Ѕmith",
+      "needle": "smith",
+      "resultado": true,
+      "nota": "confusable cirílico Ѕ en el haystack"
+    },
+    {
+      "haystack": "Íñigo",
+      "needle": "inigo",
+      "resultado": true,
+      "nota": "í y ñ"
+    },
+    {
+      "haystack": "İstanbul",
+      "needle": "istanbul",
+      "resultado": true,
+      "nota": "i con punto"
+    },
+    {
+      "haystack": "Ǎna Lucía",
+      "needle": "ana lucia",
+      "resultado": true,
+      "nota": "caron"
+    },
+    {
+      "haystack": "François",
+      "needle": "francois",
+      "resultado": true,
+      "nota": "cedilla"
+    },
+    {
+      "haystack": "ＡＮＡ",
+      "needle": "ana",
+      "resultado": true,
+      "nota": "ancho completo en el haystack"
+    },
+    {
+      "haystack": "Ana",
+      "needle": "ＡＮＡ",
+      "resultado": true,
+      "nota": "ancho completo en el needle"
+    },
+    {
+      "haystack": "ana maria",
+      "needle": "ANA MARIA",
+      "resultado": true,
+      "nota": "mayúsculas en el needle"
+    },
+    {
+      "haystack": "anamaria",
+      "needle": "ana maria",
+      "resultado": true,
+      "nota": "el jurado acepta palabras pegadas"
+    },
+    {
+      "haystack": "Ana-María",
+      "needle": "ana maria",
+      "resultado": false,
+      "nota": "guion no es espacio"
+    },
+    {
+      "haystack": "ana maria",
+      "needle": "ana ma",
+      "resultado": false,
+      "nota": "palabra de dos letras"
+    },
+    {
+      "haystack": "ana maría gómez",
+      "needle": "maria gomez",
+      "resultado": true,
+      "nota": "dos palabras contiguas"
+    },
+    {
+      "haystack": "Ana Maria",
+      "needle": "Maria Gómez",
+      "resultado": false,
+      "nota": "falta una palabra"
+    },
+    {
+      "haystack": "Angélica",
+      "needle": "angelica",
+      "resultado": true,
+      "nota": "eñe no, tilde sí"
+    },
+    {
+      "haystack": "JOSÉ  ÁNGEL",
+      "needle": "jose angel",
+      "resultado": true,
+      "nota": "dos nombres con tildes"
+    },
+    {
+      "haystack": " ana ",
+      "needle": " ana ",
+      "resultado": true,
+      "nota": "espacios en los bordes"
+    },
+    {
+      "haystack": "ana",
+      "needle": " ana",
+      "resultado": false,
+      "nota": "espacio inicial que el haystack no tiene"
+    },
+    {
+      "haystack": "",
+      "needle": "ana",
+      "resultado": false,
+      "nota": "haystack vacío"
+    },
+    {
+      "haystack": "ana",
+      "needle": "",
+      "resultado": false,
+      "nota": "needle vacío"
+    },
+    {
+      "haystack": "su cédula 1.020.304.050 quedó registrada",
+      "needle": "1020304050",
+      "resultado": true,
+      "nota": "cédula con puntos"
+    },
+    {
+      "haystack": "su cédula 1020304050 quedó registrada",
+      "needle": "1.020.304.050",
+      "resultado": true,
+      "nota": "needle con puntos"
+    },
+    {
+      "haystack": "su cédula 1-020-304-050",
+      "needle": "1020304050",
+      "resultado": true,
+      "nota": "separador guion"
+    },
+    {
+      "haystack": "su cédula 1 020 304 050",
+      "needle": "1020304050",
+      "resultado": true,
+      "nota": "separador espacio"
+    },
+    {
+      "haystack": "su cédula 1_020_304_050",
+      "needle": "1020304050",
+      "resultado": true,
+      "nota": "separador guion bajo"
+    },
+    {
+      "haystack": "su cédula 1/020/304/050",
+      "needle": "1020304050",
+      "resultado": true,
+      "nota": "separador barra"
+    },
+    {
+      "haystack": "su cédula 1–020–304–050",
+      "needle": "1020304050",
+      "resultado": true,
+      "nota": "separador raya"
+    },
+    {
+      "haystack": "su cédula 1´020´304´050",
+      "needle": "1020304050",
+      "resultado": false,
+      "nota": "separador acento agudo"
+    },
+    {
+      "haystack": "su cédula 1·020·304·050",
+      "needle": "1020304050",
+      "resultado": true,
+      "nota": "separador punto medio"
+    },
+    {
+      "haystack": "su cédula 1,020,304,050",
+      "needle": "1020304050",
+      "resultado": true,
+      "nota": "separador coma"
+    },
+    {
+      "haystack": "su cédula 10203040501",
+      "needle": "1020304050",
+      "resultado": false,
+      "nota": "un dígito de más al final"
+    },
+    {
+      "haystack": "su cédula 11020304050",
+      "needle": "1020304050",
+      "resultado": false,
+      "nota": "un dígito de más al inicio"
+    },
+    {
+      "haystack": "tel +57 300 123 4567",
+      "needle": "3001234567",
+      "resultado": true,
+      "nota": "celular con prefijo país"
+    },
+    {
+      "haystack": "tel +573001234567",
+      "needle": "3001234567",
+      "resultado": true,
+      "nota": "celular E164"
+    },
+    {
+      "haystack": "tel 3001234567",
+      "needle": "573001234567",
+      "resultado": true,
+      "nota": "needle con 57 y haystack sin él"
+    },
+    {
+      "haystack": "tel +57 300 123 4567",
+      "needle": "573001234567",
+      "resultado": true,
+      "nota": "needle de doce dígitos"
+    },
+    {
+      "haystack": "celular +57 (300) 123-4567",
+      "needle": "3001234567",
+      "resultado": false,
+      "nota": "paréntesis no son separadores"
+    },
+    {
+      "haystack": "valor 1.234.567",
+      "needle": "1234567",
+      "resultado": true,
+      "nota": "siete dígitos"
+    },
+    {
+      "haystack": "valor 1234567",
+      "needle": "1.234.567",
+      "resultado": true,
+      "nota": "needle de siete dígitos con puntos"
+    },
+    {
+      "haystack": "factura 12345",
+      "needle": "1234",
+      "resultado": true,
+      "nota": "menos de seis dígitos"
+    },
+    {
+      "haystack": "CC-1020304050",
+      "needle": "CC1020304050",
+      "resultado": false,
+      "nota": "letras y dígitos: no compacta"
+    },
+    {
+      "haystack": "valor ١٢٣٤٥٦",
+      "needle": "١٢٣٤٥٦",
+      "resultado": true,
+      "nota": "dígitos arábigo-índicos"
+    },
+    {
+      "haystack": "cédula 1 . 0 2 0 3 0 4",
+      "needle": "1 . 0 2 0 3 0 4",
+      "resultado": true,
+      "nota": "dígitos espaciados: cae a la rama de texto"
+    },
+    {
+      "haystack": "cédula 1020304",
+      "needle": "1 . 0 2 0 3 0 4",
+      "resultado": false,
+      "nota": "la proporción de dígitos no alcanza"
+    },
+    {
+      "haystack": "cédula 1.2.3.4.5.6",
+      "needle": "123456.....",
+      "resultado": false,
+      "nota": "la proporción de dígitos manda sobre el compactado"
+    },
+    {
+      "haystack": "cédula 1.2.3.4.5.6",
+      "needle": "123456    ",
+      "resultado": true,
+      "nota": "relleno con espacios"
+    },
+    {
+      "haystack": "folio 123456",
+      "needle": "123456",
+      "resultado": true,
+      "nota": "seis dígitos justos"
+    },
+    {
+      "haystack": "folio 1234567",
+      "needle": "123456",
+      "resultado": false,
+      "nota": "seis dígitos con otro pegado"
+    },
+    {
+      "haystack": "valor 000123456",
+      "needle": "123456",
+      "resultado": false,
+      "nota": "ceros a la izquierda no estorban"
+    },
+    {
+      "haystack": "Pedido 4500123 de Ana",
+      "needle": "123",
+      "resultado": true,
+      "nota": "tres dígitos dentro de un número"
+    }
+  ],
+  "normalizacion": [
+    {
+      "entrada": "González  Pérez",
+      "clean": "González Pérez",
+      "quitarTildes": "Gonzalez  Perez",
+      "plegar": "gonzález  pérez",
+      "norm": "gonzalez perez",
+      "nota": "tildes y espacios repetidos"
+    },
+    {
+      "entrada": "ＡＮＡ",
+      "clean": "ANA",
+      "quitarTildes": "ＡＮＡ",
+      "plegar": "ａｎａ",
+      "norm": "ana",
+      "nota": "ancho completo"
+    },
+    {
+      "entrada": "İstanbul",
+      "clean": "İstanbul",
+      "quitarTildes": "Istanbul",
+      "plegar": "i̇stanbul",
+      "norm": "istanbul",
+      "nota": "i con punto arriba"
+    },
+    {
+      "entrada": "Weiß",
+      "clean": "Weiß",
+      "quitarTildes": "Weiß",
+      "plegar": "weiss",
+      "norm": "weiss",
+      "nota": "eszett"
+    },
+    {
+      "entrada": "STRAẞE",
+      "clean": "STRAẞE",
+      "quitarTildes": "STRAẞE",
+      "plegar": "strasse",
+      "norm": "strasse",
+      "nota": "eszett mayúscula"
+    },
+    {
+      "entrada": "ΟΔΥΣΣΕΥΣ",
+      "clean": "ΟΔΥΣΣΕΥΣ",
+      "quitarTildes": "ΟΔΥΣΣΕΥΣ",
+      "plegar": "οδυσσευσ",
+      "norm": "οδυσσευσ",
+      "nota": "sigma final"
+    },
+    {
+      "entrada": "Vаsyl",
+      "clean": "Vasyl",
+      "quitarTildes": "Vаsyl",
+      "plegar": "vаsyl",
+      "norm": "vasyl",
+      "nota": "confusable cirílico"
+    },
+    {
+      "entrada": "Ana​María",
+      "clean": "AnaMaría",
+      "quitarTildes": "Ana​Maria",
+      "plegar": "ana​maría",
+      "norm": "anamaria",
+      "nota": "formato Cf"
+    },
+    {
+      "entrada": "Ana María",
+      "clean": "Ana María",
+      "quitarTildes": "Ana Maria",
+      "plegar": "ana maría",
+      "norm": "ana maria",
+      "nota": "espacio duro"
+    },
+    {
+      "entrada": "Ana\tMaría\r\n",
+      "clean": "Ana María ",
+      "quitarTildes": "Ana\tMaria\r\n",
+      "plegar": "ana\tmaría\r\n",
+      "norm": "ana maria ",
+      "nota": "controles de espacio"
+    },
+    {
+      "entrada": "Muñoz",
+      "clean": "Muñoz",
+      "quitarTildes": "Munoz",
+      "plegar": "muñoz",
+      "norm": "munoz",
+      "nota": "eñe"
+    },
+    {
+      "entrada": "Ǎna",
+      "clean": "Ǎna",
+      "quitarTildes": "Ana",
+      "plegar": "ǎna",
+      "norm": "ana",
+      "nota": "caron"
+    },
+    {
+      "entrada": "é",
+      "clean": "é",
+      "quitarTildes": "e",
+      "plegar": "é",
+      "norm": "e",
+      "nota": "e + acento combinado"
+    },
+    {
+      "entrada": "1.020.304",
+      "clean": "1.020.304",
+      "quitarTildes": "1.020.304",
+      "plegar": "1.020.304",
+      "norm": "1.020.304",
+      "nota": "dígitos con puntos"
+    },
+    {
+      "entrada": "ﬁn",
+      "clean": "fin",
+      "quitarTildes": "ﬁn",
+      "plegar": "ﬁn",
+      "norm": "fin",
+      "nota": "ligadura fi"
+    },
+    {
+      "entrada": "ℓ",
+      "clean": "l",
+      "quitarTildes": "ℓ",
+      "plegar": "ℓ",
+      "norm": "l",
+      "nota": "ele de script"
+    },
+    {
+      "entrada": "½",
+      "clean": "1⁄2",
+      "quitarTildes": "½",
+      "plegar": "½",
+      "norm": "1⁄2",
+      "nota": "fracción vulgar"
+    },
+    {
+      "entrada": "①",
+      "clean": "1",
+      "quitarTildes": "①",
+      "plegar": "①",
+      "norm": "1",
+      "nota": "dígito en círculo"
+    },
+    {
+      "entrada": "㎏",
+      "clean": "kg",
+      "quitarTildes": "㎏",
+      "plegar": "㎏",
+      "norm": "kg",
+      "nota": "símbolo de kilogramo"
+    },
+    {
+      "entrada": "ｶ",
+      "clean": "カ",
+      "quitarTildes": "ｶ",
+      "plegar": "ｶ",
+      "norm": "カ",
+      "nota": "katakana de ancho medio"
+    },
+    {
+      "entrada": "№",
+      "clean": "No",
+      "quitarTildes": "№",
+      "plegar": "№",
+      "norm": "no",
+      "nota": "número abreviado"
+    },
+    {
+      "entrada": "Ⅻ",
+      "clean": "XII",
+      "quitarTildes": "Ⅻ",
+      "plegar": "ⅻ",
+      "norm": "xii",
+      "nota": "numeral romano"
+    },
+    {
+      "entrada": "ẛ",
+      "clean": "ṡ",
+      "quitarTildes": "ſ",
+      "plegar": "ẛ",
+      "norm": "s",
+      "nota": "ese larga con punto"
+    },
+    {
+      "entrada": "Å",
+      "clean": "Å",
+      "quitarTildes": "A",
+      "plegar": "å",
+      "norm": "a",
+      "nota": "signo de angstrom"
+    },
+    {
+      "entrada": "ǅ",
+      "clean": "Dž",
+      "quitarTildes": "ǅ",
+      "plegar": "ǆ",
+      "norm": "dz",
+      "nota": "dígrafo con título"
+    },
+    {
+      "entrada": "  doble   espacio  ",
+      "clean": " doble espacio ",
+      "quitarTildes": "  doble   espacio  ",
+      "plegar": "  doble   espacio  ",
+      "norm": " doble espacio ",
+      "nota": "espacios en los bordes"
+    },
+    {
+      "entrada": "Ὰ",
+      "clean": "Ὰ",
+      "quitarTildes": "Α",
+      "plegar": "ὰ",
+      "norm": "α",
+      "nota": "alfa con acento y ypogegrammeni"
+    },
+    {
+      "entrada": "ά",
+      "clean": "ά",
+      "quitarTildes": "α",
+      "plegar": "ά",
+      "norm": "α",
+      "nota": "alfa + acento combinado"
+    },
+    {
+      "entrada": "ッ",
+      "clean": "ッ",
+      "quitarTildes": "ッ",
+      "plegar": "ッ",
+      "norm": "ッ",
+      "nota": "katakana pequeño"
+    },
+    {
+      "entrada": "2²",
+      "clean": "22",
+      "quitarTildes": "2²",
+      "plegar": "2²",
+      "norm": "22",
+      "nota": "superíndice"
+    }
+  ],
+  "digitosEn": [
+    {
+      "haystack": "cédula 1.020.304.050",
+      "digitos": "1020304050",
+      "resultado": true,
+      "nota": "separadores"
+    },
+    {
+      "haystack": "cédula 1020304050",
+      "digitos": "1020304050",
+      "resultado": true,
+      "nota": "sin separadores"
+    },
+    {
+      "haystack": "cédula 10203040501",
+      "digitos": "1020304050",
+      "resultado": false,
+      "nota": "dígito vecino al final"
+    },
+    {
+      "haystack": "cédula 11020304050",
+      "digitos": "1020304050",
+      "resultado": false,
+      "nota": "dígito vecino al inicio"
+    },
+    {
+      "haystack": "tel +57 300 123 4567",
+      "digitos": "573001234567",
+      "resultado": true,
+      "nota": "doce dígitos"
+    },
+    {
+      "haystack": "tel 3001234567",
+      "digitos": "573001234567",
+      "resultado": true,
+      "nota": "candidato sin el 57"
+    },
+    {
+      "haystack": " CC-1020304050 ",
+      "digitos": "1020304050",
+      "resultado": true,
+      "nota": "con texto alrededor"
+    },
+    {
+      "haystack": "no hay",
+      "digitos": "123456",
+      "resultado": false,
+      "nota": "sin coincidencia"
+    },
+    {
+      "haystack": "valor 1 234 567",
+      "digitos": "1234567",
+      "resultado": true,
+      "nota": "separado por espacios"
+    },
+    {
+      "haystack": "valor 1.234.567-8",
+      "digitos": "1234567",
+      "resultado": false,
+      "nota": "dígito extra tras guion"
+    }
+  ]
+}
