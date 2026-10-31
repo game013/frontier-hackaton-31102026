@@ -1,0 +1,47 @@
+{
+  "entities": [
+    {
+      "entity_id": "p_008",
+      "type": "person",
+      "originals": [
+        "Yesenia",
+        "Yesenia Ramírez"
+      ],
+      "pseudonyms": {
+        "name": "Marcela Pardo"
+      },
+      "records": [
+        "09f5ec34-bd6b-5b30-96c4-67aecdbdae34",
+        "2d493256-cf41-55e8-9e5f-c4367f0d23f1",
+        "9e0e0572-3746-5a1a-ba83-560a64bdddbe",
+        "bdde8eb9-65e1-5e72-a62a-de5618195dcc"
+      ]
+    },
+    {
+      "entity_id": "p_016",
+      "type": "person",
+      "originals": [
+        "Kelly Castaño",
+        "kelly.castano@kipupay.co"
+      ],
+      "pseudonyms": {
+        "name": "Doris Lozano",
+        "email": "doris.lozano@kipupay.co"
+      },
+      "records": [
+        "sdoc_01"
+      ]
+    },
+    {
+      "entity_id": "kept_007",
+      "type": "organization_or_place",
+      "originals": [
+        "Bancolombia"
+      ],
+      "pseudonyms": {},
+      "kept": true,
+      "reason": "organización, lugar, marca o figura pública; no es persona natural",
+      "records": []
+    }
+  ]
+}

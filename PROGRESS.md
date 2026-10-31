@@ -15,7 +15,7 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Hitos de hoy (Bogotá, UTC−5)
 
-- [ ] 12:45 · C0 hecha: `go.mod`, paquetes y tipos compartidos en `integracion/c0-c11`.
+- [x] 12:45 · C0 hecha: `go.mod`, paquetes y tipos compartidos en `integracion/c0-c11`.
 - [ ] 13:30 · Servicio en Railway con `/v1/health` y `/v1/anonymize` de eco (C1).
 - [ ] 14:15 · Pipeline completo sobre `sample/`: validador OK, 13/13 tests y J-REC 100 % (C17).
 - [ ] 14:45 · Pipeline sobre `fuentes/`: validador OK, barrido 0, dos corridas idénticas (C18).
@@ -97,11 +97,24 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | C19 | Cuasi-identificadores en texto y maestro (opcional antes de la corrida 1 si sobra tiempo). | `internal/cuasi/` | C17 | CE-12, CE-13 con J-IND en verde | — | espera | — |
-| C20 | Jueces especializados restantes (J-DIR, J-OCU, J-IND, J-FP, J-CAT, J-EST, J-PAR, J-CON, J-HOM, J-REP, J-CRE, J-VIV) y los 28 casos de `CASOS_ESQUINA.md` como fixtures. | `internal/juez/`, `tests/casos/` | C11, C18 | Todos los casos corren; reporte por juez | — | espera | — |
+| C20 | Jueces especializados restantes (J-DIR, J-OCU, J-IND, J-FP, J-CAT, J-EST, J-PAR, J-CON, J-HOM, J-REP, J-CRE, J-VIV) que corren los fixtures de C27. | `internal/juez/` | C11, C18, C27 | Todos los casos corren; reporte por juez | — | espera | — |
 | C21 | Monitor de crecimiento: `record_index` con `If-None-Match`; avisa cuando cambia. | `cmd/monitor/` | C4 | Detecta un cambio simulado | — | espera | — |
 | C22 | Hold-out 80/20 y prueba de crecimiento (J-CRE). | `internal/juez/`, `scripts/` | C18, C20 | 0 seudónimos viejos cambian | — | espera | — |
-| C23 | `DECISIONS.md` (qué es PII, qué se conservó, costo en tokens y tiempo) y guion de demo. | `DECISIONS.md`, `docs/demo/` | C18 | Responde las 3 preguntas del enunciado con cifras de la corrida | — | espera | — |
+| C23 | `DECISIONS.md`: llenar las cifras de costo en tokens y tiempo sobre el esqueleto de C29; guion de demo. | `DECISIONS.md`, `docs/demo/` | C18, C29 | Responde las 3 preguntas del enunciado con cifras de la corrida | — | espera | — |
 | C24 | Respaldo de la bóveda a disco local fuera de git tras cada corrida. | `scripts/` | C2, C18 | Restaurar el respaldo reproduce `entities.json` | — | espera | — |
+
+### Pista paralela · sin dependencias (lista desde ya)
+
+No dependen de la ola 1 y acortan la ola 2 o desbloquean hitos. Se cortan de `integracion/c0-c11` como cualquier
+tarea (reglas 0–2). Orden sugerido: C25 primero (bloquea el hito de las 14:15), luego C26 y C27.
+
+| Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| C25 | **Calibrar los umbrales de Jev (D31).** Etiquetar candidatos de `sample/` con su verdad (`expected_output/entities.json`: persona o no, género), incluir negativos (marcas, bancos, lugares, apellido-lugar, "Claro"), pasarlos por `typesafe/jev-1.14-20261014` y medir precisión y cobertura por umbral para persona, desempate y género. Solo ids y conteos en el informe. | `scripts/calibrar_jev.py`, `analisis/06_calibracion.md` | — | Informe con la curva por umbral y un valor recomendado por decisión; si difiere de D31, propuesta `DECISIÓN:` en la bitácora | claude | en curso | — |
+| C26 | **Allowlist como datos.** Las ~30 entidades a conservar (`analisis/00_resumen.md`) con `reason`, más las reglas genéricas (sufijos `S.A.S.`, "Banco …", mayúscula sin nombre de pila delante, apellido-lugar). C14 solo la carga; no edita este archivo. | `internal/detecta/allowlist.json` | — | JSON válido con prueba de esquema; cubre todas las entidades de `analisis/00_resumen.md` y los `kept` de `sample/expected_output/entities.json` | — | lista | — |
+| C27 | **Fixtures de los casos esquina.** Cada caso de `CASOS_ESQUINA.md` (CE-01 a CE-32) como archivo con id de registro, campo, entrada y esperado (qué debe desaparecer, qué debe quedar, qué juez lo mide). Es la parte de datos de C20. | `tests/casos/` | — | Un fixture por caso, legible por `cmd/juez`; ningún dato real fuera de los ids y de lo estrictamente necesario para el esperado | — | lista | — |
+| C28 | **Railway listo.** Proyecto, volumen en `/data`, una réplica, Serverless apagado, reinicio `ON_FAILURE`, healthcheck `/v1/health`; variables `LLM_MODEL=typesafe/jev-1.14-20261014`, `OPENROUTER_API_KEY`, secreto del HMAC. | Panel de Railway (fuera del repo) | — | C1 solo tiene que desplegar; variables verificadas sin mostrarlas | usuario | lista | — |
+| C29 | **Esqueleto de `DECISIONS.md`.** Las tres preguntas del enunciado: qué es PII, qué se conservó y por qué, costo. Declara D15 (filtración al modelo) y que `provider.data_collection: deny` se acepta pero no está probado que se cumpla. Deja huecos marcados para las cifras de la corrida. | `DECISIONS.md` | — | Las tres secciones escritas; solo faltan cifras (las llena C23) | — | lista | — |
 
 ## Pendientes de decisión
 
@@ -115,8 +128,12 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 14:05 · C0 · claude · Revisión de C0 atendida: fixture versionada para la prueba de ida y vuelta, tags JSON de
+  `Resultado` y `Respuesta`, `internal/` en la tabla de `AGENTS.md`. Contratos de `Almacen` y `Modelo` se amplían
+  cuando C2 y C10 reporten su `CONTRATO:`.
 - 13:40 · — · claude · Alcance fijado: solo C0–C11. Trabajo sobre `integracion/c0-c11` (regla 0); las filas las
   cierra quien integra. C0 en curso.
 - 12:50 · — · claude · Ronda 4 del ataque cerrada: D28 corregida, D30–D34; Jev 1.14 con snapshot fijo.
+- 12:47 · — · claude · Pista paralela C25–C29 agregada en `lista` (sin dependencias). C20 y C23 ahora dependen de C27 y C29.
 - 12:35 · — · claude · P1 cerrada (Jev 1.14, D13) y P2 cerrada (D29).
 - 12:20 · — · claude · Tablero creado; diseño cerrado en D1–D28; C0 lista.

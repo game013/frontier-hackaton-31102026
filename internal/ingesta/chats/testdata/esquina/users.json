@@ -1,0 +1,57 @@
+[
+  {
+    "id": "UTESTBOT01",
+    "team_id": "TTEST0001",
+    "name": "kipi",
+    "real_name": "Kipi",
+    "is_bot": true,
+    "profile": {
+      "real_name": "Kipi",
+      "display_name": "Kipi",
+      "title": "Asistente virtual"
+    }
+  },
+  {
+    "id": "UTEST0001",
+    "team_id": "TTEST0001",
+    "name": "prueba.persona",
+    "real_name": "Ana Prueba Apellido",
+    "is_bot": false,
+    "is_restricted": true,
+    "tz": "America/Bogota",
+    "profile": {
+      "real_name": "Ana Prueba Apellido",
+      "display_name": "Ana",
+      "title": "Cliente",
+      "email": "ana.prueba@ejemplo.test"
+    }
+  },
+  {
+    "id": "UTEST0002",
+    "team_id": "TTEST0001",
+    "name": "prueba.agente",
+    "real_name": "Beto Agente Prueba",
+    "is_bot": false,
+    "is_restricted": false,
+    "tz": "America/Bogota",
+    "profile": {
+      "real_name": "Beto Agente Prueba",
+      "display_name": "Beto",
+      "title": "Agente de Soporte",
+      "email": "beto.agente@kipupay.co"
+    }
+  },
+  {
+    "id": "UTEST0003",
+    "team_id": "TTEST0001",
+    "name": "prueba.borrada",
+    "real_name": "",
+    "deleted": true,
+    "is_bot": false,
+    "profile": {
+      "real_name": "",
+      "display_name": "",
+      "email": ""
+    }
+  }
+]
