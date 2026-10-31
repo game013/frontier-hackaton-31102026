@@ -8,11 +8,18 @@ nunca nombres, correos, cédulas, celulares ni direcciones.
 
     python3 scripts/calibrar_jev.py --dry-run              # dataset y etiquetas, sin red
     python3 scripts/calibrar_jev.py --workers 6            # corrida real + informe
+    python3 scripts/calibrar_jev.py --sin-red --env /ruta/inexistente   # informe desde la caché
     python3 scripts/calibrar_jev.py --dry-run --verificar-informe
 
 La corrida real cuesta menos de US$0,01 y deja la respuesta cruda en
-`tmp/calibracion_jev/cache.json`: el informe se regenera desde ahí sin volver a pagar
-(`--sin-red`). Cada llamada lleva timeout y los 429/5xx/timeout se reintentan con backoff.
+`tmp/calibracion_jev/cache.json`, indexada por el hash de (snapshot, state, preguntas). El
+informe se regenera desde ahí sin volver a pagar y sin clave: `--sin-red` solo pide la
+respuesta que falte y aborta si no está, así que no hace falta `OPENROUTER_API_KEY` cuando
+la caché está completa. La clave se pide únicamente si hay llamadas sin caché y no se pasó
+`--sin-red`; sale de `--env` o del entorno. Cada llamada lleva timeout y los
+429/5xx/timeout se reintentan con backoff.
+
+El modelo es el snapshot fijo de D32 y no es configurable a propósito.
 
 Desde un worktree sin `.env` ni `sample/`, pasa `--env` y `--sample` con la ruta del checkout principal.
 """
@@ -20,8 +27,11 @@ Desde un worktree sin `.env` ni `sample/`, pasa `--env` y `--sample` con la ruta
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
+import io
 import json
+import os
 import re
 import sys
 import time
@@ -35,7 +45,8 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 ENDPOINT = "https://openrouter.ai/api/alpha/decisions"
-MODELO_POR_DEFECTO = "typesafe/jev-1.14-20261014"
+# Snapshot fijo de D32: la calibración no puede apuntar a otro modelo (ni al alias móvil).
+MODELO = "typesafe/jev-1.14-20261014"
 D31 = {"persona": 0.50, "desempate": 0.70, "genero": 0.60}
 UMBRALES = [round(0.30 + 0.05 * i, 2) for i in range(14)]  # 0,30 … 0,95
 OPCIONES_TIPO = ("persona", "organizacion", "lugar", "marca", "otro")
@@ -277,13 +288,16 @@ def leer_env(ruta: Path) -> dict[str, str]:
 
 
 def leer_clientes(sample: Path) -> list[dict[str, str]]:
+    """Filas de `clientes.csv` (latin-1, separado por `;`).
+
+    `csv.DictReader` respeta las comillas de `notas`, que trae `;` entrecomillados: partir
+    por `;` a mano desalinea la última columna.
+    """
     ruta = sample / "input/tables/clientes.csv"
     if not ruta.exists():
         return []
     texto = ruta.read_bytes().decode("latin-1")
-    lineas = [l for l in texto.splitlines() if l.strip()]
-    cabecera = lineas[0].split(";")
-    return [dict(zip(cabecera, linea.split(";"))) for linea in lineas[1:]]
+    return [dict(fila) for fila in csv.DictReader(io.StringIO(texto), delimiter=";")]
 
 
 def forma_de_nombre(texto: str) -> str | None:
@@ -539,10 +553,11 @@ class NegativoCurado:
     contexto: str | None  # None: se busca la mención en las ventanas del corpus
 
 
+# Casos duros que la allowlist no cubre. Los dos primeros negativos de banco y regulador
+# (Bancolombia y Superfinanciera) no van aquí: salen de las entidades `kept` de
+# `entities.json` (`negativos_kept`).
 NEGATIVOS_CURADOS = [
-    NegativoCurado("Bancolombia", "organizacion", "banco", None),
     NegativoCurado("PSE", "organizacion", "banco", None),
-    NegativoCurado("Superfinanciera", "organizacion", "regulador", None),
     NegativoCurado("Kipu Pay", "marca", "marca", None),
     NegativoCurado("Granada", "lugar", "barrio", None),
     NegativoCurado("Medellín", "lugar", "ciudad", None),
@@ -580,6 +595,28 @@ NEGATIVOS_CURADOS = [
     NegativoCurado("901.456.789-3", "otro", "numero", "El comercio tiene NIT 901.456.789-3 y no aparece en el listado."),
     NegativoCurado("WhatsApp", "marca", "marca", "Prefiere que lo contactemos por WhatsApp para el reporte."),
 ]
+
+
+def negativos_kept(sample: Path) -> list[NegativoCurado]:
+    """Entidades `kept` de `entities.json` como negativos de la pregunta de tipo.
+
+    El jurado las exige conservar, así que no son personas. Su `type` es
+    `organization_or_place` (mezcla organización y lugar): se etiqueta `organizacion` y el
+    grupo `kept` deja ver de dónde sale el negativo. El contexto no se inventa: se busca la
+    mención en las ventanas del corpus.
+    """
+    ruta = sample / "expected_output/entities.json"
+    if not ruta.exists():
+        return []
+    salida: list[NegativoCurado] = []
+    for entidad in json.loads(ruta.read_text(encoding="utf-8")).get("entities", []):
+        if not entidad.get("kept"):
+            continue
+        for original in entidad.get("originals", []):
+            mencion = (original or "").strip()
+            if mencion:
+                salida.append(NegativoCurado(mencion, "organizacion", "kept", None))
+    return salida
 
 
 def ventana_para(forma: str, ventanas: list[Ventana], preferida: Ventana | None) -> Ventana | None:
@@ -664,7 +701,7 @@ def construir_dataset(sample: Path) -> tuple[list[Muestra], dict]:
         )
         agregar(muestra)
 
-    for negativo in NEGATIVOS_CURADOS:
+    for negativo in negativos_kept(sample) + NEGATIVOS_CURADOS:
         ventana = ventana_para(negativo.mencion, ventanas, None)
         if negativo.contexto is not None or ventana is None:
             if negativo.contexto is None:
@@ -892,24 +929,29 @@ class ErrorJev(RuntimeError):
     pass
 
 
+def clave_cache(state: str, preguntas: dict) -> str:
+    """Clave de la caché: el snapshot de D32 entra en el hash, así un cambio de modelo no reusa nada."""
+    material = "\x00".join(
+        [MODELO, state, json.dumps(preguntas, sort_keys=True, ensure_ascii=False)]
+    )
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
+
+
 class ClienteJev:
-    def __init__(self, clave: str, modelo: str, cache: dict, ruta_cache: Path, sin_red: bool, workers: int):
+    def __init__(
+        self, clave: str | None, cache: dict, ruta_cache: Path, sin_red: bool, workers: int
+    ):
         self._clave = clave
-        self._modelo = modelo
         self._cache = cache
         self._ruta_cache = ruta_cache
         self._sin_red = sin_red
         self._workers = workers
 
-    def clave_cache(self, state: str, preguntas: dict) -> str:
-        material = "\x00".join(
-            [self._modelo, state, json.dumps(preguntas, sort_keys=True, ensure_ascii=False)]
-        )
-        return hashlib.sha256(material.encode("utf-8")).hexdigest()
-
     def _llamar(self, state: str, preguntas: dict) -> dict:
+        if not self._clave:
+            raise ErrorJev("sin OPENROUTER_API_KEY para llamar a la API")
         cuerpo = {
-            "model": self._modelo,
+            "model": MODELO,
             "provider": {"data_collection": "deny"},
             "state": state,
             "questions": preguntas,
@@ -958,7 +1000,7 @@ class ClienteJev:
                         clave = futuros[futuro]
                         state, preguntas = pendientes[clave]
                         entrada = {
-                            "modelo": self._modelo,
+                            "modelo": MODELO,
                             "state": state,
                             "questions": preguntas,
                             "response": futuro.result(),
@@ -973,7 +1015,7 @@ class ClienteJev:
     def guardar(self) -> None:
         self._ruta_cache.parent.mkdir(parents=True, exist_ok=True)
         meta = self._cache.setdefault("meta", {})
-        meta["modelo"] = self._modelo
+        meta["modelo"] = MODELO
         meta["endpoint"] = ENDPOINT
         meta["ultima_corrida"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         meta["llamadas"] = len(self._cache["calls"])
@@ -1092,33 +1134,38 @@ def genero_decidido(entrada: dict, umbral: float) -> str | None:
 
 
 def curva_genero(muestras: list[Muestra], entradas: dict[str, dict]) -> list[dict]:
+    """Curva de la regla de género de D31.
+
+    La cobertura se mide sobre todas las menciones con pregunta de género, incluidos los
+    nombres unisex: un unisex que la regla decide cuenta como decidido, y si la regla lo
+    deja en unisex cuenta como acierto de la rama unisex (`unisex_indeterminado`). La
+    exactitud se mide solo sobre los M/F decididos, porque la verdad unisex no elige lado.
+    """
     filas = []
-    unisex_total = sum(
-        1 for m in muestras if m.pregunta_genero and m.verdad_genero == "indeterminado"
-    )
+    con_pregunta = [m for m in muestras if m.pregunta_genero]
+    unisex_total = sum(1 for m in con_pregunta if m.verdad_genero == "indeterminado")
     for umbral in UMBRALES:
-        decididos = aciertos = unisex_ok = 0
-        for muestra in muestras:
-            if not muestra.pregunta_genero:
-                continue
+        decididos = decididos_mf = aciertos = unisex_ok = 0
+        for muestra in con_pregunta:
             decidido = genero_decidido(entradas[muestra.id], umbral)
-            if decidido is not None:
-                if muestra.verdad_genero in {"M", "F"}:
-                    decididos += 1
-                    aciertos += 1 if decidido == muestra.verdad_genero else 0
-            elif muestra.verdad_genero == "indeterminado":
-                unisex_ok += 1
-        total = sum(1 for m in muestras if m.pregunta_genero and m.verdad_genero in {"M", "F"})
+            if decidido is None:
+                unisex_ok += 1 if muestra.verdad_genero == "indeterminado" else 0
+                continue
+            decididos += 1
+            if muestra.verdad_genero in {"M", "F"}:
+                decididos_mf += 1
+                aciertos += 1 if decidido == muestra.verdad_genero else 0
         filas.append(
             {
                 "umbral": umbral,
                 "decididos": decididos,
+                "decididos_mf": decididos_mf,
                 "aciertos": aciertos,
-                "exactitud": aciertos / decididos if decididos else None,
-                "cobertura": decididos / total if total else None,
+                "exactitud": aciertos / decididos_mf if decididos_mf else None,
+                "cobertura": decididos / len(con_pregunta) if con_pregunta else None,
                 "unisex_indeterminado": unisex_ok,
                 "unisex_total": unisex_total,
-                "total_con_genero": total,
+                "total_con_pregunta": len(con_pregunta),
             }
         )
     return filas
@@ -1182,12 +1229,17 @@ def recomendar_genero(filas: list[dict]) -> dict | None:
     return max(con_exactitud, key=lambda f: f["exactitud"]) if con_exactitud else None
 
 
+def fila_con(filas: list[dict], umbral: float) -> dict | None:
+    """Fila de la curva en un umbral exacto (la rejilla es de paso fijo y sin flotantes raros)."""
+    return next((f for f in filas if abs(f["umbral"] - umbral) < 1e-9), None)
+
+
 def operativo(decision: str, filas: list[dict], campo: str, recomendado: dict | None) -> dict | None:
     """Recomendación que se lleva a D31: la del criterio, salvo que la muestra no discrimine."""
     if recomendado is None:
         return None
     if not discrimina(filas, campo):
-        vigente = next((f for f in filas if abs(f["umbral"] - D31[decision]) < 1e-9), None)
+        vigente = fila_con(filas, D31[decision])
         if vigente is not None:
             return vigente
     return recomendado
@@ -1299,15 +1351,10 @@ def generar_informe(meta: dict) -> tuple[str, str]:
     # Hallazgos: los cinco números que resumen la corrida, todos desde los datos.
     mediana_positivos = sorted(prob_positivos)[len(prob_positivos) // 2] if prob_positivos else None
     max_negativos = max(prob_negativos) if prob_negativos else None
-    cobertura_vigente = next(
-        (f["cobertura"] for f in persona if abs(f["umbral"] - D31["persona"]) < 1e-9), None
-    )
-    fila_desempate_vigente = next(
-        (f for f in desempate if abs(f["umbral"] - D31["desempate"]) < 1e-9), None
-    )
-    fila_genero_vigente = next(
-        (f for f in genero if abs(f["umbral"] - D31["genero"]) < 1e-9), None
-    )
+    fila_persona_vigente = fila_con(persona, D31["persona"])
+    cobertura_vigente = fila_persona_vigente["cobertura"] if fila_persona_vigente else None
+    fila_desempate_vigente = fila_con(desempate, D31["desempate"])
+    fila_genero_vigente = fila_con(genero, D31["genero"])
     hallazgos = [
         f"Dataset: {conteos['clase'].get('persona', 0)} positivos de persona, "
         f"{conteos['clase'].get('no_persona', 0)} negativos y "
@@ -1495,9 +1542,7 @@ def generar_informe(meta: dict) -> tuple[str, str]:
         + (", ".join(desempate_mal) if desempate_mal else "ninguno")
         + ".\n"
     )
-    vigente_desempate = next(
-        (f for f in desempate if abs(f["umbral"] - D31["desempate"]) < 1e-9), None
-    )
+    vigente_desempate = fila_con(desempate, D31["desempate"])
     if vigente_desempate is not None and not discrimina(desempate, "precision"):
         piezas.append(
             f"\n**La curva no separa:** la precisión es 1,000 en toda la rejilla. Con el valor vigente "
@@ -1509,18 +1554,29 @@ def generar_informe(meta: dict) -> tuple[str, str]:
 
     piezas.append("\n## 4. Género (M / F / indeterminado)\n")
     piezas.append(
-        "Regla medida: si `max(P(M), P(F)) ≥ t` se decide ese género; si no, unisex (D31). La cobertura es "
-        "la fracción de nombres con género conocido que quedan decididos; los nombres unisex de verdad "
-        "(`indeterminado`) no cuentan en la exactitud y se informan aparte como «unisex sin decidir», que "
-        "es el acierto de la rama unisex.\n"
+        "Regla medida: si `max(P(M), P(F)) ≥ t` se decide ese género; si no, unisex (D31). La cobertura "
+        "tiene en el denominador todas las menciones con pregunta de género, unisex incluidos, y en el "
+        "numerador todas las que la regla decide (también unisex decididos); por eso se informa el conteo "
+        "de decididos. La exactitud se mide solo sobre los M/F decididos: la verdad unisex no elige lado y "
+        "se informa aparte como «unisex sin decidir», que es el acierto de la rama unisex.\n"
     )
     piezas.append(
         _tabla(
-            ["t", "Decididos", "Aciertos", "Exactitud", "Cobertura", "Unisex sin decidir", "D31"],
+            [
+                "t",
+                "Decididos",
+                "M/F decididos",
+                "Aciertos",
+                "Exactitud",
+                "Cobertura",
+                "Unisex sin decidir",
+                "D31",
+            ],
             [
                 [
                     _num(f["umbral"], 2),
                     str(f["decididos"]),
+                    str(f["decididos_mf"]),
                     str(f["aciertos"]),
                     _num(f["exactitud"]),
                     _num(f["cobertura"]),
@@ -1628,6 +1684,11 @@ def generar_informe(meta: dict) -> tuple[str, str]:
         "\nRegla de la recomendación operativa: es la que deja el criterio de cada decisión, salvo que la "
         "curva no separe clases (ningún umbral de la rejilla con error); en ese caso se conserva el valor "
         "vigente de D31, porque el borde inferior de la rejilla no es un óptimo medido.\n"
+        "\nQué mide esta tabla: D31 redacta el desempate con `confidence ≥ 0,70` y la rama unisex del "
+        "género con `confianza < 0,60`, mientras que la calibración mide `probabilities` (la probabilidad "
+        "de la opción ganadora y `max(P(M), P(F))`). «Coincide» significa que el umbral recomendado es "
+        "numéricamente el vigente, no que la regla medida sea una traducción literal del texto de D31; el "
+        "§6 mide la misma regla con `confidence` para que la diferencia se vea.\n"
     )
     if cambios:
         decision_texto = (
@@ -1715,12 +1776,20 @@ def generar_informe(meta: dict) -> tuple[str, str]:
 
     piezas.append("\n## 9. Reproducir\n")
     piezas.append(
-        "```sh\npython3 scripts/calibrar_jev.py --dry-run\n"
-        "python3 scripts/calibrar_jev.py --workers 6\n"
+        "```sh\n"
+        "# 1. dataset y etiquetas, sin red\n"
+        "python3 scripts/calibrar_jev.py --dry-run\n\n"
+        "# 2. corrida real: solo llama a la API por las claves que falten en la caché\n"
+        "python3 scripts/calibrar_jev.py --workers 6\n\n"
+        "# 3. regenerar el informe desde la caché: no necesita OPENROUTER_API_KEY\n"
+        "python3 scripts/calibrar_jev.py --sin-red --env /ruta/inexistente\n\n"
+        "# 4. comprobar que el informe no filtró ninguna forma real\n"
         "python3 scripts/calibrar_jev.py --dry-run --verificar-informe\n```\n\n"
-        "La corrida real cachea cada respuesta por hash en `tmp/calibracion_jev/cache.json`: el informe se "
-        "regenera sin volver a llamar a la API y `--verificar-informe` comprueba que no quedó ninguna forma "
-        "de `entities.json`, `users.json` ni `clientes.csv` bajo la normalización del jurado.\n"
+        "La corrida real cachea cada respuesta por su clave en `tmp/calibracion_jev/cache.json` y solo pide "
+        "la clave de la API si hay llamadas sin caché; con la caché completa, `--sin-red` regenera el "
+        "informe igual y falla si falta alguna respuesta. `--verificar-informe` busca las formas de "
+        "`entities.json`, `users.json` y `clientes.csv` con el mismo `contiene()` de `docs/validar.mjs` "
+        "(`CONFUSABLES`, NFKC, invisibles, ß/ς/ſ, dígitos con separadores y prefijo 57).\n"
     )
     return "\n".join(piezas), decision_texto
 
@@ -1849,6 +1918,11 @@ def imprimir_conteos(conteos: dict, muestras: list[Muestra]) -> None:
 
 
 def costo_de(entradas: dict[str, dict]) -> tuple[float, int, int]:
+    """Costo y tokens de la corrida.
+
+    `entradas` viene indexado por clave de caché, no por muestra: dos muestras que comparten
+    state y preguntas comparten llamada y no se cobran dos veces.
+    """
     costo = 0.0
     entrada_tokens = salida_tokens = 0
     for entrada in entradas.values():
@@ -1870,13 +1944,19 @@ def main(argv: list[str] | None = None) -> int:
     analizador.add_argument(
         "--out", type=Path, default=RAIZ / "analisis/06_calibracion.md"
     )
-    analizador.add_argument("--model", default=MODELO_POR_DEFECTO)
     analizador.add_argument("--env", type=Path, default=RAIZ / ".env")
     analizador.add_argument("--workers", type=int, default=6)
-    analizador.add_argument("--limite", type=int, default=0, help="recorta el dataset (humo)")
     analizador.add_argument("--dry-run", action="store_true", help="arma y valida el dataset sin red")
-    analizador.add_argument("--sin-red", action="store_true", help="solo caché; falla si falta alguna")
-    analizador.add_argument("--verificar-informe", action="store_true")
+    analizador.add_argument(
+        "--sin-red",
+        action="store_true",
+        help="solo caché: regenera el informe sin clave y falla si falta alguna llamada",
+    )
+    analizador.add_argument(
+        "--verificar-informe",
+        action="store_true",
+        help="busca formas reales de la muestra en el informe con la normalización del jurado",
+    )
     args = analizador.parse_args(argv)
 
     if not args.sample.exists():
@@ -1901,20 +1981,29 @@ def main(argv: list[str] | None = None) -> int:
             print(f"informe sin formas sensibles: {args.out}")
         return 0
 
-    if args.limite > 0:
-        muestras = muestras[: args.limite]
-
-    clave_api = leer_env(args.env).get("OPENROUTER_API_KEY")
-    if not clave_api:
-        print("falta OPENROUTER_API_KEY en el entorno o en .env", file=sys.stderr)
-        return 1
-
     cache = cargar_cache(args.cache)
-    cliente = ClienteJev(clave_api, args.model, cache, args.cache, args.sin_red, args.workers)
     pendientes: dict[str, tuple[str, dict]] = {}
     for muestra in muestras:
         preguntas = preguntas_de(muestra)
-        pendientes.setdefault(cliente.clave_cache(muestra.state, preguntas), (muestra.state, preguntas))
+        pendientes.setdefault(clave_cache(muestra.state, preguntas), (muestra.state, preguntas))
+
+    # La clave solo se pide si de verdad hay que llamar: con la caché completa, `--sin-red`
+    # regenera el informe desde un worktree sin `.env`.
+    faltantes = [clave for clave in pendientes if clave not in cache.get("calls", {})]
+    clave_api = None
+    if faltantes and not args.sin_red:
+        clave_api = leer_env(args.env).get("OPENROUTER_API_KEY") or os.environ.get(
+            "OPENROUTER_API_KEY"
+        )
+        if not clave_api:
+            print(
+                f"faltan {len(faltantes)} llamadas en la caché y no hay OPENROUTER_API_KEY "
+                f"(ni en {args.env} ni en el entorno)",
+                file=sys.stderr,
+            )
+            return 1
+
+    cliente = ClienteJev(clave_api, cache, args.cache, args.sin_red, args.workers)
     try:
         por_clave = cliente.resolver(pendientes)
     except ErrorJev as error:
@@ -1924,13 +2013,13 @@ def main(argv: list[str] | None = None) -> int:
     entradas: dict[str, dict] = {}
     for muestra in muestras:
         preguntas = preguntas_de(muestra)
-        entradas[muestra.id] = por_clave[cliente.clave_cache(muestra.state, preguntas)]
+        entradas[muestra.id] = por_clave[clave_cache(muestra.state, preguntas)]
 
     curva_p = curva_persona(muestras, entradas)
     curva_d = curva_desempate(muestras, entradas)
     curva_g = curva_genero(muestras, entradas)
-    costo, tokens_entrada, tokens_salida = costo_de(entradas)
-    llamadas = len({cliente.clave_cache(m.state, preguntas_de(m)) for m in muestras})
+    costo, tokens_entrada, tokens_salida = costo_de(por_clave)
+    llamadas = len(por_clave)
 
     meta = {
         "muestras": muestras,
@@ -1947,7 +2036,7 @@ def main(argv: list[str] | None = None) -> int:
             "desempate", curva_d, "precision", recomendar_desempate(curva_d)
         ),
         "op_genero": operativo("genero", curva_g, "exactitud", recomendar_genero(curva_g)),
-        "modelo": args.model,
+        "modelo": MODELO,
         "endpoint": ENDPOINT,
         "comando": "python3 scripts/calibrar_jev.py --workers " + str(args.workers),
         "fecha": (cache.get("meta") or {}).get("ultima_corrida")
