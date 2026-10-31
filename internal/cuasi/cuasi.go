@@ -15,9 +15,8 @@
 package cuasi
 
 import (
-	"crypto/sha256"
-	"encoding/binary"
 	"fmt"
+	"sort"
 
 	"github.com/game013/frontier-hackaton-31102026/internal/campos"
 	"github.com/game013/frontier-hackaton-31102026/internal/catalogo"
@@ -47,10 +46,62 @@ func Generaliza(recs []modelo.Registro, indice *registro.Indice) ([]modelo.Regis
 
 // edicionesDe arma los tramos a generalizar de un registro.
 func edicionesDe(r modelo.Registro, indice *registro.Indice) []campos.Edicion {
-	if tabla, ok := r.(modelo.TableRecord); ok {
-		return filaMaestro(tabla, indice)
+	switch v := r.(type) {
+	case modelo.TableRecord:
+		return filaMaestro(v, indice)
+	case modelo.ChatRecord:
+		return edicionesTexto("text", v.Text, ciudadDeLaPersona(r, indice))
+	case modelo.DocRecord:
+		preferida := ciudadDeLaPersona(r, indice)
+		return append(edicionesTexto("body", v.Body, preferida), edicionesTexto("title", v.Title, preferida)...)
 	}
 	return nil
+}
+
+// edicionesTexto generaliza los cuasi-identificadores de un campo de texto: la
+// ocupación ligada a una persona va a su sector, el barrio a su ciudad y el año
+// de la relación a "hace unos años" (D9). Un barrio detrás de «en» genérico
+// solo se generaliza dentro de la plantilla, es decir, cuando el mismo texto ya
+// declara la ocupación de alguien: así un lugar suelto se conserva.
+func edicionesTexto(campo modelo.CampoTexto, texto, preferida string) []campos.Edicion {
+	if texto == "" {
+		return nil
+	}
+	ps := palabras(texto)
+	ocupaciones := ocupacionesEn(ps)
+	tramos := append([]tramo{}, ocupaciones...)
+	for _, barrio := range barriosEn(ps, preferida) {
+		if barrio.vivienda || len(ocupaciones) > 0 {
+			tramos = append(tramos, barrio.tramo)
+		}
+	}
+	tramos = append(tramos, aniosEn(texto, ps)...)
+	sort.SliceStable(tramos, func(i, j int) bool { return tramos[i].desde < tramos[j].desde })
+
+	ediciones := make([]campos.Edicion, 0, len(tramos))
+	for _, t := range tramos {
+		ediciones = append(ediciones, campos.Edicion{
+			Ruta: campo, Inicio: ps[t.desde].inicio, Fin: ps[t.hasta-1].fin, Nuevo: t.nuevo,
+		})
+	}
+	return ediciones
+}
+
+// ciudadDeLaPersona es la ciudad que la ficha de la persona guarda del maestro;
+// desempata los barrios que existen en varias ciudades. Vacía si no se conoce.
+func ciudadDeLaPersona(r modelo.Registro, indice *registro.Indice) string {
+	if indice == nil {
+		return ""
+	}
+	persona, ok := indice.AutorDe(r.IDRegistro())
+	if !ok {
+		return ""
+	}
+	ficha, ok := indice.Ficha(persona.Llave)
+	if !ok {
+		return ""
+	}
+	return ficha.Ciudad
 }
 
 // filaMaestro generaliza la fila de un cliente: la ocupación a su sector y el
@@ -84,13 +135,7 @@ func barrioAlterno(r modelo.TableRecord, indice *registro.Indice) (string, bool)
 			llave = persona.Llave
 		}
 	}
-	return catalogo.BarrioAlterno(r.Columns["ciudad"], actual, indiceDe(llave))
-}
-
-// indiceDe deriva un índice estable del hash de la llave.
-func indiceDe(llave string) int {
-	suma := sha256.Sum256([]byte(llave))
-	return int(binary.BigEndian.Uint32(suma[:4]) % 1000)
+	return catalogo.BarrioAlterno(r.Columns["ciudad"], actual, indiceDeLlave(llave))
 }
 
 // entero reemplaza el valor completo de un campo del registro.
