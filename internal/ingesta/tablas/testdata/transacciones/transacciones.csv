@@ -1,0 +1,3 @@
+﻿tx_id,fecha,cliente_id,tipo,monto,descripcion,canal,estado
+TX-900001,2026-07-01,CL-90001,pago_credito,520000,"Cuota crédito, sede Norte",pse,aprobada
+TX-900002,2026-07-02,CL-90002,pago_servicio,1370000,Retiro cajero Bancolombia Chapinero,debito_automatico,aprobada

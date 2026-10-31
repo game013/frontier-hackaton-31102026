@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Exportado el 2026-10-15. Un comentario no es un registro, aunque se parezca:
+  <pqr radicado="PQR-2026-0000" cliente_id="CL-00000" cedula="0" ciudad="Ninguna" fecha="2026-01-01" agente="nadie" tipo="reclamo" estado="cerrado">
+    <descripcion><![CDATA[Este texto vive en un comentario y no debe aparecer en la salida.]]></descripcion>
+    <respuesta>Nada.</respuesta>
+  </pqr>
+-->
+<pqrs generado="2026-10-15" sistema="kipu-core">
+  <pqr radicado="PQR-2026-9001" cliente_id="CL-90001" cedula="12345678" ciudad="Bogotá" fecha="2026-09-19" agente="julian.ospina" tipo="reclamo" estado="cerrado">
+    <descripcion><![CDATA[Me cobraron 356.000 < 400.000 y la etiqueta decía "A & B".]]></descripcion>
+    <respuesta>Se revirtió el cobro &amp; se corrigió la asociación.</respuesta>
+  </pqr>
+  <pqr radicado="PQR-2026-9002" cliente_id="CL-90002" cedula="87654321" ciudad="Cali" fecha="2026-09-28" agente="" tipo="queja" estado="abierto">
+    <descripcion><![CDATA[Sin respuesta todavía.]]></descripcion>
+    <respuesta></respuesta>
+  </pqr>
+</pqrs>
