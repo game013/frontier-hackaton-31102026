@@ -197,6 +197,13 @@ diferencia entre la contabilidad al empezar y la del final del job—, no el acu
 `/anonymize`. Una corrida **sin llave** reporta cero tokens y cero dólares porque no hizo ninguna llamada (D19): ese
 cero es la cifra, no un hueco.
 
+**Limitación aceptada (no se arregla hoy).** El cliente de Jev es uno solo para `/run` y `/anonymize`, así que el
+contador es del proceso: un lote de `/anonymize` que corra mientras hay una corrida activa le suma sus tokens al
+`cost` de esa corrida. Lo que `/run/{id}` publica es entonces el gasto del proceso entre la primera y la última
+llamada del job, no el del job solo. Se acepta porque la ventana es operativa y corta: hay una sola corrida activa y
+el lote en vivo dura menos de un minuto. No es una promesa de exactitud: es la limitación con la que se reportan las
+cifras de la tabla.
+
 #### Cómo se llenan las seis cifras
 
 Se corre una vez, se consulta el job y se leen los seis valores. Ningún número de esta tabla se estima.
