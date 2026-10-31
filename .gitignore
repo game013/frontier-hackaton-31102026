@@ -28,3 +28,6 @@ __pycache__/
 # Archivos swap de editores (pueden contener copias de .env)
 *.swp
 *.swo
+
+# Salida generada por el pipeline (contiene seudónimos y diccionario con formas reales)
+/output/
