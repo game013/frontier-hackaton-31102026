@@ -1,6 +1,7 @@
 package servidor_test
 
 import (
+	"github.com/game013/frontier-hackaton-31102026/internal/llm"
 	"testing"
 
 	"github.com/game013/frontier-hackaton-31102026/internal/servidor"
@@ -20,9 +21,19 @@ func TestCargaConfig(t *testing.T) {
 	if cfg.Equipo == "" || cfg.Version == "" || cfg.PythonBin == "" || cfg.AyudantePDF == "" {
 		t.Fatalf("config incompleta: %+v", cfg)
 	}
-	if cfg.Modelos == nil || len(cfg.Modelos) != 0 {
-		t.Fatalf("sin modelo configurado, models debe ser lista vacía: %+v", cfg.Modelos)
+	if len(cfg.Modelos) != 1 || cfg.Modelos[0] != llm.SnapshotJev {
+		t.Fatalf("sin variables, models debe ser el snapshot fijo %s: %+v", llm.SnapshotJev, cfg.Modelos)
 	}
+
+	// LLM_MODEL manda cuando no hay MODELOS: es lo que /run usa de verdad (D32).
+	entorno["LLM_MODEL"] = "typesafe/jev-de-prueba"
+	if cfg, err = servidor.Carga(carga); err != nil {
+		t.Fatalf("Carga con LLM_MODEL: %v", err)
+	}
+	if len(cfg.Modelos) != 1 || cfg.Modelos[0] != "typesafe/jev-de-prueba" {
+		t.Fatalf("LLM_MODEL no se reportó: %+v", cfg.Modelos)
+	}
+	delete(entorno, "LLM_MODEL")
 
 	entorno["PORT"] = "8080"
 	entorno["DATA_DIR"] = "/data"

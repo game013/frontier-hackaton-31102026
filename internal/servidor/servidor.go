@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/game013/frontier-hackaton-31102026/internal/llm"
 	"net/http"
 	"net/url"
 	"os"
@@ -39,7 +40,7 @@ func Carga(getenv func(string) string) (Config, error) {
 		DatosDir:    or(getenv("DATA_DIR"), "var"),
 		Equipo:      or(getenv("TEAM"), "kipu-frontier"),
 		Version:     or(getenv("VERSION"), "dev"),
-		Modelos:     lista(or(getenv("MODELOS"), getenv("LLM_MODEL"))),
+		Modelos:     modelos(getenv),
 		PythonBin:   or(getenv("PYTHON_BIN"), "python3"),
 		AyudantePDF: or(getenv("PDF_HELPER"), filepath.Join("tools", "pdf", "extraer.py")),
 	}
@@ -53,6 +54,15 @@ func Carga(getenv func(string) string) (Config, error) {
 		return c, errors.New("TEAM vacío")
 	}
 	return c, nil
+}
+
+// modelos reporta el snapshot real (D32): MODELOS manda, luego LLM_MODEL y, si
+// no hay variables, el snapshot fijo del cliente de Jev.
+func modelos(getenv func(string) string) []string {
+	if lista := lista(or(getenv("MODELOS"), getenv("LLM_MODEL"))); len(lista) > 0 {
+		return lista
+	}
+	return []string{llm.SnapshotJev}
 }
 
 func or(valor, porDefecto string) string {

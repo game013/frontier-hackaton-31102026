@@ -93,7 +93,7 @@ func fuenteDe(valor string) (modelo.Fuente, error) {
 	case modelo.FuenteChats, modelo.FuenteDocs, modelo.FuenteTablas:
 		return fuente, nil
 	}
-	return "", fmt.Errorf("source %q no es chats, docs ni tables", valor)
+	return "", fmt.Errorf("source no es chats, docs ni tables")
 }
 
 // clavesRegistro lista los campos obligatorios del contrato por fuente: un
@@ -137,7 +137,7 @@ func decodificaRegistros(fuente modelo.Fuente, crudos []json.RawMessage) ([]mode
 				return nil, fmt.Errorf("registro %d: %v", i, err)
 			}
 			if !formatosDoc[doc.Format] {
-				return nil, fmt.Errorf("registro %d: format %q no es pdf, html ni md", i, doc.Format)
+				return nil, fmt.Errorf("registro %d: format no es pdf, html ni md", i)
 			}
 			registro = doc
 		case modelo.FuenteTablas:
@@ -146,7 +146,7 @@ func decodificaRegistros(fuente modelo.Fuente, crudos []json.RawMessage) ([]mode
 				return nil, fmt.Errorf("registro %d: %v", i, err)
 			}
 			if !tablasFuente[tabla.Table] {
-				return nil, fmt.Errorf("registro %d: table %q no es clientes, transacciones, pqrs ni empleados", i, tabla.Table)
+				return nil, fmt.Errorf("registro %d: table no es clientes, transacciones, pqrs ni empleados", i)
 			}
 			registro = tabla
 		}

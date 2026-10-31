@@ -154,6 +154,30 @@ func TestPDFCorruptoNoPierdeElRegistro(t *testing.T) {
 	}
 }
 
+// Sin ayudante disponible el registro no se pierde y la metadata conserva las
+// claves del contrato: un documento sin author no vale.
+func TestPDFSinAyudanteConservaClavesDeMetadata(t *testing.T) {
+	carpeta := t.TempDir()
+	ruta := filepath.Join(carpeta, "sin_ayudante.pdf")
+	if err := os.WriteFile(ruta, []byte("%PDF-1.4"), 0o600); err != nil {
+		t.Fatalf("no pude escribir el PDF: %v", err)
+	}
+	lector := &docs.Lector{Python: "python3", Ayudante: filepath.Join(carpeta, "no_existe.py"), Timeout: time.Second}
+	registro, err := lector.Documento(context.Background(),
+		docs.Entrada{ID: "doc_sin_ayudante", Filename: "sin_ayudante.pdf", Format: "pdf"}, ruta)
+	if err != nil {
+		t.Fatalf("Documento abortó sin ayudante: %v", err)
+	}
+	if registro.Body != "" {
+		t.Fatalf("cuerpo = %q, esperaba vacío", registro.Body)
+	}
+	for _, clave := range []string{"title", "author", "subject", "keywords"} {
+		if _, ok := registro.Metadata[clave]; !ok {
+			t.Fatalf("falta la clave %q en metadata: %v", clave, registro.Metadata)
+		}
+	}
+}
+
 // ayudanteQueFalla escribe un guion que imita el contrato de extraer.py: sin
 // --texto falla, y en modo texto responde el JSON de respaldo.
 func ayudanteQueFalla(t *testing.T) string {
