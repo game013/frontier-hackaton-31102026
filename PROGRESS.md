@@ -136,7 +136,7 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
-- 17:05 · C19 · pi · `CASO:` CE-39 cerrado con juez J-IND: el acta de un comité presenta a la persona sin verbo
+- 17:05 · C19 · pi · `CASO:` CE-40 cerrado con juez J-IND: el acta de un comité presenta a la persona sin verbo
   («Antecedentes de la afectada: ingeniera de sistemas, vinculada en 2023») y antes se quedaba entera. Ahora «la
   afectada» ata el oficio y «vinculada en» ancla el año; las dos actas de `fuentes/docs` salen generalizadas. Muestra
   13/13, validador OK en muestra y corpus, J-GLO 3883/3891 (99,8 %, CE-33).
@@ -144,7 +144,7 @@ Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pas�
   máquina del operador, porque el volumen de Railway no puede empujar nada. `scripts/boveda.sh` y la nota de C24 en
   este tablero dicen la secuencia (job en `done`, copia local del volumen, respaldo al disco) y qué no hace el script:
   no entra a Railway, no lanza corridas, no programa cron y no escribe dentro del repo.
-- 16:35 · C19 · worker · `CASO:` CE-38: una fecha de negocio detrás de un "desde" suelto se conservaba por casualidad.
+- 16:35 · C19 · worker · `CASO:` CE-39: una fecha de negocio detrás de un "desde" suelto se conservaba por casualidad.
   El año del texto ahora exige ancla de relación ("llevo con ustedes", "cliente desde", "vinculado desde", "con
   nosotros"); "Kipu Pay opera desde 2020" y "la empresa abrió desde 2019" se quedan. La puntuación no ASCII dejó de
   pegar palabras, así que "desde 2024…" también se reconoce. Sobre `fuentes/` la salida es byte a byte igual que la

@@ -37,7 +37,7 @@ var verbosVivienda = conjunto(
 )
 
 // verbosEntrada anclan el año de la relación con la empresa: «entré con ustedes
-// en 2025», «vinculada en 2023» (CE-39). Se comparan con tildes para no
+// en 2025», «vinculada en 2023» (CE-40). Se comparan con tildes para no
 // confundirlos con la preposición «entre».
 var verbosEntrada = conjunto(
 	"entré", "entro", "entró", "entraron", "entramos", "entraste",
@@ -45,7 +45,7 @@ var verbosEntrada = conjunto(
 )
 
 // anclasPersona presentan a una persona sin verbo delante: el acta de un comité
-// habla de «la afectada» y a continuación le atribuye el oficio (CE-39).
+// habla de «la afectada» y a continuación le atribuye el oficio (CE-40).
 var anclasPersona = conjunto("afectada", "afectado")
 
 // anclaAnio es la preposición del año de vinculación: «llevo con ustedes desde

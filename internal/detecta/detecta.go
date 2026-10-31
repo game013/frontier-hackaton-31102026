@@ -139,14 +139,20 @@ func (d *Detector) Candidatos(recs []modelo.Registro) []Candidato {
 				continue
 			}
 			conocidas := d.enCampo(r, campo, "")
+			// tomados son los tramos ya propuestos en este campo. Los generadores
+			// van del más preciso al más ruidoso, así que un tramo que pisa uno
+			// tomado se descarta: dos candidatos solapados que el modelo marque
+			// persona darían ediciones solapadas y tumbarían la corrida (CE-38).
+			var tomados []modelo.Mencion
 			for _, generador := range generadores {
 				for _, c := range generador.busca(campo.Valor) {
 					if _, ok := d.allow.Conserva(c.valor); ok {
 						continue
 					}
-					if solapaAlguna(conocidas, c.inicio, c.fin) {
+					if solapaAlguna(conocidas, c.inicio, c.fin) || solapaAlguna(tomados, c.inicio, c.fin) {
 						continue
 					}
+					tomados = append(tomados, modelo.Mencion{Inicio: c.inicio, Fin: c.fin})
 					out = append(out, Candidato{
 						Registro:  r.IDRegistro(),
 						Fuente:    r.FuenteRegistro(),
