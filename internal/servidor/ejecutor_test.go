@@ -14,6 +14,7 @@ import (
 
 	"github.com/game013/frontier-hackaton-31102026/internal/campos"
 	"github.com/game013/frontier-hackaton-31102026/internal/ingesta/docs"
+	"github.com/game013/frontier-hackaton-31102026/internal/llm"
 	"github.com/game013/frontier-hackaton-31102026/internal/modelo"
 	"github.com/game013/frontier-hackaton-31102026/internal/norm"
 	"github.com/game013/frontier-hackaton-31102026/internal/nucleo"
@@ -141,6 +142,13 @@ func nombreDeDocumento(t *testing.T, entrada, id string) string {
 // determinista y no toca /data.
 func ejecutorDePrueba(t *testing.T) *EjecutorFuentes {
 	t.Helper()
+	return ejecutorConContabilidad(t, nil)
+}
+
+// ejecutorConContabilidad es igual, pero con la contabilidad del modelo que el
+// servicio le pasa desde el cliente de Jev.
+func ejecutorConContabilidad(t *testing.T, uso func() llm.Uso) *EjecutorFuentes {
+	t.Helper()
 	n, err := nucleo.Nuevo(nucleo.Opciones{
 		Secreto: []byte(secretoPruebaEjecutor),
 		Plazo:   2 * time.Minute,
@@ -148,7 +156,7 @@ func ejecutorDePrueba(t *testing.T) *EjecutorFuentes {
 	if err != nil {
 		t.Fatalf("nucleo: %v", err)
 	}
-	ejecutor, err := NuevoEjecutor(n, docs.NuevoLector())
+	ejecutor, err := NuevoEjecutor(n, docs.NuevoLector(), uso)
 	if err != nil {
 		t.Fatalf("NuevoEjecutor: %v", err)
 	}
@@ -211,6 +219,25 @@ func TestEjecutaDescargaYAnonimizaLaMuestra(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// La contabilidad del modelo llega a los conteos de la corrida tal como la
+// reporta el cliente de Jev: es lo que /run/{id} publica en cost.tokens_in y
+// cost.tokens_out (C23, D13). Las cifras son de la prueba.
+func TestEjecutaReportaLaContabilidadDelModelo(t *testing.T) {
+	muestra := muestraDeCorpus(t)
+	srv := httptest.NewServer(apiFalsa(t, muestra))
+	defer srv.Close()
+
+	quiero := llm.Uso{Llamadas: 2, Aciertos: 1, TokensEntrada: 321, TokensSalida: 99}
+	ejecutor := ejecutorConContabilidad(t, func() llm.Uso { return quiero })
+	conteos, err := ejecutor.Ejecuta(context.Background(), srv.URL+"/v1", tokenFuentes, t.TempDir())
+	if err != nil {
+		t.Fatalf("Ejecuta: %v", err)
+	}
+	if conteos.Modelo != quiero {
+		t.Fatalf("contabilidad = %+v, quiero %+v", conteos.Modelo, quiero)
 	}
 }
 

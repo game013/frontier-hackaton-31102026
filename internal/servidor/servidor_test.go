@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/game013/frontier-hackaton-31102026/internal/llm"
 	"github.com/game013/frontier-hackaton-31102026/internal/modelo"
 	"github.com/game013/frontier-hackaton-31102026/internal/servidor"
 )
@@ -306,7 +307,64 @@ type estadoCorrida struct {
 		Docs   int `json:"docs"`
 		Tables int `json:"tables"`
 	} `json:"records"`
+	Cost *struct {
+		TokensIn  int     `json:"tokens_in"`
+		TokensOut int     `json:"tokens_out"`
+		Seconds   float64 `json:"seconds"`
+	} `json:"cost"`
 	Error string `json:"error"`
+}
+
+// ejecutorConUso devuelve los conteos con la contabilidad del modelo que el
+// ejecutor real toma del cliente de Jev.
+type ejecutorConUso struct{ uso llm.Uso }
+
+func (e ejecutorConUso) Ejecuta(context.Context, string, string, string) (servidor.Conteos, error) {
+	return servidor.Conteos{Chats: 1, Modelo: e.uso}, nil
+}
+
+// correEsperaTerminada lanza /run con el ejecutor dado y devuelve el estado del
+// job ya terminado.
+func correEsperaTerminada(t *testing.T, h *httptest.Server) estadoCorrida {
+	t.Helper()
+	peticion := fmt.Sprintf(`{"sources_url":"%s","token":"tok_de_prueba"}`, h.URL)
+	codigo, datos := pide(t, http.MethodPost, h.URL+"/v1/run", peticion)
+	if codigo != http.StatusAccepted {
+		t.Fatalf("run = %d: %s", codigo, datos)
+	}
+	var aceptado struct {
+		JobID string `json:"job_id"`
+	}
+	if err := json.Unmarshal(datos, &aceptado); err != nil || aceptado.JobID == "" {
+		t.Fatalf("falta job_id: %s (%v)", datos, err)
+	}
+	return esperaEstado(t, h.URL+"/v1/run/"+aceptado.JobID, "done")
+}
+
+// El costo de /run/{id} sale de la contabilidad del modelo (C23). Las cifras son
+// de la prueba: las de la corrida las llena la corrida 1 (DECISIONS.md §3.4).
+func TestCorridaReportaTokensDelModelo(t *testing.T) {
+	h := nuevo(t, servidor.Deps{Ejecutor: ejecutorConUso{uso: llm.Uso{TokensEntrada: 1234, TokensSalida: 567}}})
+	estado := correEsperaTerminada(t, h)
+	if estado.Cost == nil {
+		t.Fatalf("corrida terminada sin cost: %+v", estado)
+	}
+	if estado.Cost.TokensIn != 1234 || estado.Cost.TokensOut != 567 {
+		t.Fatalf("tokens = %d/%d, quiero 1234/567", estado.Cost.TokensIn, estado.Cost.TokensOut)
+	}
+	if estado.Cost.Seconds <= 0 {
+		t.Fatalf("segundos = %v, se esperaba una corrida medida", estado.Cost.Seconds)
+	}
+}
+
+// Sin uso que reportar el cero es la cifra real de una corrida determinista
+// (D19): no se inventa un costo a partir de los segundos.
+func TestCorridaSinModeloReportaCero(t *testing.T) {
+	h := nuevo(t, servidor.Deps{Ejecutor: ejecutorConUso{}})
+	estado := correEsperaTerminada(t, h)
+	if estado.Cost == nil || estado.Cost.TokensIn != 0 || estado.Cost.TokensOut != 0 {
+		t.Fatalf("cost = %+v, quiero tokens en cero", estado.Cost)
+	}
 }
 
 func esperaEstado(t *testing.T, url, quiero string) estadoCorrida {

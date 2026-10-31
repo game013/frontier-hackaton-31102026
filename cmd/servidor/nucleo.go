@@ -13,6 +13,7 @@ import (
 
 	"github.com/game013/frontier-hackaton-31102026/internal/almacen"
 	"github.com/game013/frontier-hackaton-31102026/internal/detecta"
+	"github.com/game013/frontier-hackaton-31102026/internal/llm"
 	"github.com/game013/frontier-hackaton-31102026/internal/modelo"
 	"github.com/game013/frontier-hackaton-31102026/internal/nucleo"
 )
@@ -33,7 +34,16 @@ const plazoCorrida = 90 * time.Minute
 type permiteNucleo struct {
 	Nucleo  modelo.Nucleo
 	Corrida *nucleo.Nucleo
-	cerrar  func() error
+	// Uso es la contabilidad del modelo que /run reporta en /run/{id}; sin
+	// llave devuelve ceros, porque no hubo llamadas (D13, D19).
+	Uso    func() llm.Uso
+	cerrar func() error
+}
+
+// contadorUso es lo que reporta su contabilidad; el cliente de Jev la
+// implementa con internal/llm.Uso.
+type contadorUso interface {
+	Uso() llm.Uso
 }
 
 // Cerrar libera la base al apagar.
@@ -102,7 +112,11 @@ func abreNucleo(datosDir string, getenv func(string) string) (*permiteNucleo, er
 		base.Cerrar()
 		return nil, err
 	}
-	return &permiteNucleo{Nucleo: vivo, Corrida: corrida, cerrar: base.Cerrar}, nil
+	uso := func() llm.Uso { return llm.Uso{} }
+	if contador, ok := modeloLLM.(contadorUso); ok {
+		uso = contador.Uso
+	}
+	return &permiteNucleo{Nucleo: vivo, Corrida: corrida, Uso: uso, cerrar: base.Cerrar}, nil
 }
 
 // secretoDe devuelve el secreto del HMAC: el del entorno, el del volumen o uno

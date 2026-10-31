@@ -13,6 +13,7 @@ import (
 
 	"github.com/game013/frontier-hackaton-31102026/internal/fuentes"
 	"github.com/game013/frontier-hackaton-31102026/internal/ingesta/docs"
+	"github.com/game013/frontier-hackaton-31102026/internal/llm"
 	"github.com/game013/frontier-hackaton-31102026/internal/modelo"
 	"github.com/game013/frontier-hackaton-31102026/internal/nucleo"
 	"github.com/game013/frontier-hackaton-31102026/internal/salida"
@@ -41,18 +42,23 @@ const (
 type EjecutorFuentes struct {
 	corredor *nucleo.Nucleo
 	lector   *docs.Lector
+	uso      func() llm.Uso
 }
 
 // NuevoEjecutor arma el ejecutor de /run. Un lector nil toma el del entorno
 // (PDF_PYTHON y tools/pdf/extraer.py), que es lo que hace el servicio.
-func NuevoEjecutor(corredor *nucleo.Nucleo, lector *docs.Lector) (*EjecutorFuentes, error) {
+//
+// uso es la contabilidad del modelo (lo que el cliente de Jev devuelve en Uso);
+// nil deja la corrida reportando cero tokens, que es lo correcto sin modelo. Se
+// pide al terminar y no al empezar porque el cliente acumula durante la corrida.
+func NuevoEjecutor(corredor *nucleo.Nucleo, lector *docs.Lector, uso func() llm.Uso) (*EjecutorFuentes, error) {
 	if corredor == nil {
 		return nil, errors.New("ejecutor: falta el núcleo de /run")
 	}
 	if lector == nil {
 		lector = docs.NuevoLector()
 	}
-	return &EjecutorFuentes{corredor: corredor, lector: lector}, nil
+	return &EjecutorFuentes{corredor: corredor, lector: lector, uso: uso}, nil
 }
 
 // Ejecuta cumple Ejecutor. Devuelve los conteos de la salida y, si algo falla
@@ -91,6 +97,11 @@ func (e *EjecutorFuentes) Ejecuta(ctx context.Context, sourcesURL, token, dirSal
 	}
 
 	conteos := cuentaPorFuente(resultado.Registros)
+	// La contabilidad se lee después de que el núcleo terminó: es el costo de
+	// esta corrida y va en /run/{id} (D13).
+	if e.uso != nil {
+		conteos.Modelo = e.uso()
+	}
 	// El índice va primero y se compara al final: declara todos los ids que la
 	// salida debe contener, así que un id declarado y ausente es una fuente
 	// ingerida a medias y la corrida falla a la vista (D11).

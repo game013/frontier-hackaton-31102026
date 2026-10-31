@@ -73,7 +73,7 @@ func corre() (errFinal error) {
 
 	// /run corre el pipeline completo sobre el API de fuentes; /anonymize atiende
 	// el lote en vivo. Los dos núcleos comparten la bóveda (D8).
-	ejecutor, err := servidor.NuevoEjecutor(nucleoReal.Corrida, nil)
+	ejecutor, err := servidor.NuevoEjecutor(nucleoReal.Corrida, nil, nucleoReal.Uso)
 	if err != nil {
 		return err
 	}
