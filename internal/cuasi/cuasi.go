@@ -6,8 +6,9 @@
 //
 //	maestro (tabla clientes): ocupación → sector, barrio → otro barrio de la
 //	misma ciudad, en todas las filas;
-//	texto: la ocupación ligada a una persona → su sector, el barrio → su
-//	ciudad y el año de la relación → "hace unos años".
+//	texto: la ocupación ligada a una persona → su sector, el barrio de la
+//	persona → su ciudad y el año de la relación → "hace unos años". El barrio
+//	de una cosa (la sede, la oficina) se conserva: es un lugar (D1, CE-41).
 //
 // Corre después del reemplazo y antes de la compuerta: los nombres falsos ya
 // están puestos y lo que se generaliza no es una forma de persona, así que la
