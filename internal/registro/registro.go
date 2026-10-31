@@ -74,6 +74,13 @@ func Construye(recs []modelo.Registro, o Opciones) (*Indice, error) {
 			return nil, err
 		}
 	}
+	for _, r := range recs {
+		doc, ok := r.(modelo.DocRecord)
+		if !ok {
+			continue
+		}
+		i.documento(doc)
+	}
 	i.usuarios(o.Usuarios)
 	for _, r := range recs {
 		chat, ok := r.(modelo.ChatRecord)
@@ -370,6 +377,68 @@ func (i *Indice) pqr(r modelo.TableRecord) {
 	}
 }
 
+// documento suma las personas que solo aparecen en un documento: el autor de la
+// metadata (Author de un PDF, author del front matter) y los correos del
+// cuerpo. De la parte local del correo sale el nombre que el texto usa después
+// ("kelly.castano" → "Kelly Castaño"), y así el nombre deja de ser un
+// desconocido (CE-30, CE-31).
+func (i *Indice) documento(r modelo.DocRecord) {
+	claves := make([]string, 0, len(r.Metadata))
+	for clave := range r.Metadata {
+		claves = append(claves, clave)
+	}
+	sort.Strings(claves)
+	for _, clave := range claves {
+		valor := strings.TrimSpace(r.Metadata[clave])
+		if valor == "" {
+			continue
+		}
+		if strings.Contains(valor, "@") {
+			i.correoDeDocumento(valor)
+			continue
+		}
+		if esNombre(valor) && esClaveDeAutor(clave) {
+			i.nombreDeDocumento(valor)
+		}
+	}
+	for _, correo := range correosEn(r.Body) {
+		i.correoDeDocumento(correo)
+	}
+}
+
+// correoDeDocumento une el correo con su persona o crea una: los del dominio de
+// la empresa son empleados (D3), el resto, terceros.
+func (i *Indice) correoDeDocumento(correo string) {
+	correo = correoLimpio(correo)
+	if correo == "" {
+		return
+	}
+	if p, ok := i.PorReferencia(correo); ok {
+		i.AgregaForma(p.Llave, modelo.Forma{Tipo: modelo.FormaCorreo, Valor: correo})
+		return
+	}
+	llave := llaveDesdeCorreo(correo)
+	if _, existe := i.personas[llave]; !existe {
+		rol := modelo.RolDesconocido
+		if strings.HasSuffix(strings.ToLower(correo), dominioEmpleados) {
+			rol = modelo.RolEmpleado
+		}
+		perfil := modelo.Perfil{Nombre: nombreDesdeCorreo(correo), Correo: correo, Handle: local(correo)}
+		i.agregaPersona(llave, rol, perfil, "", "", []string{correo})
+	}
+	i.AgregaForma(llave, modelo.Forma{Tipo: modelo.FormaCorreo, Valor: correo})
+	i.AgregaForma(llave, modelo.Forma{Tipo: modelo.FormaUsuario, Valor: local(correo)})
+}
+
+// nombreDeDocumento agrega el nombre que declara un autor de documento cuando ya
+// hay una persona única con ese nombre; si no, no inventa una persona por un
+// nombre suelto.
+func (i *Indice) nombreDeDocumento(nombre string) {
+	if candidatos := i.Busca(nombre); len(candidatos) == 1 {
+		i.AgregaForma(candidatos[0].Llave, modelo.Forma{Tipo: modelo.FormaNombreCompleto, Valor: nombre})
+	}
+}
+
 // usuarios une users.json con el maestro por la parte local del correo (D3) y
 // crea personas de chat que no están en ninguna tabla (terceros y clientes
 // fuera del maestro, D22).
@@ -526,6 +595,82 @@ func (i *Indice) heredaFicha(llave string, otra *Ficha) {
 		ficha.Ciudad = otra.Ciudad
 	}
 	ficha.Ref = appendUnicos(ficha.Ref, otra.Ref...)
+}
+
+// llaveDesdeCorreo da la llave de una persona que solo consta por correo: los
+// empleados cuelgan de p_kp_, el resto de p_t_ (D22).
+func llaveDesdeCorreo(correo string) string {
+	suma := sha256.Sum256([]byte(norm.Norm(correo)))
+	digesto := hex.EncodeToString(suma[:6])
+	if strings.HasSuffix(strings.ToLower(correo), dominioEmpleados) {
+		return "p_kp_" + digesto
+	}
+	return "p_t_" + digesto
+}
+
+// nombreDesdeCorreo arma el nombre que el corpus escribe en el texto a partir de
+// la parte local: "kelly.castano" → "Kelly Castaño".
+func nombreDesdeCorreo(correo string) string {
+	parte := local(correo)
+	if parte == "" {
+		return ""
+	}
+	tokens := strings.FieldsFunc(parte, func(r rune) bool {
+		return r == '.' || r == '_' || r == '-' || r == '+'
+	})
+	nombre := make([]string, 0, len(tokens))
+	for _, token := range tokens {
+		if token == "" {
+			continue
+		}
+		runas := []rune(strings.ToLower(token))
+		runas[0] = []rune(strings.ToUpper(string(runas[0])))[0]
+		nombre = append(nombre, string(runas))
+	}
+	if len(nombre) > 2 {
+		nombre = nombre[:2]
+	}
+	return strings.Join(nombre, " ")
+}
+
+// esClaveDeAutor marca las claves de metadata donde el corpus declara quién
+// escribió el documento.
+func esClaveDeAutor(clave string) bool {
+	switch strings.ToLower(clave) {
+	case "author", "autor", "creator", "prepared_by", "prepared by", "owner", "from":
+		return true
+	}
+	return false
+}
+
+// esNombre descarta fechas, números y frases largas de la metadata.
+func esNombre(valor string) bool {
+	campos := strings.Fields(valor)
+	if len(campos) < 2 || len(campos) > 5 {
+		return false
+	}
+	for _, campo := range campos {
+		for _, r := range campo {
+			if r >= '0' && r <= '9' {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// correosEn extrae las direcciones de correo del cuerpo de un documento.
+func correosEn(texto string) []string {
+	var out []string
+	for _, campo := range strings.FieldsFunc(texto, func(r rune) bool {
+		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
+			r == '.' || r == '_' || r == '%' || r == '+' || r == '-' || r == '@')
+	}) {
+		if strings.Contains(campo, "@") {
+			out = append(out, campo)
+		}
+	}
+	return out
 }
 
 // llaveCliente convierte CL-19127 en p_cl_19127.
