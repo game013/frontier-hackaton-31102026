@@ -5,10 +5,10 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Estado ahora
 
-- **Fase:** olas 0–1 (C0–C11) sobre la rama de integración `integracion/c0-c11`. El alcance de esta tanda es C0–C11;
-  la ola 2 (C12–C18) y la ola 3 quedan fuera por tiempo.
-- **Próximo paso:** ola 1 (C1–C11) en paralelo. Python de PDF ya instalado en `tmp/venv`
-  (`pdfplumber` 0.11.7, `pypdf` 5.6.1) para C7.
+- **Fase:** olas 0–1 cerradas (C0–C11) sobre `integracion/c0-c11`; C25 (calibración de Jev) hecha en la pista
+  paralela. La ola 2 (C12–C18) y la ola 3 siguen fuera de esta tanda.
+- **Próximo paso:** pista paralela C26 (allowlist), C27 (fixtures) y C29 (esqueleto de `DECISIONS.md`); después
+  C12–C18.
 - **Corrida 1:** 15:30 (Bogotá). El usuario la lanza con VALIDAR ENTRYPOINT; el agente solo la propone.
 - **Pendientes de decisión:** ninguno (P1 → D13, P2 → D29).
 - **Bloqueos:** ninguno.
@@ -106,11 +106,11 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 ### Pista paralela · sin dependencias (lista desde ya)
 
 No dependen de la ola 1 y acortan la ola 2 o desbloquean hitos. Se cortan de `integracion/c0-c11` como cualquier
-tarea (reglas 0–2). Orden sugerido: C25 primero (bloquea el hito de las 14:15), luego C26 y C27.
+tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `DECISIONS.md`).
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C25 | **Calibrar los umbrales de Jev (D31).** Etiquetar candidatos de `sample/` con su verdad (`expected_output/entities.json`: persona o no, género), incluir negativos (marcas, bancos, lugares, apellido-lugar, "Claro"), pasarlos por `typesafe/jev-1.14-20261014` y medir precisión y cobertura por umbral para persona, desempate y género. Solo ids y conteos en el informe. | `scripts/calibrar_jev.py`, `analisis/06_calibracion.md` | — | Informe con la curva por umbral y un valor recomendado por decisión; si difiere de D31, propuesta `DECISIÓN:` en la bitácora | claude | en curso | — |
+| C25 | **Calibrar los umbrales de Jev (D31).** Etiquetar candidatos de `sample/` con su verdad (`expected_output/entities.json`: persona o no, género), incluir negativos (marcas, bancos, lugares, apellido-lugar, "Claro"), pasarlos por `typesafe/jev-1.14-20261014` y medir precisión y cobertura por umbral para persona, desempate y género. Solo ids y conteos en el informe. | `scripts/calibrar_jev.py`, `analisis/06_calibracion.md` | — | Informe con la curva por umbral y un valor recomendado por decisión; si difiere de D31, propuesta `DECISIÓN:` en la bitácora | claude | hecha | 10a87e5 |
 | C26 | **Allowlist como datos.** Las ~30 entidades a conservar (`analisis/00_resumen.md`) con `reason`, más las reglas genéricas (sufijos `S.A.S.`, "Banco …", mayúscula sin nombre de pila delante, apellido-lugar). C14 solo la carga; no edita este archivo. | `internal/detecta/allowlist.json` | — | JSON válido con prueba de esquema; cubre todas las entidades de `analisis/00_resumen.md` y los `kept` de `sample/expected_output/entities.json` | — | lista | — |
 | C27 | **Fixtures de los casos esquina.** Cada caso de `CASOS_ESQUINA.md` (CE-01 a CE-32) como archivo con id de registro, campo, entrada y esperado (qué debe desaparecer, qué debe quedar, qué juez lo mide). Es la parte de datos de C20. | `tests/casos/` | — | Un fixture por caso, legible por `cmd/juez`; ningún dato real fuera de los ids y de lo estrictamente necesario para el esperado | — | lista | — |
 | C28 | **Railway listo.** Proyecto, volumen en `/data`, una réplica, Serverless apagado, reinicio `ON_FAILURE`, healthcheck `/v1/health`; variables `LLM_MODEL=typesafe/jev-1.14-20261014`, `OPENROUTER_API_KEY`, secreto del HMAC. | Panel de Railway (fuera del repo) | — | C1 solo tiene que desplegar; variables verificadas sin mostrarlas | usuario | lista | — |
@@ -137,6 +137,14 @@ Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pas�
   J-DIC y J-REC 100 %. Servicio desplegado en `frontier-31102026-production.up.railway.app` (health y `/anonymize`
   de eco verificados). Faltan en el panel de Railway: variables (`LLM_MODEL`, `OPENROUTER_API_KEY`, secreto HMAC) y
   volumen en `/data`; los pone el usuario.
+- 14:13 · C25 · claude · C25 hecha (rama `c25-calibracion-jev`, punta `10a87e5`): 344 candidatos de `sample/` (290 persona / 39 no persona / 15 desempate),
+  344 llamadas, US$ 0,006788. Precisión 1,000 en persona y desempate; exactitud 1,000 en género con cobertura
+  0,988 en el 0,60 vigente. La muestra no separa clases: se mantiene D31 y se recalibra con el corpus real.
+- 14:13 · C25 · claude · DECISIÓN: D31 se mantiene (persona > 0,50, desempate ≥ 0,70, género ≥ 0,60) porque la
+  muestra de C25 no separa clases (precisión y exactitud en 1,000 en toda la rejilla y óptimo de la curva en el
+  borde 0,30); se recalibra con el corpus real antes de mover umbrales.
+- 14:13 · C25 · claude · CASO: CE-32 (nombre unisex) no se resuelve por el umbral de género: Jev decide M/F con
+  probabilidad alta; el seudónimo unisex tiene que salir del catálogo (D18).
 - 14:10 · — · claude · Ola 1 integrada: C1–C10 en `integracion/c0-c11` con `go build`/`go vet`/`go test`
   en verde; smoke local de C1 (health, `/anonymize` de eco, 404 de `/output`). C11 sigue en curso.
 - 14:05 · C0 · claude · Revisión de C0 atendida: fixture versionada para la prueba de ida y vuelta, tags JSON de
