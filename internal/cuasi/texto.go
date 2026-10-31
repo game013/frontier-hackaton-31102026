@@ -37,9 +37,16 @@ var verbosVivienda = conjunto(
 )
 
 // verbosEntrada anclan el año de la relación con la empresa: «entré con ustedes
-// en 2025». Se comparan con tildes para no confundirlos con la preposición
-// «entre».
-var verbosEntrada = conjunto("entré", "entro", "entró", "entraron", "entramos", "entraste")
+// en 2025», «vinculada en 2023» (CE-39). Se comparan con tildes para no
+// confundirlos con la preposición «entre».
+var verbosEntrada = conjunto(
+	"entré", "entro", "entró", "entraron", "entramos", "entraste",
+	"vinculado", "vinculada", "vinculados", "vinculadas",
+)
+
+// anclasPersona presentan a una persona sin verbo delante: el acta de un comité
+// habla de «la afectada» y a continuación le atribuye el oficio (CE-39).
+var anclasPersona = conjunto("afectada", "afectado")
 
 // anclaAnio es la preposición del año de vinculación: «llevo con ustedes desde
 // 2021», «es cliente desde 2020». Por sí sola no basta: detrás tiene que haber
@@ -168,7 +175,7 @@ func ocupacionEn(ps []palabra, i int) (int, string) {
 func ligadaAPersona(ps []palabra, i int) bool {
 	for j := i - 1; j >= 0 && j >= i-3; j-- {
 		clave := norm.Norm(ps[j].texto)
-		if disparadoresOcupacion[clave] {
+		if disparadoresOcupacion[clave] || anclasPersona[clave] {
 			return true
 		}
 		if !conectores[clave] {

@@ -303,6 +303,11 @@ func TestAnioDeLaRelacionNecesitaAncla(t *testing.T) {
 			"desde 2020.",
 			"desde 2020.",
 		},
+		{
+			"vinculada en el acta",
+			"Antecedentes de la afectada: ingeniera de sistemas, vinculada en 2023, sin reclamos previos.",
+			"Antecedentes de la afectada: profesional de tecnología, vinculada en hace unos años, sin reclamos previos.",
+		},
 	}
 	for _, c := range casos {
 		t.Run(c.nombre, func(t *testing.T) {
@@ -330,6 +335,7 @@ func TestConservaTextoQueNoEsCuasiIdentificador(t *testing.T) {
 		{"ocupación fuera del catálogo", "Soy cartógrafa y llevo con ustedes desde siempre."},
 		{"año de negocio", "Se entrega el 15 de agosto de 2026 y el monto es 1.480.000."},
 		{"año de nacimiento", "Les paso el otro caso: la clienta de Cali, enfermera, nacida en 1974, que ya reclamó dos veces."},
+		{"año de un contrato", "El contrato quedó en firme en 2023 y se renovó en 2025."},
 	}
 	for _, c := range casos {
 		t.Run(c.nombre, func(t *testing.T) {
