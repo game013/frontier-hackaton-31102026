@@ -71,7 +71,7 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 | C7 | Ingesta de docs: MD con front matter; HTML → markdown con comentarios y `display:none`; PDF vía `tools/pdf/extraer.py` (pdfplumber cuerpo, pypdf metadata) como subproceso con timeout. Metadata con las mismas claves. | `internal/ingesta/docs/`, `tools/pdf/` | C0 | Sobre `sample/input`: mismas claves de metadata y similitud de `body` ≥ 0,9 con la salida ideal | — | espera | — |
 | C8 | Formas: un renderizador por tipo (completo, corto, pila, MAYÚSCULAS sin tildes, slug, usuario, correo, correo deletreado, cédula con y sin puntos, `CC<num>`, celular en 3 formatos, dirección, fecha ISO / en palabras / US, placa, pasaporte). Lo usan el registro (formas reales) y la fábrica (formas falsas). | `internal/formas/` | C0 | Cada renderizador probado contra ejemplos de `sample/expected_output` | — | espera | — |
 | C9 | Catálogos embebidos: nombres de pila colombianos por género, unisex y extranjeros; apellidos con tildes; dominios públicos; barrios por ciudad; ocupación → 13 sectores (D18). | `internal/catalogo/` | C0 | Conteos mínimos (≥300 por género, ≥400 apellidos) y sin ninguna forma real de `fuentes/` | — | espera | — |
-| C10 | Cliente de Jev 1.13: OpenRouter `POST /api/alpha/decisions` (`state`, `questions` `choice`/`noul`/`score`), varias preguntas por llamada, umbral de confianza 0,6, timeout, caché en SQLite por hash, contabilidad de tokens y costo, modelo por `LLM_MODEL`, enmascarado de formas conocidas (D15). | `internal/llm/` | C0 | Prueba con servidor falso: caché, timeout, JSON inválido; una prueba real opcional con datos inventados | — | espera | — |
+| C10 | Cliente de Jev 1.14: OpenRouter `POST /api/alpha/decisions` (`state`, `questions` `choice`/`noul`/`score`), varias preguntas por llamada, umbral de confianza 0,6, timeout, caché en SQLite por hash, contabilidad de tokens y costo, modelo por `LLM_MODEL`, enmascarado de formas conocidas (D15). | `internal/llm/` | C0 | Prueba con servidor falso: caché, timeout, JSON inválido; una prueba real opcional con datos inventados | — | espera | — |
 | C11 | Juez base: `cmd/juez` corre `validar.mjs`, los 13 tests de `tests_sample.json` y los 5 públicos por familia, J-GLO y J-DIC; imprime puntaje por juez. | `cmd/juez/`, `internal/juez/` | C0 | Sobre `sample/expected_output` da 13/13 y J-GLO 0 | — | espera | — |
 
 ### Ola 2 · pipeline
@@ -101,7 +101,7 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 
 | Id | Pregunta | Afecta | Estado |
 | --- | --- | --- | --- |
-| P1 | ¿Qué modelo usa C10? | C10, D13, D15 | cerrada → D13: `typesafe/jev-1.13` por `/api/alpha/decisions` |
+| P1 | ¿Qué modelo usa C10? | C10, D13, D15 | cerrada → D13: `typesafe/jev-1.14` por `/api/alpha/decisions` |
 | P2 | En `/anonymize`, `author` llega como nombre: ¿cómo se separan homónimos en vivo? | C16, C18 | cerrada → D29 |
 
 ## Bitácora
@@ -109,5 +109,5 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
-- 12:35 · — · claude · P1 cerrada (Jev 1.13, D13) y P2 cerrada (D29).
+- 12:35 · — · claude · P1 cerrada (Jev 1.14, D13) y P2 cerrada (D29).
 - 12:20 · — · claude · Tablero creado; diseño cerrado en D1–D28; C0 lista.

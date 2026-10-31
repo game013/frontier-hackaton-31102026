@@ -63,7 +63,7 @@ Al crear un directorio de código (`cmd/`, `internal/`…), agrégalo a esta tab
 - Go 1.24+, solo `net/http` y `modernc.org/sqlite` (sin cgo). Base reusable en `../10102026` (servidor, SQLite con
   migraciones, captura de requests): ver `analisis/05_reuso_10102026.md`.
 - PDF: ayudante en Python con pdfplumber (cuerpo) y pypdf (metadata), invocado como subproceso.
-- Modelo: Jev 1.13 (`typesafe/jev-1.13`) vía OpenRouter, endpoint `POST /api/alpha/decisions` (no `chat/completions`);
+- Modelo: Jev 1.14 (`typesafe/jev-1.14`) vía OpenRouter, endpoint `POST /api/alpha/decisions` (no `chat/completions`);
   `OPENROUTER_API_KEY` en `.env`. Solo preguntas cerradas.
 - API de fuentes: `TOKEN` en `.env`; 600 peticiones por minuto.
 - Validación: `node docs/validar.mjs output/ --public fuentes/` y `node docs/validar.mjs sample/expected_output --public sample`.
