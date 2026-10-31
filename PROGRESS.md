@@ -5,10 +5,9 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Estado ahora
 
-- **Fase:** olas 0–1 cerradas (C0–C11) sobre `integracion/c0-c11`; C25 (calibración de Jev) hecha en la pista
-  paralela. La ola 2 (C12–C18) y la ola 3 siguen fuera de esta tanda.
-- **Próximo paso:** pista paralela C26 (allowlist), C27 (fixtures) y C29 (esqueleto de `DECISIONS.md`); después
-  C12–C18.
+- **Fase:** olas 0–1 cerradas (C0–C11); C25 hecha. **Ola 2 en curso (C12–C18) sobre `integracion/ola2`**, con
+  C27 y C29 de la pista paralela. C26 (allowlist) la trabaja otro agente en su propia rama.
+- **Próximo paso:** cerrar C12–C18; después C19 (cuasi-identificadores, incluido `sample_08`), C20 y C22.
 - **Corrida 1:** 15:30 (Bogotá). El usuario la lanza con VALIDAR ENTRYPOINT; el agente solo la propone.
 - **Pendientes de decisión:** ninguno (P1 → D13, P2 → D29).
 - **Bloqueos:** ninguno.
@@ -26,7 +25,7 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Reglas de coordinación
 
-0. **Rama de integración.** Desde C0 el trabajo entra a `integracion/c0-c11`, no a `master`. Las tareas se cortan
+0. **Rama de integración.** Desde la ola 2 el trabajo entra a `integracion/ola2`, no a `master`. Las tareas se cortan
    de esa rama, se integran ahí y `master` solo se mueve cuando el usuario lo pida (merge de la rama completa o PR).
    Motivo: aísla el trabajo de la ola 0–1, permite revisar el conjunto antes de publicar y deja `master` desplegable.
 1. **Tomar una tarea.** Solo se toma una tarea en estado `lista`. Se toma editando su fila (Estado `en curso`,
@@ -84,19 +83,19 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C12 | Registro de personas: maestro + empleados + users (`users.name` = parte local del correo; `@kipupay.co`), llaves `p_cl_`/`p_kp_`, todas las formas reales vía C8, índices exactos (cédula, correo, celular, `CL-`, `PQR-`, placa, uid, fecha+monto → tx). | `internal/registro/` | C3, C5, C6, C8 | Cada persona de la muestra tiene las `forms` de sus tests de consistencia | — | espera | — |
-| C13 | Fábrica de perfiles: `HMAC(secreto, llave)`, mismo género y estructura, unicidad, exclusión de toda forma real, bóveda primero (D4, D22). | `internal/perfil/` | C2, C8, C9 | Determinista con la misma llave; nunca coincide con una forma real; perfil guardado no cambia | — | espera | — |
-| C14 | Detección: Aho-Corasick en espacio normalizado, patrones con contexto (cédula, celular, correo, deletreado, placa, pasaporte, fechas, adjuntos), allowlist con reglas genéricas, cuatro generadores de candidatos insensibles a mayúsculas (D30); dos pasadas (D14). | `internal/detecta/` | C3, C12 | Casos CE-03, 04, 08, 14, 15, 16, 21, 22, 23, 29, 30, 31 en verde | — | espera | — |
-| C15 | Residuo con Jev: candidatos dudosos de C14 → pregunta cerrada (persona, organización, lugar, marca, otro) con la mención enmascarada; género y origen (D27). | `internal/detecta/residuo/` | C10, C14 | Con un modelo falso: integra respuestas; con timeout cae a reglas | — | espera | — |
-| C16 | Resolución: ids duros → contexto (autor, hilo, handoff, "soy X") → nombre único → Jev con fichas abstractas (D26) → D19; en vivo, D29; regla y confianza por mención; dudosos; terceros (D22, D23). | `internal/resuelve/` | C10, C12, C14 | CE-01, 02, 17, 18, 19, 28 en verde | — | espera | — |
-| C17 | Reemplazo con estilo (derecha a izquierda, todos los strings del registro), compuerta (D25, hashes sin sal), salida (`*.jsonl`, `entities.json` con todas las formas). | `internal/reemplazo/`, `internal/compuerta/`, `internal/salida/` | C3, C13, C16 | Muestra: validador OK, 13/13, J-GLO 0 | — | espera | — |
-| C18 | Núcleo y cableado: `Anonymize` único para `/run` y `/anonymize` (D8, D24, D28); job de `/run` = fuentes → ingesta → núcleo → salida en `/data`; costo en `/run/{id}`. Corrida completa sobre `fuentes/`, despliegue y smoke test. | `internal/nucleo/`, cableado en `internal/servidor/` | C1, C4, C7, C15, C17 | `fuentes/`: validador OK, barrido 0, dos corridas idénticas, `/run` < 15 min en Railway | — | espera | — |
+| C12 | Registro de personas: maestro + empleados + users (`users.name` = parte local del correo; `@kipupay.co`), llaves `p_cl_`/`p_kp_`, todas las formas reales vía C8, índices exactos (cédula, correo, celular, `CL-`, `PQR-`, placa, uid, fecha+monto → tx). | `internal/registro/` | C3, C5, C6, C8 | Cada persona de la muestra tiene las `forms` de sus tests de consistencia | pi | en curso | — |
+| C13 | Fábrica de perfiles: `HMAC(secreto, llave)`, mismo género y estructura, unicidad, exclusión de toda forma real, bóveda primero (D4, D22). | `internal/perfil/` | C2, C8, C9 | Determinista con la misma llave; nunca coincide con una forma real; perfil guardado no cambia | pi | en curso | — |
+| C14 | Detección: Aho-Corasick en espacio normalizado, patrones con contexto (cédula, celular, correo, deletreado, placa, pasaporte, fechas, adjuntos), allowlist con reglas genéricas, cuatro generadores de candidatos insensibles a mayúsculas (D30); dos pasadas (D14). | `internal/detecta/` | C3, C12 | Casos CE-03, 04, 08, 14, 15, 16, 21, 22, 23, 29, 30, 31 en verde | pi | en curso | — |
+| C15 | Residuo con Jev: candidatos dudosos de C14 → pregunta cerrada (persona, organización, lugar, marca, otro) con la mención enmascarada; género y origen (D27). | `internal/detecta/residuo/` | C10, C14 | Con un modelo falso: integra respuestas; con timeout cae a reglas | pi | en curso | — |
+| C16 | Resolución: ids duros → contexto (autor, hilo, handoff, "soy X") → nombre único → Jev con fichas abstractas (D26) → D19; en vivo, D29; regla y confianza por mención; dudosos; terceros (D22, D23). | `internal/resuelve/` | C10, C12, C14 | CE-01, 02, 17, 18, 19, 28 en verde | pi | en curso | — |
+| C17 | Reemplazo con estilo (derecha a izquierda, todos los strings del registro), compuerta (D25, hashes sin sal), salida (`*.jsonl`, `entities.json` con todas las formas). | `internal/reemplazo/`, `internal/compuerta/`, `internal/salida/` | C3, C13, C16 | Muestra: validador OK, 12/13 (`sample_08` mide cuasi-identificadores y pasa a C19), J-GLO 0, J-REC 100 % | pi | en curso | — |
+| C18 | Núcleo y cableado: `Anonymize` único para `/run` y `/anonymize` (D8, D24, D28); job de `/run` = fuentes → ingesta → núcleo → salida en `/data`; costo en `/run/{id}`. Corrida completa sobre `fuentes/`, despliegue y smoke test. | `internal/nucleo/`, cableado en `internal/servidor/` | C1, C4, C7, C15, C17 | `fuentes/`: validador OK, barrido 0, dos corridas idénticas, `/run` < 15 min en Railway | pi | en curso | — |
 
 ### Ola 3 · después de la corrida 1
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C19 | Cuasi-identificadores en texto y maestro (opcional antes de la corrida 1 si sobra tiempo). | `internal/cuasi/` | C17 | CE-12, CE-13 con J-IND en verde | — | espera | — |
+| C19 | Cuasi-identificadores en texto y maestro: ocupación → sector, barrio → ciudad, año → "hace unos años", en el texto y en la fila del maestro. Incluye `sample_08` (movido aquí desde C17 por decisión del usuario: la corrida 1 no lleva cuasi en texto, D21). | `internal/cuasi/` | C17 | CE-12, CE-13 con J-IND en verde; `sample_08` en verde | — | espera | — |
 | C20 | Jueces especializados restantes (J-DIR, J-OCU, J-IND, J-FP, J-CAT, J-EST, J-PAR, J-CON, J-HOM, J-REP, J-CRE, J-VIV) que corren los fixtures de C27. | `internal/juez/` | C11, C18, C27 | Todos los casos corren; reporte por juez | — | espera | — |
 | C21 | Monitor de crecimiento: `record_index` con `If-None-Match`; avisa cuando cambia. | `cmd/monitor/` | C4 | Detecta un cambio simulado | — | espera | — |
 | C22 | Hold-out 80/20 y prueba de crecimiento (J-CRE). | `internal/juez/`, `scripts/` | C18, C20 | 0 seudónimos viejos cambian | — | espera | — |
@@ -112,9 +111,9 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | C25 | **Calibrar los umbrales de Jev (D31).** Etiquetar candidatos de `sample/` con su verdad (`expected_output/entities.json`: persona o no, género), incluir negativos (marcas, bancos, lugares, apellido-lugar, "Claro"), pasarlos por `typesafe/jev-1.14-20261014` y medir precisión y cobertura por umbral para persona, desempate y género. Solo ids y conteos en el informe. | `scripts/calibrar_jev.py`, `analisis/06_calibracion.md` | — | Informe con la curva por umbral y un valor recomendado por decisión; si difiere de D31, propuesta `DECISIÓN:` en la bitácora | claude | hecha | 10a87e5 |
 | C26 | **Allowlist como datos.** Las ~30 entidades a conservar (`analisis/00_resumen.md`) con `reason`, más las reglas genéricas (sufijos `S.A.S.`, "Banco …", mayúscula sin nombre de pila delante, apellido-lugar). C14 solo la carga; no edita este archivo. | `internal/detecta/allowlist.json` | — | JSON válido con prueba de esquema; cubre todas las entidades de `analisis/00_resumen.md` y los `kept` de `sample/expected_output/entities.json` | — | lista | — |
-| C27 | **Fixtures de los casos esquina.** Cada caso de `CASOS_ESQUINA.md` (CE-01 a CE-32) como archivo con id de registro, campo, entrada y esperado (qué debe desaparecer, qué debe quedar, qué juez lo mide). Es la parte de datos de C20. | `tests/casos/` | — | Un fixture por caso, legible por `cmd/juez`; ningún dato real fuera de los ids y de lo estrictamente necesario para el esperado | — | lista | — |
+| C27 | **Fixtures de los casos esquina.** Cada caso de `CASOS_ESQUINA.md` (CE-01 a CE-32) como archivo con id de registro, campo, entrada y esperado (qué debe desaparecer, qué debe quedar, qué juez lo mide). Es la parte de datos de C20. | `tests/casos/` | — | Un fixture por caso, legible por `cmd/juez`; ningún dato real fuera de los ids y de lo estrictamente necesario para el esperado | pi | en curso | — |
 | C28 | **Railway listo.** Proyecto, volumen en `/data`, una réplica, Serverless apagado, reinicio `ON_FAILURE`, healthcheck `/v1/health`; variables `LLM_MODEL=typesafe/jev-1.14-20261014`, `OPENROUTER_API_KEY`, secreto del HMAC. | Panel de Railway (fuera del repo) | — | C1 solo tiene que desplegar; variables verificadas sin mostrarlas | usuario | lista | — |
-| C29 | **Esqueleto de `DECISIONS.md`.** Las tres preguntas del enunciado: qué es PII, qué se conservó y por qué, costo. Declara D15 (filtración al modelo) y que `provider.data_collection: deny` se acepta pero no está probado que se cumpla. Deja huecos marcados para las cifras de la corrida. | `DECISIONS.md` | — | Las tres secciones escritas; solo faltan cifras (las llena C23) | — | lista | — |
+| C29 | **Esqueleto de `DECISIONS.md`.** Las tres preguntas del enunciado: qué es PII, qué se conservó y por qué, costo. Declara D15 (filtración al modelo) y que `provider.data_collection: deny` se acepta pero no está probado que se cumpla. Deja huecos marcados para las cifras de la corrida. | `DECISIONS.md` | — | Las tres secciones escritas; solo faltan cifras (las llena C23) | pi | en curso | — |
 
 ## Pendientes de decisión
 
@@ -127,6 +126,10 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
+
+- 13:35 · — · pi · Ola 2 tomada (C12–C18) sobre `integracion/ola2` desde `master` (`dbb4bef`), más C27 y C29 de la
+  pista paralela. C26 no se toca: la trabaja otro agente. `DECISIÓN:` C17 ya no exige 13/13: `sample_08` mide
+  cuasi-identificadores (`fotógrafa`/`Granada`/`2025`) y pasa a C19, en línea con D21 (corrida 1 sin cuasi en texto).
 
 - 15:00 · — · claude · `master` recibe `integracion/c0-c11` por fast-forward (71 commits, sin merge commit). Sin push:
   publicar primero exige limpiar del historial los blobs con datos de la muestra anteriores a `8f809f2`.
