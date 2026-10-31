@@ -64,7 +64,14 @@ func corre() (errFinal error) {
 		log.Printf("pdf: %s", detalle)
 	}
 
-	svc, err := servidor.Nuevo(cfg, servidor.Deps{})
+	// El núcleo real: /anonymize ya anonimiza con la misma bóveda que /run (D8).
+	nucleoReal, err := abreNucleo(cfg.DatosDir, os.Getenv)
+	if err != nil {
+		return err
+	}
+	defer func() { errFinal = errors.Join(errFinal, nucleoReal.Cerrar()) }()
+
+	svc, err := servidor.Nuevo(cfg, servidor.Deps{Nucleo: nucleoReal.Nucleo})
 	if err != nil {
 		return err
 	}

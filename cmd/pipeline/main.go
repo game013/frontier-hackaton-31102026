@@ -66,22 +66,20 @@ func corre(fuentes, salidaDir, datos, allowlistRuta string, sinLLM, vivo bool, p
 	}
 	defer base.Cerrar()
 
-	var modelo modelo.Modelo
+	var clienteModelo modelo.Modelo
 	if !sinLLM {
 		cliente, err := nucleo.ConfiguracionDelModelo(os.Getenv)
 		if err != nil {
 			return fmt.Errorf("modelo: %w", err)
 		}
-		if cliente != nil {
-			modelo = cliente
-		}
+		clienteModelo = cliente
 	}
 	secreto := os.Getenv("SECRETO_HMAC")
 	if secreto == "" {
 		secreto = secretoPorDefecto
 	}
 	n, err := nucleo.Nuevo(nucleo.Opciones{
-		Almacen: base, Modelo: modelo, Secreto: []byte(secreto),
+		Almacen: base, Modelo: clienteModelo, Secreto: []byte(secreto),
 		Allowlist: allow, Vivo: vivo, Plazo: plazo,
 	})
 	if err != nil {
