@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/game013/frontier-hackaton-31102026/internal/catalogo"
 	"github.com/game013/frontier-hackaton-31102026/internal/norm"
@@ -41,8 +42,35 @@ var verbosVivienda = conjunto(
 var verbosEntrada = conjunto("entré", "entro", "entró", "entraron", "entramos", "entraste")
 
 // anclaAnio es la preposición del año de vinculación: «llevo con ustedes desde
-// 2021», «es cliente desde 2020».
+// 2021», «es cliente desde 2020». Por sí sola no basta: detrás tiene que haber
+// una relación de la persona con la empresa (anclasDeRelacion).
 const anclaAnio = "desde"
+
+// anclasDeRelacion son las palabras que atan el año a la relación de la persona
+// con la empresa: «llevo con ustedes desde», «vine desde», «me vinculé desde»,
+// «soy cliente desde», «vinculada desde». Un «desde» suelto es una fecha de
+// negocio («Kipu Pay opera desde 2020») y se conserva (D1, DECISIONS §1.4).
+var anclasDeRelacion = conjunto(
+	"llevo", "lleva", "llevas", "llevamos", "llevan", "llevaba", "llevaban", "llevabamos",
+	"estoy", "estas", "esta", "estamos", "estan", "estaba", "estaban",
+	"vine", "vino", "vinimos", "vinieron",
+	"trabajo", "trabajas", "trabaja", "trabajamos", "trabajan", "trabaje", "trabajaba",
+	"vinculado", "vinculada", "vinculados", "vinculadas",
+	"cliente", "clienta", "clientes", "usuario", "usuaria", "usuarios", "usuarias",
+)
+
+// interlocutores es la empresa como interlocutor: «con nosotros desde 2021» ata
+// el año aunque el verbo no quepa en la ventana.
+var interlocutores = conjunto("nosotros", "nosotras", "ustedes", "ustees", "usted")
+
+// puentesRelacion pueden ir entre el ancla y «desde»: «llevo con ustedes desde»,
+// «cliente nuestro desde».
+var puentesRelacion = conjunto(
+	"con", "nuestro", "nuestra", "nosotros", "nosotras", "ustedes", "ustees", "usted",
+)
+
+// topeAncla acota cuántas palabras atrás se busca el ancla.
+const topeAncla = 4
 
 // haceUnosAnios generaliza el año de la relación (D9).
 const haceUnosAnios = "hace unos años"
@@ -85,9 +113,11 @@ func palabras(texto string) []palabra {
 	return out
 }
 
+// esLetraODigito separa palabras con el criterio de Unicode, no con ASCII más
+// «todo lo alto»: la puntuación no ASCII («…», «—») no es parte de la palabra, y
+// sin eso «desde 2024…» no dejaría ver el año.
 func esLetraODigito(r rune) bool {
-	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
-		(r >= '0' && r <= '9') || r >= 0x80
+	return unicode.IsLetter(r) || unicode.IsDigit(r)
 }
 
 // une junta las palabras [desde, hasta) con un espacio, que es como el catálogo
@@ -208,8 +238,9 @@ func mayusculaInicial(s string) bool {
 }
 
 // aniosEn encuentra los años de la relación con la empresa: los que van detrás
-// de «desde» o de «entró … en». Un año de negocio («julio de 2026») y el de un
-// id interno («PQR-2025-0548») se quedan.
+// de un «desde» con relación delante o de «entró … en». Un año de negocio
+// («julio de 2026», «Kipu Pay opera desde 2020») y el de un id interno
+// («PQR-2025-0548») se quedan.
 func aniosEn(texto string, ps []palabra) []tramo {
 	var out []tramo
 	for i, p := range ps {
@@ -247,15 +278,34 @@ func anclado(ps []palabra, i int) bool {
 	if i == 0 {
 		return false
 	}
-	if norm.Norm(ps[i-1].texto) == anclaAnio {
-		return true
+	switch norm.Norm(ps[i-1].texto) {
+	case anclaAnio:
+		return relacionAntes(ps, i-1)
+	case "en":
+		for j := i - 2; j >= 0 && j >= i-6; j-- {
+			if verbosEntrada[strings.ToLower(ps[j].texto)] {
+				return true
+			}
+		}
 	}
-	if norm.Norm(ps[i-1].texto) != "en" {
-		return false
-	}
-	for j := i - 2; j >= 0 && j >= i-6; j-- {
-		if verbosEntrada[strings.ToLower(ps[j].texto)] {
+	return false
+}
+
+// relacionAntes mira hacia atrás desde la posición de «desde»: salta los puentes
+// del habla («llevo con ustedes», «cliente nuestro») y devuelve true solo si
+// encuentra el ancla. Cualquier otra palabra corta la búsqueda: sin relación
+// delante, el año es de negocio y se conserva.
+func relacionAntes(ps []palabra, desde int) bool {
+	for j := desde - 1; j >= 0 && desde-j <= topeAncla; j-- {
+		clave := norm.Norm(ps[j].texto)
+		if anclasDeRelacion[clave] {
 			return true
+		}
+		if clave == "con" && interlocutores[norm.Norm(ps[j+1].texto)] {
+			return true
+		}
+		if !puentesRelacion[clave] {
+			return false
 		}
 	}
 	return false

@@ -233,6 +233,88 @@ func columnasDe(r modelo.TableRecord) string {
 	return strings.Join(valores, " ")
 }
 
+// El año solo se generaliza cuando hay una relación de la persona delante: un
+// «desde» suelto es la fecha de negocio de la empresa y se conserva (D1,
+// DECISIONS §1.4). Y la puntuación no ASCII no pega palabras: «2024…» sigue
+// siendo un año.
+func TestAnioDeLaRelacionNecesitaAncla(t *testing.T) {
+	casos := []struct {
+		nombre string
+		texto  string
+		quiero string
+	}{
+		{
+			"plantilla",
+			"Buenas, soy fotógrafa, vivo en Granada. y llevo con ustedes desde 2024 sin un solo atraso.",
+			"Buenas, soy profesional de las industrias creativas, vivo en Cali. y llevo con ustedes desde hace unos años sin un solo atraso.",
+		},
+		{
+			"llevo con ustees",
+			"y llevo con ustees desde 2023 sin un solo atraso, por si eso cuenta!!",
+			"y llevo con ustees desde hace unos años sin un solo atraso, por si eso cuenta!!",
+		},
+		{
+			"estoy con",
+			"la clienta de Cali está con nosotros desde 2021 y pide el detalle",
+			"la clienta de Cali está con nosotros desde hace unos años y pide el detalle",
+		},
+		{
+			"cliente desde",
+			"Te la exonero por 12 meses por ser cliente desde 2021",
+			"Te la exonero por 12 meses por ser cliente desde hace unos años",
+		},
+		{
+			"cliente nuestro desde",
+			"Titular: chef de Medellín, cliente nuestro desde 2021. Niega conocer al afectado.",
+			"Titular: chef de Medellín, cliente nuestro desde hace unos años. Niega conocer al afectado.",
+		},
+		{
+			"vinculado desde",
+			"Cliente de Bucaramanga, arquitecto, vinculado desde 2021",
+			"Cliente de Bucaramanga, arquitecto, vinculado desde hace unos años",
+		},
+		{
+			"con nosotros sin verbo en la ventana",
+			"una agente de soporte en Barranquilla, con nosotros desde 2024; para efectos de la ARL",
+			"una agente de soporte en Barranquilla, con nosotros desde hace unos años; para efectos de la ARL",
+		},
+		{
+			"puntos suspensivos pegados al año",
+			"y llevo con ustedes desde 2024… sin un solo atraso",
+			"y llevo con ustedes desde hace unos años… sin un solo atraso",
+		},
+		{
+			"puntos suspensivos pegados a la preposición",
+			"llevo con ustedes…desde 2020 sin un solo atraso",
+			"llevo con ustedes…desde hace unos años sin un solo atraso",
+		},
+		{
+			"fecha de negocio de la empresa",
+			"Kipu Pay opera desde 2020.",
+			"Kipu Pay opera desde 2020.",
+		},
+		{
+			"apertura de la empresa",
+			"la empresa abrió desde 2019.",
+			"la empresa abrió desde 2019.",
+		},
+		{
+			"desde suelto",
+			"desde 2020.",
+			"desde 2020.",
+		},
+	}
+	for _, c := range casos {
+		t.Run(c.nombre, func(t *testing.T) {
+			rec := chatDePrueba(c.texto)
+			out := generaliza(t, []modelo.Registro{rec})
+			if got := textoDe(t, out[0]); got != c.quiero {
+				t.Fatalf("texto =\n %q\nquiero\n %q", got, c.quiero)
+			}
+		})
+	}
+}
+
 // Lo que no es cuasi-identificador de nadie se queda: la ocupación en aposición
 // tras una coma, las fechas de negocio y los nombres comunes en minúscula
 // (DECISIONS §1.4, J-PAR).
@@ -247,6 +329,7 @@ func TestConservaTextoQueNoEsCuasiIdentificador(t *testing.T) {
 		{"año de un id interno", "Abro INC-2026-044 y entro por PQR-2025-0548."},
 		{"ocupación fuera del catálogo", "Soy cartógrafa y llevo con ustedes desde siempre."},
 		{"año de negocio", "Se entrega el 15 de agosto de 2026 y el monto es 1.480.000."},
+		{"año de nacimiento", "Les paso el otro caso: la clienta de Cali, enfermera, nacida en 1974, que ya reclamó dos veces."},
 	}
 	for _, c := range casos {
 		t.Run(c.nombre, func(t *testing.T) {
