@@ -394,6 +394,46 @@ func TestCE41BarrioSolamenteSiEsDeLaPersona(t *testing.T) {
 	}
 }
 
+// CE-42: si entre el verbo de entrada y el año hay otro «en» o un «de» que une
+// otra frase, el año es de negocio y se conserva (D1, DECISIONS §1.4).
+func TestCE42AnioDeNegocioTrasOtraFrase(t *testing.T) {
+	casos := []struct {
+		nombre string
+		texto  string
+		quiero string
+	}{
+		{
+			"entró en vigencia",
+			"La resolución entró en vigencia en 2024 y aplica desde este mes.",
+			"La resolución entró en vigencia en 2024 y aplica desde este mes.",
+		},
+		{
+			"de que une otra frase",
+			"El radicado entró de nuevo en 2024 con la respuesta del área.",
+			"El radicado entró de nuevo en 2024 con la respuesta del área.",
+		},
+		{
+			"entrada de la persona, sin nada en medio",
+			"De una. Yo soy fotógrafa, trabajo cerca, en Granada, y entré con ustedes en 2025, así que paso cualquier tarde.",
+			"De una. Yo soy profesional de las industrias creativas, trabajo cerca, en Cali, y entré con ustedes en hace unos años, así que paso cualquier tarde.",
+		},
+		{
+			"vinculada en el acta",
+			"Antecedentes de la afectada: ingeniera de sistemas, vinculada en 2023, sin reclamos previos.",
+			"Antecedentes de la afectada: profesional de tecnología, vinculada en hace unos años, sin reclamos previos.",
+		},
+	}
+	for _, c := range casos {
+		t.Run(c.nombre, func(t *testing.T) {
+			rec := chatDePrueba(c.texto)
+			out := generaliza(t, []modelo.Registro{rec})
+			if got := textoDe(t, out[0]); got != c.quiero {
+				t.Fatalf("texto =\n %q\nquiero\n %q", got, c.quiero)
+			}
+		})
+	}
+}
+
 // Una fila con datos que el catálogo no conoce se queda como está: aquí no se
 // inventan sectores ni barrios (D18).
 func TestConservaFilaFueraDelCatalogo(t *testing.T) {

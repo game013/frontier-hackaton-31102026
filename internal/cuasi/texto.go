@@ -334,10 +334,29 @@ func anclado(ps []palabra, i int) bool {
 	case anclaAnio:
 		return relacionAntes(ps, i-1)
 	case "en":
-		for j := i - 2; j >= 0 && j >= i-6; j-- {
-			if verbosEntrada[strings.ToLower(ps[j].texto)] {
-				return true
-			}
+		return entradaAntes(ps, i-1)
+	}
+	return false
+}
+
+// topeEntrada acota cuántas palabras atrás se busca el verbo de entrada: el
+// mismo alcance que tenía el año cuando la búsqueda era un bucle en anclado.
+const topeEntrada = 5
+
+// entradaAntes busca el verbo de entrada detrás del «en» que precede al año
+// (posición en). Si entre el verbo y el año hay otro «en» o un «de» que une otra
+// frase, el año pertenece a una fecha de negocio y se conserva: «la resolución
+// entró en vigencia en 2024» (CE-42). El precio es que «entró en la empresa en
+// 2021» también se conserva: sin analizar la oración, la duda se resuelve a
+// favor del dato (D1).
+func entradaAntes(ps []palabra, en int) bool {
+	for j := en - 1; j >= 0 && en-j <= topeEntrada; j-- {
+		clave := norm.Norm(ps[j].texto)
+		if clave == "en" || clave == "de" {
+			return false
+		}
+		if verbosEntrada[strings.ToLower(ps[j].texto)] {
+			return true
 		}
 	}
 	return false
