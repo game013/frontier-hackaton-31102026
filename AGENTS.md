@@ -52,6 +52,8 @@ tabla, actualízala ahí en el mismo commit.
 | `CASOS_ESQUINA.md` | Catálogo vivo de casos esquina, cada uno con su juez. Todo caso descubierto se agrega aquí. |
 | `PROGRESS.md` | Tablero de implementación para varios agentes: tareas, dependencias, estado y reglas de coordinación. Léelo antes de tomar trabajo. |
 | `RUBRICA.md`  | Rúbrica de la hackathon y pesos.                                                         |
+| `cmd/`        | Binarios: `servidor/` (servicio HTTP) y `juez/` (validador, tests, J-GLO, J-DIC, J-REC). |
+| `tools/pdf/`  | Ayudante Python: pdfplumber para el cuerpo del PDF y pypdf para metadata y respaldo.     |
 | `internal/`   | Código del pipeline: contratos, normalización, ingesta, detección, resolución y salida.  |
 | `internal/catalogo/` | Catálogos embebidos de la fábrica de seudónimos: nombres de pila, apellidos, dominios públicos, barrios por ciudad y ocupación → sector. Datos en `datos/*.json` con `go:embed`. |
 | `scripts/`    | Utilidades; `descargar_fuentes.py` baja el API completo a `fuentes/`.                     |
