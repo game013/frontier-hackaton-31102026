@@ -491,6 +491,57 @@ func TestCE43AnclaEnTerceraPersonaNecesitaPersona(t *testing.T) {
 	}
 }
 
+// CE-44: el año de la persona que hoy se escapa. El artículo entre «desde» y el
+// año («el», «del», «el año») y el orden invertido («Desde 2021 soy cliente»)
+// también son la relación de la persona, no una fecha de negocio.
+func TestCE44AnioConArticuloYOrdenInvertido(t *testing.T) {
+	casos := []struct {
+		nombre string
+		texto  string
+		quiero string
+	}{
+		{
+			"artículo el",
+			"Soy cliente desde el 2021 y pido el certificado.",
+			"Soy cliente desde el hace unos años y pido el certificado.",
+		},
+		{
+			"artículo del año",
+			"Soy cliente desde del año 2021 y pido el certificado.",
+			"Soy cliente desde del año hace unos años y pido el certificado.",
+		},
+		{
+			"artículo el año",
+			"Soy cliente desde el año 2021 y pido el certificado.",
+			"Soy cliente desde el año hace unos años y pido el certificado.",
+		},
+		{
+			"orden invertido",
+			"Desde 2021 soy cliente y pido el certificado.",
+			"Desde hace unos años soy cliente y pido el certificado.",
+		},
+		{
+			"orden invertido con artículo",
+			"Desde el 2021 soy clienta y pido el certificado.",
+			"Desde el hace unos años soy clienta y pido el certificado.",
+		},
+		{
+			"invertido sin persona",
+			"Desde 2021 el banco no responde.",
+			"Desde 2021 el banco no responde.",
+		},
+	}
+	for _, c := range casos {
+		t.Run(c.nombre, func(t *testing.T) {
+			rec := chatDePrueba(c.texto)
+			out := generaliza(t, []modelo.Registro{rec})
+			if got := textoDe(t, out[0]); got != c.quiero {
+				t.Fatalf("texto =\n %q\nquiero\n %q", got, c.quiero)
+			}
+		})
+	}
+}
+
 // Una fila con datos que el catálogo no conoce se queda como está: aquí no se
 // inventan sectores ni barrios (D18).
 func TestConservaFilaFueraDelCatalogo(t *testing.T) {

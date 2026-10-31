@@ -343,16 +343,37 @@ func esAnio(texto string, p palabra) bool {
 	return p.fin >= len(texto) || texto[p.fin] != '-'
 }
 
+// articulosDelAnio pueden ir entre la preposición y el año: «cliente desde el
+// 2021», «desde el año 2021», «desde del año 2021» (CE-44). Las claves van
+// normalizadas: «año» llega como «ano».
+var articulosDelAnio = conjunto("el", "del", "ano")
+
 // anclado dice si el año es el de la relación de la persona con la empresa.
 func anclado(ps []palabra, i int) bool {
-	if i == 0 {
+	j := i - 1
+	for n := 0; n < 2 && j >= 0 && articulosDelAnio[norm.Norm(ps[j].texto)]; n++ {
+		j--
+	}
+	if j < 0 {
 		return false
 	}
-	switch norm.Norm(ps[i-1].texto) {
+	switch norm.Norm(ps[j].texto) {
 	case anclaAnio:
-		return relacionAntes(ps, i-1)
+		return relacionAntes(ps, j) || relacionDespues(ps, i)
 	case "en":
-		return entradaAntes(ps, i-1)
+		return entradaAntes(ps, j)
+	}
+	return false
+}
+
+// relacionDespues mira hasta cuatro palabras después del año: el habla invierte
+// el orden y la relación de la persona va detrás («Desde 2021 soy cliente»,
+// CE-44).
+func relacionDespues(ps []palabra, i int) bool {
+	for j := i + 1; j < len(ps) && j <= i+topeAncla; j++ {
+		if sustantivosDePersona[norm.Norm(ps[j].texto)] {
+			return true
+		}
 	}
 	return false
 }
