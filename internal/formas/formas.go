@@ -265,8 +265,8 @@ func cedula(p modelo.Perfil) (string, error) {
 	return d, nil
 }
 
-// agrupar pone puntos de miles desde la derecha: 1107360039 → 1.107.360.039,
-// 32390356 → 32.390.356, como aparece en el chat.
+// agrupar pone puntos de miles desde la derecha: 98765432 → 98.765.432,
+// 1234567890 → 1.234.567.890, como aparece en el chat.
 func agrupar(d string) string {
 	var grupos []string
 	for len(d) > 3 {

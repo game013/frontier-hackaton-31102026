@@ -589,7 +589,7 @@ NEGATIVOS_CURADOS = [
     NegativoCurado("Restrepo", "lugar", "apellido_lugar", "El usuario reporta que vive en el barrio Restrepo."),
     NegativoCurado("Córdoba", "lugar", "apellido_lugar", "La sucursal de Montería, Córdoba, abre el sábado."),
     NegativoCurado("Robledo", "lugar", "apellido_lugar", "Vive en Robledo y trabaja en el centro."),
-    NegativoCurado("Claro", "otro", "claro", "Claro, es 1.107.360.039"),
+    NegativoCurado("Claro", "otro", "claro", "Claro, es 9.876.543"),
     NegativoCurado("Claro", "marca", "claro", "Mi plan de Claro vence el 30 y no me llega la factura."),
     NegativoCurado("1.480.000", "otro", "numero", "El cobro fue de 1.480.000 y no coincide con la cuota."),
     NegativoCurado("901.456.789-3", "otro", "numero", "El comercio tiene NIT 901.456.789-3 y no aparece en el listado."),
