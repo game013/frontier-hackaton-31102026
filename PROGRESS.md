@@ -5,7 +5,8 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Estado ahora
 
-- **Fase:** diseño cerrado (D1–D28). Arranca la ola 0.
+- **Fase:** olas 0–1 (C0–C11) sobre la rama de integración `integracion/c0-c11`. El alcance de esta tanda es C0–C11;
+  la ola 2 (C12–C18) y la ola 3 quedan fuera por tiempo.
 - **Próximo paso:** C0 (contratos). Al terminar C0 se abre toda la ola 1 en paralelo.
 - **Corrida 1:** 15:30 (Bogotá). El usuario la lanza con VALIDAR ENTRYPOINT; el agente solo la propone.
 - **Pendientes de decisión:** ninguno (P1 → D13, P2 → D29).
@@ -13,7 +14,7 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Hitos de hoy (Bogotá, UTC−5)
 
-- [ ] 12:45 · C0 hecha: `go.mod`, paquetes y tipos compartidos en master.
+- [ ] 12:45 · C0 hecha: `go.mod`, paquetes y tipos compartidos en `integracion/c0-c11`.
 - [ ] 13:30 · Servicio en Railway con `/v1/health` y `/v1/anonymize` de eco (C1).
 - [ ] 14:15 · Pipeline completo sobre `sample/`: validador OK, 13/13 tests y J-REC 100 % (C17).
 - [ ] 14:45 · Pipeline sobre `fuentes/`: validador OK, barrido 0, dos corridas idénticas (C18).
@@ -24,19 +25,23 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Reglas de coordinación
 
+0. **Rama de integración.** Desde C0 el trabajo entra a `integracion/c0-c11`, no a `master`. Las tareas se cortan
+   de esa rama, se integran ahí y `master` solo se mueve cuando el usuario lo pida (merge de la rama completa o PR).
+   Motivo: aísla el trabajo de la ola 0–1, permite revisar el conjunto antes de publicar y deja `master` desplegable.
 1. **Tomar una tarea.** Solo se toma una tarea en estado `lista`. Se toma editando su fila (Estado `en curso`,
-   Responsable, hora) y haciendo commit inmediato en master con `chore: toma Cn` (solo `PROGRESS.md`). Si el push o
-   el commit chocan con otro agente que la tomó primero, se suelta y se elige otra.
+   Responsable, hora) y haciendo commit inmediato en `integracion/c0-c11` con `chore: toma Cn` (solo `PROGRESS.md`). Si
+   el commit choca con otro agente que la tomó primero, se suelta y se elige otra.
 2. **Aislamiento.** Cada tarea trabaja en su worktree `../31102026-wt/Cn` sobre la rama `cn-<slug>`
-   (`git worktree add ../31102026-wt/Cn -b cn-<slug> master`). Nunca dos agentes en el mismo worktree.
+   (`git worktree add ../31102026-wt/Cn -b cn-<slug> integracion/c0-c11`). Nunca dos agentes en el mismo worktree.
 3. **Propiedad de rutas.** Cada tarea solo escribe en las rutas de su columna *Toca*. Si necesita cambiar una ruta
    de otra tarea, escribe en la bitácora y espera; no la edita.
 4. **Contratos.** `internal/modelo` (tipos e interfaces compartidos) es de C0. Después de C0, un cambio de contrato
    se pide en la bitácora con `CONTRATO:`; lo aplica quien orquesta en un commit aparte y avisa a los afectados.
    Mientras tanto, la tarea usa un adaptador local, no edita `internal/modelo`.
 5. **Terminar.** Una tarea está `hecha` cuando: `go test ./...` en verde, su criterio de *Hecha cuando* se cumple
-   con una prueba que compara contra un esperado, rebase sobre master, merge fast-forward a master, y su fila
-   actualizada con el hash del commit. Commits atómicos y convencionales (ver `AGENTS.md`).
+   con una prueba que compara contra un esperado, merge de la punta de `integracion/c0-c11` a su rama, y merge a
+   `integracion/c0-c11`. La fila (Estado `hecha`, hash del commit) la actualiza quien integra, no cada tarea, para
+   evitar conflictos en este archivo. Commits atómicos y convencionales (ver `AGENTS.md`).
 6. **Abrir dependientes.** Al cerrar una tarea, quien la cierra pasa a `lista` toda tarea cuyas dependencias quedaron
    todas `hecha`, en el mismo commit que actualiza su fila.
 7. **Bloqueos.** Si una tarea no puede seguir: Estado `bloqueada`, una línea en la bitácora con el motivo y lo que
@@ -56,7 +61,7 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C0 | `go.mod` (Go 1.24, `modernc.org/sqlite`), árbol de paquetes vacío, y en `internal/modelo`: `ChatRecord`, `DocRecord`, `TableRecord`, `Persona` (llave, rol, género, formas), `Forma` (tipo, valor), `Perfil`, `Mencion` (offsets, tipo, persona, regla, confianza), `Entity`; interfaces `Almacen`, `Detector`, `Resolutor`, `Fabrica`, `Modelo` (LLM), `Nucleo.Anonymize(source, records)`. | `go.mod`, `internal/modelo/` | — | Compila; los tipos serializan a JSON igual que `sample/expected_output` (prueba de ida y vuelta) | — | lista | — |
+| C0 | `go.mod` (Go 1.24, `modernc.org/sqlite`), árbol de paquetes vacío, y en `internal/modelo`: `ChatRecord`, `DocRecord`, `TableRecord`, `Persona` (llave, rol, género, formas), `Forma` (tipo, valor), `Perfil`, `Mencion` (offsets, tipo, persona, regla, confianza), `Entity`; interfaces `Almacen`, `Detector`, `Resolutor`, `Fabrica`, `Modelo` (LLM), `Nucleo.Anonymize(source, records)`. | `go.mod`, `internal/modelo/` | — | Compila; los tipos serializan a JSON igual que `sample/expected_output` (prueba de ida y vuelta) | orquestador | en curso | — |
 
 ### Ola 1 · piezas independientes (paralelo tras C0)
 
@@ -109,6 +114,8 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 13:40 · — · claude · Alcance fijado: solo C0–C11. Trabajo sobre `integracion/c0-c11` (regla 0); las filas las
+  cierra quien integra. C0 en curso.
 - 12:50 · — · claude · Ronda 4 del ataque cerrada: D28 corregida, D30–D34; Jev 1.14 con snapshot fijo.
 - 12:35 · — · claude · P1 cerrada (Jev 1.14, D13) y P2 cerrada (D29).
 - 12:20 · — · claude · Tablero creado; diseño cerrado en D1–D28; C0 lista.
