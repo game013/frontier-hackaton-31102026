@@ -83,6 +83,8 @@ bloquea la corrida oficial.
 | CE-47 | Seudónimo viejo igual a un dato real nuevo         | `birth_iso` de `p_cl_40686` = nacimiento real de un cliente `PG-` | La compuerta lo cambia en el texto y el valor ya no se declara: el validador pasa | J-DIC, J-CRE |
 | CE-49 | Tercero de la bóveda que empata con un cliente     | Con Jev, la corrida 1 deja 20 terceros con formas de clientes; tras el crecimiento suben a 184, incluidas filas de `clientes` | La única persona del maestro gana sin consultar el modelo; no se crea otro tercero | J-CON, J-CRE |
 | CE-48 | Forma de una persona de la bóveda sin mención      | `p_cl_15468` en la corrida tras el crecimiento | La compuerta pide el perfil a la fábrica (bóveda primero); la corrida no cae | J-CRE        |
+| CE-50 | Persona que se queda sin `name` tras la compuerta | Corrida oficial 2: `p_cl_34834` y `p_cl_57176` con nombre reescrito en el texto y el `name` viejo podado | Se declara el nombre que quedó en su fila de tabla, en la variante de más registros, nunca uno ajeno | J-CON |
+| CE-51 | Dos perfiles con el mismo nombre corto              | Corrida oficial 2: `p_cl_13198` y `p_cl_98093`, ambos «Sol Lozada» | La bóveda trata el nombre corto como ocupado y la fábrica avanza el intento | J-CON |
 | CE-34 | Test público `pub_04` pide dos entidades con una forma completa que solo tiene una fila | `fuentes/tests_public.json` `pub_04` | No se cumple declarando una forma que no es de la persona; el criterio propio es dos personas, dos seudónimos, separadas por uid | J-HOM        |
 
 ## Aceptados con motivo
