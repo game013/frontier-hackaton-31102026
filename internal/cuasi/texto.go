@@ -60,12 +60,17 @@ var sujetosDeCosa = conjunto("sede", "oficina", "empresa", "compania")
 // topeBarrio acota cuántas palabras atrás se busca el verbo que ata el barrio.
 const topeBarrio = 5
 
+// formasVinculado nombran la relación de la persona sin verbo propio («vinculada
+// en 2023», «vinculado desde 2021»). Las usan los dos anclajes del año y también
+// cuentan como sustantivo de persona, así que se declaran una sola vez.
+var formasVinculado = conjunto("vinculado", "vinculada", "vinculados", "vinculadas")
+
 // verbosEntrada anclan el año de la relación con la empresa: «entré con ustedes
 // en 2025», «vinculada en 2023» (CE-40). Se comparan con tildes para no
 // confundirlos con la preposición «entre».
-var verbosEntrada = conjunto(
-	"entré", "entro", "entró", "entraron", "entramos", "entraste",
-	"vinculado", "vinculada", "vinculados", "vinculadas",
+var verbosEntrada = union(
+	formasVinculado,
+	conjunto("entré", "entro", "entró", "entraron", "entramos", "entraste"),
 )
 
 // anclasPersona presentan a una persona sin verbo delante: el acta de un comité
@@ -74,20 +79,33 @@ var anclasPersona = conjunto("afectada", "afectado")
 
 // anclaAnio es la preposición del año de vinculación: «llevo con ustedes desde
 // 2021», «es cliente desde 2020». Por sí sola no basta: detrás tiene que haber
-// una relación de la persona con la empresa (anclasDeRelacion).
+// una relación de la persona con la empresa (anclasPrimeraPersona,
+// anclasTerceraPersona o sustantivosDePersona).
 const anclaAnio = "desde"
 
-// anclasDeRelacion son las palabras que atan el año a la relación de la persona
-// con la empresa: «llevo con ustedes desde», «vine desde», «me vinculé desde»,
-// «soy cliente desde», «vinculada desde». Un «desde» suelto es una fecha de
-// negocio («Kipu Pay opera desde 2020») y se conserva (D1, DECISIONS §1.4).
-var anclasDeRelacion = conjunto(
-	"llevo", "lleva", "llevas", "llevamos", "llevan", "llevaba", "llevaban", "llevabamos",
-	"estoy", "estas", "esta", "estamos", "estan", "estaba", "estaban",
-	"vine", "vino", "vinimos", "vinieron",
-	"trabajo", "trabajas", "trabaja", "trabajamos", "trabajan", "trabaje", "trabajaba",
-	"vinculado", "vinculada", "vinculados", "vinculadas",
-	"cliente", "clienta", "clientes", "usuario", "usuaria", "usuarios", "usuarias",
+// anclasPrimeraPersona atan el año a la relación de la persona sin más ayuda:
+// «llevo con ustedes desde», «vine desde», «trabajo desde», «entré desde».
+var anclasPrimeraPersona = union(
+	conjunto(verboTrabajo, "llevo", "estoy", "vine"),
+	conjunto("entré"),
+)
+
+// anclasTerceraPersona solo valen si en la ventana hay un sustantivo de persona
+// o el puente «con nosotros/ustedes» (CE-43): «la clienta está desde» sí, «Kipu
+// Pay trabaja desde 2019» no, que es una fecha de negocio (D1, DECISIONS §1.4).
+var anclasTerceraPersona = conjunto(
+	"lleva", "llevas", "llevamos", "llevan", "llevaba", "llevaban", "llevabamos",
+	"estas", "esta", "estamos", "estan", "estaba", "estaban",
+	"vino", "vinimos", "vinieron",
+	"trabajas", "trabaja", "trabajamos", "trabajan", "trabaje", "trabajaba",
+)
+
+// sustantivosDePersona nombran a la persona en la ventana del año: «cliente
+// desde», «usuaria desde», «vinculada desde». Atan el año por sí solos y
+// habilitan las anclas en tercera persona.
+var sustantivosDePersona = union(
+	formasVinculado,
+	conjunto("cliente", "clienta", "clientes", "usuario", "usuaria", "usuarios", "usuarias"),
 )
 
 // interlocutores es la empresa como interlocutor: «con nosotros desde 2021» ata
@@ -365,18 +383,33 @@ func entradaAntes(ps []palabra, en int) bool {
 // relacionAntes mira hacia atrás desde la posición de «desde»: salta los puentes
 // del habla («llevo con ustedes», «cliente nuestro») y devuelve true solo si
 // encuentra el ancla. Cualquier otra palabra corta la búsqueda: sin relación
-// delante, el año es de negocio y se conserva.
+// delante, el año es de negocio y se conserva. Un ancla en tercera persona
+// necesita además un sustantivo de persona en la ventana (CE-43).
 func relacionAntes(ps []palabra, desde int) bool {
 	for j := desde - 1; j >= 0 && desde-j <= topeAncla; j-- {
 		clave := norm.Norm(ps[j].texto)
-		if anclasDeRelacion[clave] {
+		switch {
+		case anclasPrimeraPersona[clave], sustantivosDePersona[clave]:
 			return true
-		}
-		if clave == "con" && interlocutores[norm.Norm(ps[j+1].texto)] {
+		case anclasTerceraPersona[clave]:
+			return personaEnLaVentana(ps, desde)
+		case clave == "con" && interlocutores[norm.Norm(ps[j+1].texto)]:
 			return true
-		}
-		if !puentesRelacion[clave] {
+		case !puentesRelacion[clave]:
 			return false
+		}
+	}
+	return false
+}
+
+// personaEnLaVentana dice si en la ventana del «desde» hay un sustantivo de
+// persona: «la clienta de Cali está desde», «el arquitecto trabaja desde». Sin
+// él, el verbo en tercera persona habla de la empresa o de una cosa y el año es
+// de negocio (CE-43).
+func personaEnLaVentana(ps []palabra, desde int) bool {
+	for j := desde - 1; j >= 0 && desde-j <= topeAncla; j-- {
+		if sustantivosDePersona[norm.Norm(ps[j].texto)] {
+			return true
 		}
 	}
 	return false
@@ -433,6 +466,22 @@ func conjunto(valores ...string) map[string]bool {
 	out := make(map[string]bool, len(valores))
 	for _, v := range valores {
 		out[v] = true
+	}
+	return out
+}
+
+// union junta conjuntos ya definidos en uno nuevo, para que una palabra se
+// declare una sola vez y los demás conjuntos la referencien en vez de copiarla.
+func union(bases ...map[string]bool) map[string]bool {
+	total := 0
+	for _, base := range bases {
+		total += len(base)
+	}
+	out := make(map[string]bool, total)
+	for _, base := range bases {
+		for k := range base {
+			out[k] = true
+		}
 	}
 	return out
 }

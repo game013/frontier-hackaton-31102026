@@ -434,6 +434,63 @@ func TestCE42AnioDeNegocioTrasOtraFrase(t *testing.T) {
 	}
 }
 
+// CE-43: un ancla en tercera persona («lleva», «está», «trabaja») solo vale si
+// en la ventana hay un sustantivo de persona o el puente «con nosotros/ustedes»;
+// si no, el año es de la empresa o de una cosa y se conserva. Las anclas de
+// primera persona siguen valiendo solas.
+func TestCE43AnclaEnTerceraPersonaNecesitaPersona(t *testing.T) {
+	casos := []struct {
+		nombre string
+		texto  string
+		quiero string
+	}{
+		{
+			"la empresa trabaja desde",
+			"Kipu Pay trabaja desde 2019 con el mismo equipo.",
+			"Kipu Pay trabaja desde 2019 con el mismo equipo.",
+		},
+		{
+			"la función está desde",
+			"la función está desde 2024 en la app.",
+			"la función está desde 2024 en la app.",
+		},
+		{
+			"el equipo trabaja desde",
+			"el equipo de soporte trabaja desde 2020 en turnos.",
+			"el equipo de soporte trabaja desde 2020 en turnos.",
+		},
+		{
+			"está con sustantivo de persona delante",
+			"la clienta de Cali está desde 2021 y pide el detalle",
+			"la clienta de Cali está desde hace unos años y pide el detalle",
+		},
+		{
+			"esta sin tilde, con persona delante",
+			"la clienta de Cali esta desde 2021 y pide el detalle",
+			"la clienta de Cali esta desde hace unos años y pide el detalle",
+		},
+		{
+			"puente con nosotros",
+			"la clienta de Cali está con nosotros desde 2021 y pide el detalle",
+			"la clienta de Cali está con nosotros desde hace unos años y pide el detalle",
+		},
+		{
+			"primera persona sin ayuda",
+			"trabajo desde 2019 con ustedes y sigo igual",
+			"trabajo desde hace unos años con ustedes y sigo igual",
+		},
+	}
+	for _, c := range casos {
+		t.Run(c.nombre, func(t *testing.T) {
+			rec := chatDePrueba(c.texto)
+			out := generaliza(t, []modelo.Registro{rec})
+			if got := textoDe(t, out[0]); got != c.quiero {
+				t.Fatalf("texto =\n %q\nquiero\n %q", got, c.quiero)
+			}
+		})
+	}
+}
+
 // Una fila con datos que el catálogo no conoce se queda como está: aquí no se
 // inventan sectores ni barrios (D18).
 func TestConservaFilaFueraDelCatalogo(t *testing.T) {
