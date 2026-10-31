@@ -323,3 +323,48 @@ func TestEscritoresConcurrentesNoPierdenFilas(t *testing.T) {
 		t.Fatalf("personas %d, perfiles %d; se esperaban %d y %d", personas, perfiles, escritores*porEscritor, escritores*porEscritor)
 	}
 }
+
+// Las personas de /anonymize van a su tabla y sus formas quedan marcadas: no
+// entran al registro del corpus ni a entities.json (D24).
+func TestPersonaVivoNoSeMezclaConElCorpus(t *testing.T) {
+	ctx := context.Background()
+	a := abrir(t, filepath.Join(t.TempDir(), "vivo.db"))
+	p := modelo.Persona{
+		Llave: "p_t_vivo1", Rol: modelo.RolDesconocido, Genero: modelo.GeneroUnisex,
+		Formas: []modelo.Forma{{Tipo: modelo.FormaNombreCompleto, Valor: "Ana Prueba Uno", Registro: "m1"}},
+	}
+	if err := a.GuardarPersonaVivo(ctx, p); err != nil {
+		t.Fatalf("GuardarPersonaVivo: %v", err)
+	}
+	if _, existe, err := a.Persona(ctx, p.Llave); err != nil || existe {
+		t.Fatalf("la persona viva entró al registro del corpus (existe=%v, err=%v)", existe, err)
+	}
+	var vivo int
+	if err := a.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM formas WHERE llave = ? AND vivo = 1", p.Llave).Scan(&vivo); err != nil {
+		t.Fatalf("cuenta formas vivas: %v", err)
+	}
+	if vivo != 1 {
+		t.Fatalf("formas vivas = %d, quiero 1", vivo)
+	}
+}
+
+// La cola de dudosos guarda la mención con su regla y confianza (D20).
+func TestAnotaDudoso(t *testing.T) {
+	ctx := context.Background()
+	a := abrir(t, filepath.Join(t.TempDir(), "vivo.db"))
+	m := modelo.Mencion{
+		Registro: "m1", Fuente: modelo.FuenteChats, Campo: "text", Inicio: 2, Fin: 9,
+		Valor: "Ana", Tipo: modelo.MencionPersona, Regla: "residuo:disparador", Confianza: 0.55,
+	}
+	if err := a.AnotaDudoso(ctx, m); err != nil {
+		t.Fatalf("AnotaDudoso: %v", err)
+	}
+	var regla string
+	var confianza float64
+	if err := a.db.QueryRowContext(ctx, "SELECT regla, confianza FROM dudosos WHERE registro = 'm1'").Scan(&regla, &confianza); err != nil {
+		t.Fatalf("lee dudoso: %v", err)
+	}
+	if regla != m.Regla || confianza != m.Confianza {
+		t.Fatalf("dudoso = %q %v", regla, confianza)
+	}
+}
