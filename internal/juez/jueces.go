@@ -42,15 +42,20 @@ func (m Medicion) Pasa() bool {
 func JuezGLO(s *Salida) Medicion {
 	m := Medicion{ID: "J-GLO", Nombre: "barrido global", Dimension: "barrido_global"}
 	textos := s.Textos()
+	indices := make([]norm.IndiceTexto, len(textos))
+	for i, texto := range textos {
+		indices[i] = norm.Indexa(texto)
+	}
 	for _, e := range s.Entities {
 		if e.Kept {
 			continue
 		}
 		for _, original := range e.Originals {
 			m.Total++
+			aguja := norm.Prepara(original)
 			encontrados := 0
-			for i, texto := range textos {
-				if norm.Contiene(texto, original) {
+			for i := range indices {
+				if indices[i].ContieneForma(aguja) {
 					encontrados++
 					if encontrados <= 3 {
 						m.Detalles = append(m.Detalles, fmt.Sprintf("%s sigue en %s (%s)", enmascara(original), s.Orden[i], e.EntityID))

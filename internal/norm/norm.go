@@ -64,11 +64,23 @@ func Contiene(haystack, needle string) bool {
 	if needle == "" {
 		return false
 	}
-	d := soloDigitos(needle)
-	if d != "" && largo(d) >= 6 && float64(largo(d)) >= 0.6*float64(largo(needle)) && !letraASCII(needle) {
-		return DigitosEn(haystack, d)
+	if esNeedleDeDigitos(needle) {
+		return DigitosEn(haystack, soloDigitos(needle))
 	}
-	h := []rune(Norm(haystack))
+	return ContieneNormalizado(Norm(haystack), needle)
+}
+
+// ContieneNormalizado es Contiene con el haystack ya en el espacio normalizado
+// (Norm). El jurado lo llama millones de veces: normalizar el mismo texto una
+// vez por forma es lo que hacía que una corrida tardara minutos.
+func ContieneNormalizado(haystackNorm, needle string) bool {
+	if needle == "" {
+		return false
+	}
+	if esNeedleDeDigitos(needle) {
+		return DigitosEn(haystackNorm, soloDigitos(needle))
+	}
+	h := []rune(haystackNorm)
 	n := []rune(Norm(needle))
 	if esTextoSolo(n) && minusculaASCII(n) {
 		if contienePalabra(h, n) {
@@ -81,6 +93,13 @@ func Contiene(haystack, needle string) bool {
 		return false
 	}
 	return strings.Contains(string(h), string(n))
+}
+
+// esNeedleDeDigitos dice si la forma se busca como dígitos compactos: seis o
+// más dígitos que son al menos el 60 % de la forma y ninguna letra latina.
+func esNeedleDeDigitos(needle string) bool {
+	d := soloDigitos(needle)
+	return d != "" && largo(d) >= 6 && float64(largo(d)) >= 0.6*float64(largo(needle)) && !letraASCII(needle)
 }
 
 // compactaDigitos es digitosCompactos() del jurado: clean() y fuera los
@@ -273,3 +292,80 @@ func minusculaASCII(rs []rune) bool {
 
 // largo cuenta runas, como largo() del jurado (que cuenta puntos de código).
 func largo(s string) int { return utf8.RuneCountInString(s) }
+
+// IndiceTexto deja un registro listo para buscar muchas formas: el texto
+// normalizado, sus palabras y sus dígitos compactos. El jurado barre miles de
+// formas sobre el mismo registro; normalizarlo una vez por forma es lo que
+// hacía que una corrida tardara minutos.
+type IndiceTexto struct {
+	normalizado string
+	palabras    map[string]bool
+	digitos     string
+}
+
+// Indexa prepara un texto para búsquedas repetidas.
+func Indexa(texto string) IndiceTexto {
+	normalizado := Norm(texto)
+	palabras := map[string]bool{}
+	for _, palabra := range strings.FieldsFunc(normalizado, func(r rune) bool {
+		return !palabra(r)
+	}) {
+		palabras[palabra] = true
+	}
+	return IndiceTexto{normalizado: normalizado, palabras: palabras, digitos: compactaDigitos(texto)}
+}
+
+// Forma es una aguja preparada una sola vez para barrerse sobre muchos textos.
+type Forma struct {
+	normalizado string
+	digitos     []rune
+	esDigitos   bool
+	esTexto     bool
+	palabras    [][]rune
+	unaPalabra  bool
+}
+
+// Prepara deja una forma lista para comparar contra cualquier IndiceTexto.
+func Prepara(needle string) Forma {
+	if needle == "" {
+		return Forma{}
+	}
+	if esNeedleDeDigitos(needle) {
+		return Forma{esDigitos: true, digitos: []rune(soloDigitos(needle))}
+	}
+	normalizado := Norm(needle)
+	n := []rune(normalizado)
+	f := Forma{normalizado: normalizado}
+	if esTextoSolo(n) && minusculaASCII(n) {
+		f.esTexto = true
+		f.palabras = partir(n)
+		f.unaPalabra = len(f.palabras) == 1
+	}
+	return f
+}
+
+// Contiene responde con la misma vara que Contiene() sobre el texto indexado.
+func (i IndiceTexto) Contiene(needle string) bool {
+	return i.ContieneForma(Prepara(needle))
+}
+
+// ContieneForma es Contiene con la aguja ya preparada.
+func (i IndiceTexto) ContieneForma(f Forma) bool {
+	if f.normalizado == "" && !f.esDigitos {
+		return false
+	}
+	if f.esDigitos {
+		return buscaDigitos([]rune(i.digitos), f.digitos)
+	}
+	if f.esTexto && f.unaPalabra && i.palabras[f.normalizado] {
+		return true
+	}
+	// Rechazo barato por bytes antes de recorrer runas y bordes.
+	if !strings.Contains(i.normalizado, f.normalizado) {
+		return false
+	}
+	if f.esTexto {
+		return contienePalabras([]rune(i.normalizado), f.palabras)
+	}
+	return true
+}
