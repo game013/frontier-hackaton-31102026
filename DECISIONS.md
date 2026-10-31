@@ -179,14 +179,54 @@ el modelo nunca recibe un registro completo. El riesgo se acepta con mitigación
 Estas cifras las llena C23 con la corrida 1 ya hecha. Hasta entonces este documento no afirma ningún número de
 corrida; los huecos están marcados para que nadie los rellene con una estimación.
 
-| Qué                                        | De dónde sale                                  | Corrida 1 |
-| ------------------------------------------ | ---------------------------------------------- | --------- |
-| Tokens de entrada al modelo                | `GET /v1/run/{id}`                             | <!-- C23: tokens de entrada de la corrida --> |
-| Tokens de salida del modelo                | `GET /v1/run/{id}`                             | <!-- C23: tokens de salida de la corrida --> |
-| Decisiones pedidas y cuántas salieron de caché | `GET /v1/run/{id}` y la tabla de caché     | <!-- C23: llamadas al modelo y aciertos de caché --> |
-| Costo en dólares                           | tokens por el precio del snapshot              | <!-- C23: dólares de la corrida --> |
-| Segundos de `/run`                         | `GET /v1/run/{id}`                             | <!-- C23: segundos de /run --> |
-| Segundos por lote de 50 en `/anonymize`    | captura de `/anonymize` (token redactado)      | <!-- C23: segundos de /anonymize --> |
+| Qué                                        | De dónde sale                                     | Corrida 1 |
+| ------------------------------------------ | ------------------------------------------------- | --------- |
+| Tokens de entrada al modelo                | `GET /v1/run/{id}` → `cost.tokens_in`             | <!-- C23: tokens de entrada de la corrida --> |
+| Tokens de salida del modelo                | `GET /v1/run/{id}` → `cost.tokens_out`            | <!-- C23: tokens de salida de la corrida --> |
+| Decisiones pedidas y cuántas salieron de caché | log de la corrida (una línea por job) y la tabla `cache_modelo` | <!-- C23: llamadas al modelo y aciertos de caché --> |
+| Costo en dólares                           | log de la corrida, contrastado con tokens por el precio del snapshot | <!-- C23: dólares de la corrida --> |
+| Segundos de `/run`                         | `GET /v1/run/{id}` → `cost.seconds`               | <!-- C23: segundos de /run --> |
+| Segundos por lote de 50 en `/anonymize`    | `curl -w '%{time_total}'` sobre el lote (token redactado) | <!-- C23: segundos de /anonymize --> |
+
+Los tokens que se reportan son los que devolvió el proveedor en cada llamada: los acumula el cliente de Jev
+(`internal/llm`, `Uso`) y viajan con los conteos de la corrida. Una corrida **sin llave** reporta cero tokens y cero
+dólares porque no hizo ninguna llamada (D19): ese cero es la cifra, no un hueco.
+
+#### Cómo se llenan las seis cifras
+
+Se corre una vez, se consulta el job y se leen los seis valores. Ningún número de esta tabla se estima.
+
+```bash
+# 1. Una corrida (idempotente mientras hay una activa). SOURCES_API_URL y TOKEN
+# salen de .env, que no entra al repo.
+export URL=https://frontier-31102026-production.up.railway.app
+JOB=$(curl -s -X POST "$URL/v1/run" -H 'Content-Type: application/json' \
+  -d "{\"sources_url\":\"$SOURCES_API_URL\",\"token\":\"$TOKEN\"}" | jq -r .job_id)
+
+# 2. Se espera a que el contrato termine: done o failed (tope 2 h).
+curl -s "$URL/v1/run/$JOB" | jq '{status, records, cost}'
+```
+
+| Cifra | Comando |
+| ----- | ------- |
+| Tokens de entrada | `curl -s "$URL/v1/run/$JOB" \| jq '.cost.tokens_in'` |
+| Tokens de salida | `curl -s "$URL/v1/run/$JOB" \| jq '.cost.tokens_out'` |
+| Segundos de `/run` | `curl -s "$URL/v1/run/$JOB" \| jq '.cost.seconds'` |
+| Llamadas y aciertos de caché | el log del servicio en Railway (`railway logs \| grep "corrida $JOB"`) imprime una línea por corrida con `N llamadas, M de caché`; contraste en el volumen: `sqlite3 /data/almacen.db "SELECT count(*) FROM cache_modelo"` antes y después de la corrida da las decisiones que costaron una llamada |
+| Dólares | la misma línea del log trae `US$ x`; se contrasta con `tokens_in × precio_entrada + tokens_out × precio_salida` del snapshot (precio por token en `https://openrouter.ai/api/v1/models`, entrada del id exacto que reporta `GET /v1/health`) |
+| Segundos por lote de 50 en `/anonymize` | ver abajo |
+
+El lote son registros ya anonimizados, en el esquema exacto del contrato: mide el tiempo de resolución y de modelo del
+caso real, y las personas que ve son seudónimos ya emitidos, que quedan reservados en `personas_vivo` (D24) sin tocar
+el registro de `/run` ni `entities.json`.
+
+```bash
+# Lote de 50 en el esquema del contrato, tomado de la salida ya anonimizada; se
+# mide el tiempo de pared del POST (el contrato da 60 s por lote).
+curl -s "$URL/v1/output/chats.jsonl" | head -50 | jq -s '{source: "chats", records: .}' > /tmp/lote50.json
+curl -s -o /dev/null -w 'anonymize 50: %{time_total}s\n' -X POST "$URL/v1/anonymize" \
+  -H 'Content-Type: application/json' -d @/tmp/lote50.json
+```
 
 Lo único medido hasta ahora es del diseño, con datos inventados y no con el corpus: 0,23–0,5 s y del orden de
 US$0,00002 por decisión (`DISEÑO.md` §6.3). Sirve para dimensionar el orden de magnitud; no es la corrida.

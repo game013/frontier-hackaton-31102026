@@ -6,10 +6,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/game013/frontier-hackaton-31102026/internal/llm"
 )
 
 // Limites de la corrida: el contrato da 2 horas; se cortan 10 minutos antes
@@ -26,11 +29,15 @@ const (
 	EstadoFallida   Estado = "failed"
 )
 
-// Conteos es cuántos registros por fuente produjo una corrida.
+// Conteos es lo que la corrida reporta de su ejecución: cuántos registros por
+// fuente produjo y cuánto costó el modelo. Modelo es la contabilidad del
+// cliente de Jev (internal/llm): sin llave no hubo llamadas y queda en cero, que
+// es la cifra real de una corrida determinista (D19), no un hueco.
 type Conteos struct {
 	Chats  int
 	Docs   int
 	Tablas int
+	Modelo llm.Uso
 }
 
 // Ejecutor corre el pipeline de /run: descarga las fuentes, ingesta, pasa todo
@@ -140,6 +147,13 @@ func (c *corridas) termina(cor *corrida, conteos Conteos, err error) {
 	if c.activa == cor {
 		c.activa = nil
 	}
+	// Una línea por corrida con ids y conteos: es de dónde sale la cifra de
+	// llamadas y aciertos de caché de DECISIONS.md §3.4. Nunca lleva formas
+	// reales.
+	log.Printf("corrida %s %s: %d chats, %d docs, %d tablas, %.1f s, tokens %d/%d, US$ %.6f, %d llamadas, %d de caché: %v",
+		cor.id, cor.estado, conteos.Chats, conteos.Docs, conteos.Tablas, cor.segundos,
+		conteos.Modelo.TokensEntrada, conteos.Modelo.TokensSalida, conteos.Modelo.CostoUSD,
+		conteos.Modelo.Llamadas, conteos.Modelo.Aciertos, err)
 }
 
 // ultimaSalida devuelve la carpeta de la última corrida que terminó bien.
@@ -192,7 +206,11 @@ func (c *corridas) vista(id string) (vistaCorrida, bool) {
 		v.FinishedAt = cor.terminada.UTC().Format(time.RFC3339Nano)
 	}
 	if cor.estado != EstadoEnCola {
-		v.Cost = &vistaCoste{Seconds: cor.segundos}
+		v.Cost = &vistaCoste{
+			TokensIn:  cor.conteos.Modelo.TokensEntrada,
+			TokensOut: cor.conteos.Modelo.TokensSalida,
+			Seconds:   cor.segundos,
+		}
 	}
 	if cor.err != nil {
 		v.Error = cor.err.Error()
