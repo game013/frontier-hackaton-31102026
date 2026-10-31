@@ -136,6 +136,9 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 17:50 · — · pi · `DECISIÓN:` D21 cambia con el visto bueno del usuario: la corrida 1 va con la generalización de
+  cuasi-identificadores en texto y maestro, no apagada. `cuasi` corre siempre dentro del núcleo y no lleva interruptor;
+  al cerrar la ola 3 ya estaba validada (muestra 13/13 con `sample_08`, validador OK en muestra y corpus).
 - 17:35 · C19 · worker · `CASO:` CE-44: el año de la persona se escapaba cuando el habla metía un artículo («soy cliente desde
   el 2021», «desde el año 2021») o invertía el orden («Desde 2021 soy cliente»). Ahora el artículo se salta y la relación se busca
   hasta cuatro palabras detrás del año; «desde 2021 el banco no responde» sigue conservado.
@@ -208,7 +211,8 @@ Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pas�
   `EjecutorPendiente`. Juez completo: 320 s → 10 s tras indexar la salida en `internal/norm`.
 - 13:35 · — · pi · Ola 2 tomada (C12–C18) sobre `integracion/ola2` desde `master` (`dbb4bef`), más C27 y C29 de la
   pista paralela. C26 no se toca: la trabaja otro agente. `DECISIÓN:` C17 ya no exige 13/13: `sample_08` mide
-  cuasi-identificadores (`fotógrafa`/`Granada`/`2025`) y pasa a C19, en línea con D21 (corrida 1 sin cuasi en texto).
+  cuasi-identificadores (`fotógrafa`/`Granada`/`2025`) y pasa a C19 (D21 cambió después: la corrida 1 sí lleva cuasi en
+  texto).
 
 - 15:00 · — · claude · `master` recibe `integracion/c0-c11` por fast-forward (71 commits, sin merge commit). Sin push:
   publicar primero exige limpiar del historial los blobs con datos de la muestra anteriores a `8f809f2`.
