@@ -131,6 +131,20 @@ type Uso struct {
 	CostoUSD float64
 }
 
+// Menos devuelve el consumo que va de antes a u: la contabilidad del cliente es
+// acumulada, así que la de una corrida es la diferencia entre la fotografía del
+// principio y la del final (C23).
+func (u Uso) Menos(antes Uso) Uso {
+	return Uso{
+		Llamadas:      u.Llamadas - antes.Llamadas,
+		Aciertos:      u.Aciertos - antes.Aciertos,
+		Fallos:        u.Fallos - antes.Fallos,
+		TokensEntrada: u.TokensEntrada - antes.TokensEntrada,
+		TokensSalida:  u.TokensSalida - antes.TokensSalida,
+		CostoUSD:      u.CostoUSD - antes.CostoUSD,
+	}
+}
+
 // Nueva valida la configuración y arma el cliente.
 func Nueva(conf Configuracion) (*Cliente, error) {
 	if strings.TrimSpace(conf.ClaveAPI) == "" {

@@ -408,6 +408,21 @@ func TestUmbralesD31(t *testing.T) {
 	}
 }
 
+// Menos da el consumo que hay entre dos fotografías de la contabilidad
+// acumulada: es lo que una corrida gastó, sin el acumulado de las anteriores
+// (C23).
+func TestUsoMenos(t *testing.T) {
+	antes := Uso{Llamadas: 20, Aciertos: 3, Fallos: 1, TokensEntrada: 5000, TokensSalida: 300, CostoUSD: 1.5}
+	despues := Uso{Llamadas: 26, Aciertos: 7, Fallos: 2, TokensEntrada: 5500, TokensSalida: 380, CostoUSD: 1.75}
+	quiero := Uso{Llamadas: 6, Aciertos: 4, Fallos: 1, TokensEntrada: 500, TokensSalida: 80, CostoUSD: 0.25}
+	if got := despues.Menos(antes); got != quiero {
+		t.Fatalf("Menos = %+v, quiero %+v", got, quiero)
+	}
+	if got := despues.Menos(despues); got != (Uso{}) {
+		t.Fatalf("Menos de la misma fotografía = %+v, quiero cero", got)
+	}
+}
+
 // Los tokens y el costo de cada respuesta se acumulan (D13, D32).
 func TestContabilidadDeTokensYCosto(t *testing.T) {
 	f := nuevoFalso(t, func(n int, w http.ResponseWriter, cuerpo peticion) {
