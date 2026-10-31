@@ -3,6 +3,10 @@
 // busca con la misma vara con que el jurado mide una fuga (D5). Los nombres
 // repiten los del jurado para poder comparar función por función, y
 // testdata/casos.json fija la paridad caso por caso.
+//
+// La búsqueda corre sobre el espacio normalizado (Norm) y, como la salida exige
+// reemplazo literal (D6), Normaliza además recuerda de dónde salió cada byte
+// normalizado para volver a offsets del original.
 package norm
 
 import (
