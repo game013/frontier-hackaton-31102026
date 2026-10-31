@@ -49,6 +49,7 @@ tabla, actualízala ahí en el mismo commit.
 | `analisis/`   | Meta-análisis: `00_resumen.md` primero; chats, docs, tablas e identidad, reuso de 10102026. |
 | `DISEÑO.md`   | Diseño, supuestos, decisiones, plan para medir. Entregable de Systems design.            |
 | `CASOS_ESQUINA.md` | Catálogo vivo de casos esquina, cada uno con su juez. Todo caso descubierto se agrega aquí. |
+| `PROGRESS.md` | Tablero de implementación para varios agentes: tareas, dependencias, estado y reglas de coordinación. Léelo antes de tomar trabajo. |
 | `RUBRICA.md`  | Rúbrica de la hackathon y pesos.                                                         |
 | `scripts/`    | Utilidades; `descargar_fuentes.py` baja el API completo a `fuentes/`.                     |
 | `fuentes/`    | Corpus real descargado. Ignorado por git.                                                |
