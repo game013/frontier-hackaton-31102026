@@ -108,6 +108,22 @@ var sustantivosDePersona = union(
 	conjunto("cliente", "clienta", "clientes", "usuario", "usuaria", "usuarios", "usuarias"),
 )
 
+// sustantivosSingularesDePersona son los mismos sustantivos sin plural: con el
+// orden invertido, «Desde 2021 los clientes reportan…» es una fecha de negocio,
+// no la relación de una persona concreta (CE-39, CE-44).
+var sustantivosSingularesDePersona = conjunto(
+	"cliente", "clienta", "usuario", "usuaria", "vinculado", "vinculada",
+)
+
+// anclasSerPersona presentan a la persona detrás del año: primera persona o
+// «es» delante del sustantivo en singular («Desde 2021 soy cliente», «desde
+// 2020 es usuaria», CE-44).
+var anclasSerPersona = conjunto("soy", "es")
+
+// articulosDePersona pueden ir entre el ancla y el sustantivo: «soy una
+// clienta», «es la usuaria».
+var articulosDePersona = conjunto("el", "la", "un", "una")
+
 // interlocutores es la empresa como interlocutor: «con nosotros desde 2021» ata
 // el año aunque el verbo no quepa en la ventana. «ustees» no es una errata: es
 // una forma del corpus tal cual («llevo con ustees desde 2023»), y por eso se
@@ -369,10 +385,19 @@ func anclado(ps []palabra, i int) bool {
 
 // relacionDespues mira hasta cuatro palabras después del año: el habla invierte
 // el orden y la relación de la persona va detrás («Desde 2021 soy cliente»,
-// CE-44).
+// CE-44). Solo ata el año cuando el sustantivo es singular y lo presenta una
+// primera persona o «es»: «Desde 2021 los clientes reportan fallas» es una fecha
+// de negocio y se conserva (CE-39).
 func relacionDespues(ps []palabra, i int) bool {
 	for j := i + 1; j < len(ps) && j <= i+topeAncla; j++ {
-		if sustantivosDePersona[norm.Norm(ps[j].texto)] {
+		if !sustantivosSingularesDePersona[norm.Norm(ps[j].texto)] {
+			continue
+		}
+		k := j - 1
+		if k > i && articulosDePersona[norm.Norm(ps[k].texto)] {
+			k--
+		}
+		if k > i && anclasSerPersona[norm.Norm(ps[k].texto)] {
 			return true
 		}
 	}
