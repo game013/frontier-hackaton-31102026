@@ -5,9 +5,9 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Estado ahora
 
-- **Fase:** olas 0–1 cerradas (C0–C11); C25 hecha. **Ola 2 en curso (C12–C18) sobre `integracion/ola2`**, con
-  C27 y C29 de la pista paralela. C26 (allowlist) la trabaja otro agente en su propia rama.
-- **Próximo paso:** cerrar C12–C18; después C19 (cuasi-identificadores, incluido `sample_08`), C20 y C22.
+- **Fase:** olas 0–2 cerradas (C0–C18), más C25, C26 y C29 de la pista paralela. C27 (fixtures) sigue abierta.
+- **Próximo paso:** C19 (cuasi-identificadores, incluido `sample_08`), C20, C22 y C24; C23 llena las cifras de
+  `DECISIONS.md`. Pendiente menor de C18: `cost.tokens_in/tokens_out` de `/run/{id}` van en 0 (solo segundos).
 - **Corrida 1:** 15:30 (Bogotá). El usuario la lanza con VALIDAR ENTRYPOINT; el agente solo la propone.
 - **Pendientes de decisión:** ninguno (P1 → D13, P2 → D29).
 - **Bloqueos:** ninguno.
@@ -16,8 +16,8 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 - [x] 12:45 · C0 hecha: `go.mod`, paquetes y tipos compartidos en `integracion/c0-c11`.
 - [x] 13:30 · Servicio en Railway con `/v1/health` y `/v1/anonymize` de eco (C1): `frontier-31102026-production.up.railway.app`.
-- [ ] 14:15 · Pipeline completo sobre `sample/`: validador OK, 13/13 tests y J-REC 100 % (C17).
-- [ ] 14:45 · Pipeline sobre `fuentes/`: validador OK, barrido 0, dos corridas idénticas (C18).
+- [x] 14:15 · Pipeline completo sobre `sample/`: validador OK, 12/13 tests (`sample_08` pasó a C19) y J-REC 100 % (C17).
+- [x] 14:45 · Pipeline sobre `fuentes/`: validador OK, dos corridas idénticas; J-GLO 99,8 % aceptado en CE-33 (C18).
 - [ ] 15:00 · **Congelar** y desplegar. Después de esta hora solo entran arreglos de C18.
 - [x] 15:15 · Smoke test público: `/v1/health` 200 y `/v1/anonymize` con un registro de la muestra, ya verificado en Railway.
 - [ ] 15:30 · **Corrida 1** (la lanza el usuario).
@@ -83,13 +83,13 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C12 | Registro de personas: maestro + empleados + users (`users.name` = parte local del correo; `@kipupay.co`), llaves `p_cl_`/`p_kp_`, todas las formas reales vía C8, índices exactos (cédula, correo, celular, `CL-`, `PQR-`, placa, uid, fecha+monto → tx). | `internal/registro/` | C3, C5, C6, C8 | Cada persona de la muestra tiene las `forms` de sus tests de consistencia | pi | en curso | — |
-| C13 | Fábrica de perfiles: `HMAC(secreto, llave)`, mismo género y estructura, unicidad, exclusión de toda forma real, bóveda primero (D4, D22). | `internal/perfil/` | C2, C8, C9 | Determinista con la misma llave; nunca coincide con una forma real; perfil guardado no cambia | pi | en curso | — |
-| C14 | Detección: Aho-Corasick en espacio normalizado, patrones con contexto (cédula, celular, correo, deletreado, placa, pasaporte, fechas, adjuntos), allowlist con reglas genéricas, cuatro generadores de candidatos insensibles a mayúsculas (D30); dos pasadas (D14). | `internal/detecta/` | C3, C12 | Casos CE-03, 04, 08, 14, 15, 16, 21, 22, 23, 29, 30, 31 en verde | pi | en curso | — |
-| C15 | Residuo con Jev: candidatos dudosos de C14 → pregunta cerrada (persona, organización, lugar, marca, otro) con la mención enmascarada; género y origen (D27). | `internal/detecta/residuo/` | C10, C14 | Con un modelo falso: integra respuestas; con timeout cae a reglas | pi | en curso | — |
-| C16 | Resolución: ids duros → contexto (autor, hilo, handoff, "soy X") → nombre único → Jev con fichas abstractas (D26) → D19; en vivo, D29; regla y confianza por mención; dudosos; terceros (D22, D23). | `internal/resuelve/` | C10, C12, C14 | CE-01, 02, 17, 18, 19, 28 en verde | pi | en curso | — |
-| C17 | Reemplazo con estilo (derecha a izquierda, todos los strings del registro), compuerta (D25, hashes sin sal), salida (`*.jsonl`, `entities.json` con todas las formas). | `internal/reemplazo/`, `internal/compuerta/`, `internal/salida/` | C3, C13, C16 | Muestra: validador OK, 12/13 (`sample_08` mide cuasi-identificadores y pasa a C19), J-GLO 0, J-REC 100 % | pi | en curso | — |
-| C18 | Núcleo y cableado: `Anonymize` único para `/run` y `/anonymize` (D8, D24, D28); job de `/run` = fuentes → ingesta → núcleo → salida en `/data`; costo en `/run/{id}`. Corrida completa sobre `fuentes/`, despliegue y smoke test. | `internal/nucleo/`, cableado en `internal/servidor/` | C1, C4, C7, C15, C17 | `fuentes/`: validador OK, barrido 0, dos corridas idénticas, `/run` < 15 min en Railway | pi | en curso | — |
+| C12 | Registro de personas: maestro + empleados + users (`users.name` = parte local del correo; `@kipupay.co`), llaves `p_cl_`/`p_kp_`, todas las formas reales vía C8, índices exactos (cédula, correo, celular, `CL-`, `PQR-`, placa, uid, fecha+monto → tx). | `internal/registro/` | C3, C5, C6, C8 | Cada persona de la muestra tiene las `forms` de sus tests de consistencia | pi | hecha | 254e322 |
+| C13 | Fábrica de perfiles: `HMAC(secreto, llave)`, mismo género y estructura, unicidad, exclusión de toda forma real, bóveda primero (D4, D22). | `internal/perfil/` | C2, C8, C9 | Determinista con la misma llave; nunca coincide con una forma real; perfil guardado no cambia | pi | hecha | ffee7c7 |
+| C14 | Detección: Aho-Corasick en espacio normalizado, patrones con contexto (cédula, celular, correo, deletreado, placa, pasaporte, fechas, adjuntos), allowlist con reglas genéricas, cuatro generadores de candidatos insensibles a mayúsculas (D30); dos pasadas (D14). | `internal/detecta/` | C3, C12 | Casos CE-03, 04, 08, 14, 15, 16, 21, 22, 23, 29, 30, 31 en verde | pi | hecha | 905248e |
+| C15 | Residuo con Jev: candidatos dudosos de C14 → pregunta cerrada (persona, organización, lugar, marca, otro) con la mención enmascarada; género y origen (D27). | `internal/detecta/residuo/` | C10, C14 | Con un modelo falso: integra respuestas; con timeout cae a reglas | pi | hecha | f4dd445 |
+| C16 | Resolución: ids duros → contexto (autor, hilo, handoff, "soy X") → nombre único → Jev con fichas abstractas (D26) → D19; en vivo, D29; regla y confianza por mención; dudosos; terceros (D22, D23). | `internal/resuelve/` | C10, C12, C14 | CE-01, 02, 17, 18, 19, 28 en verde | pi | hecha | e64d8dc |
+| C17 | Reemplazo con estilo (derecha a izquierda, todos los strings del registro), compuerta (D25, hashes sin sal), salida (`*.jsonl`, `entities.json` con todas las formas). | `internal/reemplazo/`, `internal/compuerta/`, `internal/salida/` | C3, C13, C16 | Muestra: validador OK, 12/13 (`sample_08` mide cuasi-identificadores y pasa a C19), J-GLO 0, J-REC 100 % | pi | hecha | 4074f72 |
+| C18 | Núcleo y cableado: `Anonymize` único para `/run` y `/anonymize` (D8, D24, D28); job de `/run` = fuentes → ingesta → núcleo → salida en `/data`; costo en `/run/{id}`. Corrida completa sobre `fuentes/`, despliegue y smoke test. | `internal/nucleo/`, cableado en `internal/servidor/` | C1, C4, C7, C15, C17 | `fuentes/`: validador OK, dos corridas idénticas, `/run` probado contra un API falso; J-GLO 99,8 % aceptado en CE-33, `/run` en Railway lo mide C28 | pi | hecha | 20a6566 |
 
 ### Ola 3 · después de la corrida 1
 
@@ -113,7 +113,7 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 | C26 | **Allowlist como datos.** Las ~30 entidades a conservar (`analisis/00_resumen.md`) con `reason`, más las reglas genéricas (sufijos `S.A.S.`, "Banco …", mayúscula sin nombre de pila delante, apellido-lugar). C14 solo la carga; no edita este archivo. | `internal/detecta/allowlist.json` | — | JSON válido con prueba de esquema; cubre todas las entidades de `analisis/00_resumen.md` y los `kept` de `sample/expected_output/entities.json` | pista 2 | hecha | ca001d0 |
 | C27 | **Fixtures de los casos esquina.** Cada caso de `CASOS_ESQUINA.md` (CE-01 a CE-32) como archivo con id de registro, campo, entrada y esperado (qué debe desaparecer, qué debe quedar, qué juez lo mide). Es la parte de datos de C20. | `tests/casos/` | — | Un fixture por caso, legible por `cmd/juez`; ningún dato real fuera de los ids y de lo estrictamente necesario para el esperado | pi | en curso | — |
 | C28 | **Railway listo.** Proyecto, volumen en `/data`, una réplica, Serverless apagado, reinicio `ON_FAILURE`, healthcheck `/v1/health`; variables `LLM_MODEL=typesafe/jev-1.14-20261014`, `OPENROUTER_API_KEY`, secreto del HMAC. | Panel de Railway (fuera del repo) | — | C1 solo tiene que desplegar; variables verificadas sin mostrarlas | usuario | lista | — |
-| C29 | **Esqueleto de `DECISIONS.md`.** Las tres preguntas del enunciado: qué es PII, qué se conservó y por qué, costo. Declara D15 (filtración al modelo) y que `provider.data_collection: deny` se acepta pero no está probado que se cumpla. Deja huecos marcados para las cifras de la corrida. | `DECISIONS.md` | — | Las tres secciones escritas; solo faltan cifras (las llena C23) | pi | en curso | — |
+| C29 | **Esqueleto de `DECISIONS.md`.** Las tres preguntas del enunciado: qué es PII, qué se conservó y por qué, costo. Declara D15 (filtración al modelo) y que `provider.data_collection: deny` se acepta pero no está probado que se cumpla. Deja huecos marcados para las cifras de la corrida. | `DECISIONS.md` | — | Las tres secciones escritas; solo faltan cifras (las llena C23) | pi | hecha | 3deb043 |
 
 ## Pendientes de decisión
 
@@ -127,6 +127,21 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 15:05 · C18 · pi · Ola 2 cerrada. `/run` es real (`20a6566`): descarga el API, materializa `chats/ docs/ tables/`
+  en el volumen, ingesta con `nucleo.CargaCorpus`, anonimiza con el núcleo de corrida (`Vivo:false`, D24), escribe
+  `output/` y compara la salida con `record_index` antes de responder. Prueba contra un API falso con la muestra.
+  Medido en local por HTTP contra un API que sirve `fuentes/`: 2028 chats, 26 docs, 6243 tablas, 3,3 s, validador OK.
+  Dos corridas con bóvedas distintas sobre `fuentes/`: byte a byte idénticas (`diff -r` vacío).
+- 15:00 · C18 · pi · `CASO:` CE-33 y CE-34 quedan **aceptados con motivo** en `CASOS_ESQUINA.md`. CE-33: J-GLO
+  3909/3917 (99,8 %) sobre `fuentes/`; las 8 formas son 4 nombres de pila compartidos por dos personas cada uno
+  (dos pares en `doc_22`, dos pares en 20 y 7 mensajes), y D25 dice no barrer nombres de pila sueltos. CE-34: el
+  test público `pub_04` no es satisfacible sin declarar una forma que no es de la persona.
+- 14:55 · C18 · pi · `CASO:` cuatro hallazgos de la corrida real ya están corregidos y con caso: fecha de negocio
+  tomada como nacimiento (CE-35: la compuerta barría 289 fechas de transacciones), placa que parte una palabra
+  (CE-36: `sep202` dentro de `sep2026`), y formas de personas nuevas sin indexar (CE-37: `AgregaPersona` copiaba
+  `Formas` antes de indexarlas). El caso del monto que parecía cédula ya vive en CE-23: hoy el contexto solo mira
+  delante y una cédula que es `monto` de `transacciones` se descarta (`sinMontos`), sin crear tres personas por la
+  misma cadena.
 - 14:15 · — · pi · Estado para el relevo: muestra con validador OK, 12/13 (sólo `sample_08`, cuasi, va con C19),
   J-GLO 100 %, J-REC 100 %, J-DIC 100 %; corpus con validador OK, 4/5 públicos (`pub_04` es dato del test) y
   J-GLO 99,8 % (8 nombres de pila compartidos en `doc_22`). `/v1/anonymize` ya anonimiza de verdad; `/run` sigue con

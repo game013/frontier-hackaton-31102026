@@ -67,3 +67,28 @@ bloquea la corrida oficial.
 | CE-30 | Nombre tras disparador sin estar en el catálogo    | "la señora …", "Prepared by …"                   | Candidato por disparador (D30c); Jev lo clasifica persona  | J-REC, J-DIR |
 | CE-31 | Nombre extranjero en documento en inglés           | Security report                                  | Candidato por mayúsculas (D30b); seudónimo de origen extranjero (D27) | J-REC, J-CAT |
 | CE-32 | Nombre unisex con confianza baja de género         | "Alexis" (M 0,35–0,38)                           | Seudónimo unisex (D31)                                     | J-CAT        |
+| CE-33 | Nombre de pila compartido que sobrevive            | 4 nombres de pila en `doc_22` (cliente y empleado) | Aceptado: D25 no barre nombres de pila sueltos; 8 formas declaradas siguen en la salida | J-GLO        |
+| CE-35 | Fecha de negocio tomada como nacimiento            | Tabla `transacciones` (fecha 2026-09-08) y chats | La fecha de negocio se conserva; sin dueño no se crea persona ni se barre (289 fechas) | J-FP, J-PAR  |
+| CE-36 | Placa que parte una palabra                       | Nombre de archivo con `sep2026`                  | `sep202` dentro de `sep2026` no es placa: se rechaza por bordes y por minúsculas | J-FP         |
+| CE-37 | Persona nueva con formas sin indexar              | Persona añadida a mitad de corrida               | Sus formas entran al índice y se reemplazan (`AgregaForma`) | J-DIR, J-CON |
+| CE-34 | Test público `pub_04` pide dos entidades con una forma completa que solo tiene una fila | `fuentes/tests_public.json` `pub_04` | No se cumple declarando una forma que no es de la persona; el criterio propio es dos personas, dos seudónimos, separadas por uid | J-HOM        |
+
+## Aceptados con motivo
+
+Casos que el juez mide en rojo y que se aceptan a sabiendas, con el número y la razón. No bloquean la corrida oficial.
+
+- **CE-33 · J-GLO 99,8 % sobre `fuentes/` (3909 de 3917 formas).** Quedan 8 formas de tipo `nombre_pila`
+  declaradas en `entities.json` que siguen en el texto. Son 4 nombres de pila, cada uno compartido por dos personas:
+  dos pares coinciden en `doc_22` (un cliente y un empleado con el mismo nombre de pila) y dos pares en 20 y 7
+  mensajes de chats (dos empleados con el mismo nombre de pila). D25 dice que un nombre de pila suelto no se barre:
+  la sustitución del nombre completo es la que hace irreversible la salida, y borrar cada aparición de un nombre de
+  pila rompería el texto sin ganar nada (el jurado además exime esas formas cuando van en mayúscula y sin dígitos).
+  El detector no las ve en la salida limpia porque ahí no son menciones con dueño. Criterio medible:
+  `go run ./cmd/juez --salida … --publico fuentes → J-GLO 3909/3917`; lo que sí está en verde son las fugas duras
+  (J-DIR y J-OCU 100 %) y J-DIC 100 %.
+- **CE-34 · `pub_04` no es satisfacible sin mentir.** El test pide dos entidades que declaren exactamente la misma
+  forma completa (nombre y dos apellidos). En el corpus esa forma completa la tiene una sola fila del maestro; la
+  otra persona homónima es un segundo apellido distinto, y los dos usuarios de chat con el nombre corto sí se
+  separan por uid. `evaluaHomonimos` exige la forma exacta, así que cumplirlo obligaría a declarar en `entities.json`
+  una forma que no es de la persona —justo lo que el validador y J-DIC castigan—. No se toca el pipeline para
+  complacerlo. Criterio medible del caso real: dos personas, dos seudónimos distintos, separadas por uid (J-HOM).
