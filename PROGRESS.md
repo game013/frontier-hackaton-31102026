@@ -5,9 +5,12 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Estado ahora
 
-- **Fase:** ola 3, sobre `integracion/ola3`. C19, C21 y C24 integradas; C23 espera las cifras de la corrida 1.
-- **Próximo paso:** C23, que solo necesita la corrida 1; C20 y C22 siguen en `espera` de C27 (fixtures).
-- **Corrida 1:** 15:30 (Bogotá). El usuario la lanza con VALIDAR ENTRYPOINT; el agente solo la propone.
+- **Fase:** corridas oficiales, sobre `master`. La ola 3 quedó cerrada: C19, C21 y C24 hechas; C20, C22 y C27
+  descartadas (motivo en la bitácora, 17:23); C28 hecha.
+- **Próximo paso:** antes de la corrida 2, el fallo del validador en un caso y las 38 claves que desaparecen (sobre
+  todo de clientes migrados) que dejó la prueba en Railway. Después, la corrida 2 y las cifras de C23 con su `job_id`.
+- **Corridas:** la 1 se lanzó y falló; quedan la 2 y la 3. Las lanza el usuario con VALIDAR ENTRYPOINT; el agente solo
+  las propone. Tras cada una, respaldo de la bóveda (C24).
 - **Pendientes de decisión:** ninguno (P1 → D13, P2 → D29).
 - **Bloqueos:** ninguno.
 
@@ -17,17 +20,20 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 - [x] 13:30 · Servicio en Railway con `/v1/health` y `/v1/anonymize` de eco (C1): `frontier-31102026-production.up.railway.app`.
 - [x] 14:15 · Pipeline completo sobre `sample/`: validador OK, 12/13 tests (`sample_08` pasó a C19) y J-REC 100 % (C17).
 - [x] 14:45 · Pipeline sobre `fuentes/`: validador OK, dos corridas idénticas; J-GLO 99,8 % aceptado en CE-33 (C18).
-- [ ] 15:00 · **Congelar** y desplegar. Después de esta hora solo entran arreglos de C18.
+- [x] 15:00 · **Congelar** y desplegar. Después de esta hora solo entran arreglos de C18. Railway corre `master` con CE-45 a CE-48 (despliegue de las 17:09).
 - [x] 15:15 · Smoke test público: `/v1/health` 200 y `/v1/anonymize` con un registro de la muestra, ya verificado en Railway.
-- [ ] 15:30 · **Corrida 1** (la lanza el usuario).
-- [ ] Tras el crecimiento: corridas 2 y 3 (las propone el agente; las lanza el usuario).
+- [x] 15:30 · **Corrida 1** (la lanza el usuario): lanzada y fallida.
+- [x] Prueba en Railway sobre el corpus crecido: 7 min 37 s, 2999 chats, 34 docs, 7823 tablas, 1,7 M tokens de
+  entrada; un caso falla el validador y desaparecen 38 claves.
+- [ ] Corridas 2 y 3 (las propone el agente; las lanza el usuario).
 
 ## Reglas de coordinación
 
-0. **Rama de integración.** El trabajo entra a `integracion/ola3`, no a `master` ni a las ramas de las olas
-   anteriores (`integracion/ola2`, `integracion/c0-c11`). Las tareas se cortan de esa rama, se integran ahí y `master`
-   solo se mueve cuando el usuario lo pida (merge de la rama completa o PR). Motivo: aísla el trabajo de la ola 0–1,
-   permite revisar el conjunto antes de publicar y deja `master` desplegable.
+0. **Rama de integración.** Desde las corridas oficiales el trabajo entra directo a `master`, que es lo que corre en
+   Railway; `integracion/ola3` y las ramas de olas anteriores quedan cerradas y no se tocan. Un arreglo grande se
+   corta de `master` en su worktree y vuelve por merge; nada entra a `master` sin `go test ./...` en verde y la
+   muestra 13/13. Motivo: los arreglos del crecimiento (CE-45 a CE-48) ya entraron a `master` y mantener una rama
+   de integración aparte solo dejaba dos verdades.
 1. **Tomar una tarea.** Solo se toma una tarea en estado `lista`. Se toma editando su fila (Estado `en curso`,
    Responsable, hora) y haciendo commit inmediato en `integracion/ola3` con `chore: toma Cn` (solo `PROGRESS.md`). Si
    el commit choca con otro agente que la tomó primero, se suelta y se elige otra.
@@ -96,15 +102,16 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | C19 | Cuasi-identificadores en texto y maestro: en la fila del maestro (`clientes`) la ocupación → sector y el barrio → otro barrio de la misma ciudad; en el texto, la ocupación de la persona → sector, su barrio → ciudad y el año de la relación → "hace unos años". Incluye `sample_08` (movido aquí desde C17 por decisión del usuario: la corrida 1 no lleva cuasi en texto, D21). | `internal/cuasi/` | C17 | CE-12, CE-13 con J-IND en verde; `sample_08` en verde | orquestador | hecha | 8cd99e5 |
-| C20 | Jueces especializados restantes (J-DIR, J-OCU, J-IND, J-FP, J-CAT, J-EST, J-PAR, J-CON, J-HOM, J-REP, J-CRE, J-VIV) que corren los fixtures de C27. | `internal/juez/` | C11, C18, C27 | Todos los casos corren; reporte por juez | — | espera | — |
+| C20 | Jueces especializados restantes (J-DIR, J-OCU, J-IND, J-FP, J-CAT, J-EST, J-PAR, J-CON, J-HOM, J-REP, J-CRE, J-VIV) que corren los fixtures de C27. | `internal/juez/` | C11, C18, C27 | Todos los casos corren; reporte por juez | — | descartada | — |
 | C21 | Monitor de crecimiento: `record_index` con `If-None-Match`; avisa cuando cambia. | `cmd/monitor/` | C4 | Detecta un cambio simulado | orquestador | hecha | 8019a54 |
-| C22 | Hold-out 80/20 y prueba de crecimiento (J-CRE). | `internal/juez/`, `scripts/` | C18, C20 | 0 seudónimos viejos cambian | — | espera | — |
-| C23 | `DECISIONS.md`: llenar las cifras de costo en tokens y tiempo sobre el esqueleto de C29; guion de demo. | `DECISIONS.md`, `docs/demo/` | C18, C29 | Responde las 3 preguntas del enunciado con cifras de la corrida | orquestador | en curso | — |
+| C22 | Hold-out 80/20 y prueba de crecimiento (J-CRE). | `internal/juez/`, `scripts/` | C18, C20 | 0 seudónimos viejos cambian | — | descartada | — |
+| C23 | `DECISIONS.md`: llenar las cifras de costo en tokens y tiempo sobre el esqueleto de C29; guion de demo. | `DECISIONS.md`, `docs/demo/` | C18, C29 | Responde las 3 preguntas del enunciado con cifras de la corrida | orquestador | espera | — |
 | C24 | Respaldo de la bóveda a un disco local fuera de git: el operador lo jala con `scripts/boveda.sh` después de la corrida; no es automático ni lo dispara el servicio. | `scripts/` | C2, C18 | Restaurar el respaldo reproduce `entities.json` | orquestador | hecha | 2de54bd |
 
-C23 sigue `en curso` y le falta una sola cosa: las seis cifras de `DECISIONS.md` §3.4 con la corrida 1 (tokens de
+C23 espera la corrida 2 y le falta una sola cosa: las seis cifras de `DECISIONS.md` §3.4 con esa corrida (tokens de
 entrada y de salida, llamadas y aciertos de caché, dólares, segundos de `/run` y segundos del lote de 50 en
-`/anonymize`). El esqueleto, la tabla de comandos y el guion de demo ya están escritos.
+`/anonymize`). La corrida 1 falló, así que sus cifras no se usan. El esqueleto, la tabla de comandos y el guion de demo
+ya están escritos.
 
 C24 se cierra con el respaldo encadenado a mano tras cada corrida: el volumen de Railway no empuja nada, así que el
 operador baja `almacen.db` a una carpeta local fuera de git y desde ahí corre `scripts/boveda.sh respaldo --datos
@@ -114,14 +121,14 @@ formas reales; el detalle está en la cabecera de `scripts/boveda.sh`.
 ### Pista paralela · sin dependencias (lista desde ya)
 
 No dependen de la ola 1 y acortan la ola 2 o desbloquean hitos. Se cortan de `integracion/ola3` como cualquier
-tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `DECISIONS.md`).
+tarea (reglas 0–2). C25, C26, C28 y C29 hechas; C27 descartada.
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | C25 | **Calibrar los umbrales de Jev (D31).** Etiquetar candidatos de `sample/` con su verdad (`expected_output/entities.json`: persona o no, género), incluir negativos (marcas, bancos, lugares, apellido-lugar, "Claro"), pasarlos por `typesafe/jev-1.14-20261014` y medir precisión y cobertura por umbral para persona, desempate y género. Solo ids y conteos en el informe. | `scripts/calibrar_jev.py`, `analisis/06_calibracion.md` | — | Informe con la curva por umbral y un valor recomendado por decisión; si difiere de D31, propuesta `DECISIÓN:` en la bitácora | claude | hecha | 10a87e5 |
 | C26 | **Allowlist como datos.** Las ~30 entidades a conservar (`analisis/00_resumen.md`) con `reason`, más las reglas genéricas (sufijos `S.A.S.`, "Banco …", mayúscula sin nombre de pila delante, apellido-lugar). C14 solo la carga; no edita este archivo. | `internal/detecta/allowlist.json` | — | JSON válido con prueba de esquema; cubre todas las entidades de `analisis/00_resumen.md` y los `kept` de `sample/expected_output/entities.json` | pista 2 | hecha | ca001d0 |
-| C27 | **Fixtures de los casos esquina.** Cada caso de `CASOS_ESQUINA.md` (CE-01 a CE-32) como archivo con id de registro, campo, entrada y esperado (qué debe desaparecer, qué debe quedar, qué juez lo mide). Es la parte de datos de C20. | `tests/casos/` | — | Un fixture por caso, legible por `cmd/juez`; ningún dato real fuera de los ids y de lo estrictamente necesario para el esperado | pi | en curso | — |
-| C28 | **Railway listo.** Proyecto, volumen en `/data`, una réplica, Serverless apagado, reinicio `ON_FAILURE`, healthcheck `/v1/health`; variables `LLM_MODEL=typesafe/jev-1.14-20261014`, `OPENROUTER_API_KEY`, secreto del HMAC. | Panel de Railway (fuera del repo) | — | C1 solo tiene que desplegar; variables verificadas sin mostrarlas | usuario | lista | — |
+| C27 | **Fixtures de los casos esquina.** Cada caso de `CASOS_ESQUINA.md` (CE-01 a CE-32) como archivo con id de registro, campo, entrada y esperado (qué debe desaparecer, qué debe quedar, qué juez lo mide). Es la parte de datos de C20. | `tests/casos/` | — | Un fixture por caso, legible por `cmd/juez`; ningún dato real fuera de los ids y de lo estrictamente necesario para el esperado | pi | descartada | — |
+| C28 | **Railway listo.** Proyecto, volumen en `/data`, una réplica, Serverless apagado, reinicio `ON_FAILURE`, healthcheck `/v1/health`; variables `LLM_MODEL=typesafe/jev-1.14-20261014`, `OPENROUTER_API_KEY`, secreto del HMAC. | Panel de Railway (fuera del repo) | — | C1 solo tiene que desplegar; variables verificadas sin mostrarlas | usuario | hecha | — |
 | C29 | **Esqueleto de `DECISIONS.md`.** Las tres preguntas del enunciado: qué es PII, qué se conservó y por qué, costo. Declara D15 (filtración al modelo) y que `provider.data_collection: deny` se acepta pero no está probado que se cumpla. Deja huecos marcados para las cifras de la corrida. | `DECISIONS.md` | — | Las tres secciones escritas; solo faltan cifras (las llena C23) | pi | hecha | 3deb043 |
 
 ## Pendientes de decisión
@@ -135,6 +142,20 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
+
+- 17:23 · C28 · claude · Railway verificado sin mostrar valores: volumen `frontier-31102026-volume` en `/data`, una
+  réplica, `LLM_MODEL`, `MODELOS` y `OPENROUTER_API_KEY` presentes, despliegue posterior a `1c29369`. No hay
+  `SECRETO_HMAC`: el servicio genera el secreto la primera vez y lo guarda en `/data/secreto_hmac`, así que el
+  respaldo de la bóveda tiene que llevarse también ese archivo.
+- 17:23 · — · claude · `DECISIÓN:` (visto bueno del usuario) se cierra la ola 3 y se reduce el alcance de medición.
+  C27 se descarta: no tenía commits y el programa oficial no la puntúa; los casos esquina ya tienen pruebas en
+  `go test ./...` de sus paquetes. C20 se descarta con ella: mediría con un instrumento propio lo mismo que el puntaje
+  oficial. C22 se descarta porque su meta ya se midió con el crecimiento real (`4e957a4`: 0 personas perdidas y 0
+  seudónimos cambiados salvo CE-47). La recalibración de D31 con el corpus real tampoco se hace hoy. El trabajo entra
+  directo a `master` (regla 0) y el criterio de «hecho» de `AGENTS.md` deja de exigir el juez por caso.
+- 17:23 · — · claude · Corrida 1 lanzada y fallida. Prueba en Railway sobre el corpus crecido: 7 min 37 s, 2999
+  chats, 34 docs, 7823 tablas, 1,7 M tokens de entrada; un caso falla el validador y desaparecen 38 claves, sobre
+  todo de clientes migrados. Otro agente lo investiga antes de la corrida 2.
 
 - 15:51 · C19 · pi · `CASO:` CE-44 corrige CE-39: el orden invertido ya no generaliza «Desde 2021 los clientes reportan
   fallas» ni «Desde 2020 los usuarios pueden pagar con QR»; solo ata el año una primera persona o «es» delante de un

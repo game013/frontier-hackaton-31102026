@@ -266,6 +266,11 @@ fuga oculta, cuasi-identificador, falso positivo, homónimos, consistencia, cate
 y la suma se pondera con los pesos del jurado (fuga 45, utilidad 35, consistencia 20; directa 3, oculta 2, resto 1).
 Un caso del catálogo en rojo bloquea la corrida oficial.
 
+**Alcance real (31-10, 17:23).** De los jueces especializados solo se construyeron J-GLO, J-DIC y J-REC; los
+demás (C20) y sus fixtures (C27) se descartaron antes de las corridas 2 y 3. Cada caso del catálogo se cubre con una
+prueba en el paquete que lo resuelve, y la prueba 9 (crecimiento) se midió con el crecimiento real del corpus en vez
+del hold-out 80/20.
+
 ### 8.2 Pruebas
 
 | # | Prueba                              | Cómo                                                                                  | Meta                       |

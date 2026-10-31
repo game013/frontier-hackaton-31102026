@@ -86,7 +86,8 @@ Al crear un directorio de código (`cmd/`, `internal/`…), agrégalo a esta tab
 ## Antes de dar algo por hecho
 
 Un cambio al pipeline está listo cuando el validador da OK, el barrido de fuga da 0, los 13 tests de la muestra
-pasan y el juez propio deja en verde todos los casos de `CASOS_ESQUINA.md`. Cada test compara contra un resultado esperado y cada paso de red lleva timeout.
+pasan, `go test ./...` queda en verde (ahí viven las pruebas de los casos de `CASOS_ESQUINA.md`) y el juez propio
+deja J-GLO, J-DIC y J-REC sin regresiones. Cada test compara contra un resultado esperado y cada paso de red lleva timeout.
 
 Las corridas oficiales son tres y las lanza el usuario con VALIDAR ENTRYPOINT: propónselas, no las supongas.
 
