@@ -95,12 +95,12 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C19 | Cuasi-identificadores en texto y maestro: ocupación → sector, barrio → ciudad, año → "hace unos años", en el texto y en la fila del maestro. Incluye `sample_08` (movido aquí desde C17 por decisión del usuario: la corrida 1 no lleva cuasi en texto, D21). | `internal/cuasi/` | C17 | CE-12, CE-13 con J-IND en verde; `sample_08` en verde | — | espera | — |
+| C19 | Cuasi-identificadores en texto y maestro: ocupación → sector, barrio → ciudad, año → "hace unos años", en el texto y en la fila del maestro. Incluye `sample_08` (movido aquí desde C17 por decisión del usuario: la corrida 1 no lleva cuasi en texto, D21). | `internal/cuasi/` | C17 | CE-12, CE-13 con J-IND en verde; `sample_08` en verde | orquestador | en curso | — |
 | C20 | Jueces especializados restantes (J-DIR, J-OCU, J-IND, J-FP, J-CAT, J-EST, J-PAR, J-CON, J-HOM, J-REP, J-CRE, J-VIV) que corren los fixtures de C27. | `internal/juez/` | C11, C18, C27 | Todos los casos corren; reporte por juez | — | espera | — |
-| C21 | Monitor de crecimiento: `record_index` con `If-None-Match`; avisa cuando cambia. | `cmd/monitor/` | C4 | Detecta un cambio simulado | — | espera | — |
+| C21 | Monitor de crecimiento: `record_index` con `If-None-Match`; avisa cuando cambia. | `cmd/monitor/` | C4 | Detecta un cambio simulado | orquestador | en curso | — |
 | C22 | Hold-out 80/20 y prueba de crecimiento (J-CRE). | `internal/juez/`, `scripts/` | C18, C20 | 0 seudónimos viejos cambian | — | espera | — |
-| C23 | `DECISIONS.md`: llenar las cifras de costo en tokens y tiempo sobre el esqueleto de C29; guion de demo. | `DECISIONS.md`, `docs/demo/` | C18, C29 | Responde las 3 preguntas del enunciado con cifras de la corrida | — | espera | — |
-| C24 | Respaldo de la bóveda a disco local fuera de git tras cada corrida. | `scripts/` | C2, C18 | Restaurar el respaldo reproduce `entities.json` | — | espera | — |
+| C23 | `DECISIONS.md`: llenar las cifras de costo en tokens y tiempo sobre el esqueleto de C29; guion de demo. | `DECISIONS.md`, `docs/demo/` | C18, C29 | Responde las 3 preguntas del enunciado con cifras de la corrida | orquestador | en curso | — |
+| C24 | Respaldo de la bóveda a disco local fuera de git tras cada corrida. | `scripts/` | C2, C18 | Restaurar el respaldo reproduce `entities.json` | orquestador | en curso | — |
 
 ### Pista paralela · sin dependencias (lista desde ya)
 
@@ -127,6 +127,10 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 15:55 · C19, C21, C23, C24 · pi · Ola 3 tomada sobre `integracion/ola3` (cortada de `master` `ef6b879`): la
+  frontera que deja la corrida 1. Cuatro implementadores en paralelo, cada uno en su worktree `../31102026-wt/Cn`
+  sobre su rama; C20 y C22 siguen en espera de C27 (fixtures). C23 incluye el pendiente de C18
+  (`cost.tokens_in/tokens_out` en 0) y sus cifras quedan para la corrida oficial.
 - 15:05 · C18 · pi · Ola 2 cerrada. `/run` es real (`20a6566`): descarga el API, materializa `chats/ docs/ tables/`
   en el volumen, ingesta con `nucleo.CargaCorpus`, anonimiza con el núcleo de corrida (`Vivo:false`, D24), escribe
   `output/` y compara la salida con `record_index` antes de responder. Prueba contra un API falso con la muestra.
