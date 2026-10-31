@@ -27,7 +27,10 @@ tabla, actualízala ahí en el mismo commit.
   correo, correo deletreado, cédula con y sin puntos, celular, dirección, fecha). Todas van a `originals`.
 - **Perfil:** la identidad falsa completa y coherente de una persona. Cada forma se reemplaza por su equivalente
   del perfil, en el mismo estilo.
-- **Bóveda:** la tabla SQLite persona → perfil. Solo agrega: un perfil asignado es para siempre.
+- **Bóveda:** la tabla SQLite persona → perfil. Solo agrega: un perfil asignado es para siempre. Junto con el
+  registro de personas, es el **único lugar donde se aceptan datos reales**: tiene que contenerlos para resolver
+  identidades. Vive en `/data` (Railway) y en su copia local; nunca entra al repo. La otra excepción es
+  `entities.json`, que el jurado exige y nunca viaja con el dataset.
 - **Fuga:** una forma real que sigue en la salida bajo la normalización de `contiene()` en `docs/validar.mjs`.
 
 ## Reglas del dominio

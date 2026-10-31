@@ -133,7 +133,8 @@ Si nada vincula, se crea una persona nueva con llave de contexto, que se persist
 - Semilla `HMAC(secreto, llave estable)`.
 - Restricciones: seudónimo único y **sin coincidencias con ninguna forma real** del registro (tampoco números de
   otra persona).
-- La bóveda es SQLite en el volumen de Railway, **solo agrega**, y se exporta como respaldo al repo.
+- La bóveda es SQLite en el volumen de Railway y **solo agrega**. Con el registro, es el único lugar con datos
+  reales: se respalda tras cada corrida a disco local fuera de git, nunca al repo.
 
 **6. Reemplazo con estilo.** Los fragmentos se reemplazan de derecha a izquierda con la variante equivalente del
 perfil, respetando mayúsculas, tildes, puntos, separadores, "arroba/punto" y slug. Recorre todos los strings del
@@ -230,7 +231,7 @@ Todo corre en local antes de gastar una corrida oficial.
 | Riesgo                                            | Mitigación                                                              |
 | ------------------------------------------------- | ----------------------------------------------------------------------- |
 | El cambio de fuentes llega antes de la corrida 1  | Priorizar una versión por reglas desplegable lo antes posible           |
-| El volumen de Railway se pierde y cambian los seudónimos | Exportar la bóveda al repo tras cada corrida; semilla determinista como respaldo |
+| El volumen de Railway se pierde y cambian los seudónimos | Respaldar la bóveda a disco local (fuera de git) tras cada corrida; semilla determinista como respaldo |
 | El LLM falla o tarda en `/anonymize`              | Timeout de 45 s y respaldo por reglas                                   |
 | Falsos positivos por nombres comunes ("Claro")    | Nombre de pila suelto solo con contexto; set dorado de falsos positivos |
 | Markdown de PDF distinto al de la salida ideal    | Solo afecta el parecido; se ajusta con lo que muestre la corrida 1     |
