@@ -628,3 +628,35 @@ func TestNuevaSinClave(t *testing.T) {
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
+
+// Las preguntas idénticas que llegan a la vez viajan una sola vez: con 16 en
+// paralelo, el mismo state sale varias veces antes de que la primera respuesta
+// llegue a la caché, y el 90 % de las preguntas de una corrida se repite.
+func TestPreguntasIdenticasEnVueloViajanUnaVez(t *testing.T) {
+	f := nuevoFalso(t, func(n int, w http.ResponseWriter, cuerpo peticion) {
+		time.Sleep(50 * time.Millisecond)
+		respondeChoice(w, cuerpo)
+	})
+	c := clienteDePrueba(t, f, nil)
+
+	const n = 12
+	var wg sync.WaitGroup
+	errores := make(chan error, n)
+	for range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, err := c.Decide(context.Background(), "mismo state", preguntaChoice()); err != nil {
+				errores <- err
+			}
+		}()
+	}
+	wg.Wait()
+	close(errores)
+	for err := range errores {
+		t.Errorf("Decide: %v", err)
+	}
+	if veces := f.veces(); veces != 1 {
+		t.Fatalf("%d peticiones para la misma pregunta en vuelo, se esperaba 1", veces)
+	}
+}

@@ -107,6 +107,21 @@ type Cliente struct {
 	http *http.Client
 	sem  chan struct{}
 	uso  usoAcumulado
+
+	// vuelos une las preguntas idénticas que llegan mientras la primera sigue
+	// en la red: con 16 en paralelo, el mismo state sale varias veces antes de
+	// que la respuesta llegue a la caché.
+	vuelosMu sync.Mutex
+	vuelos   map[string]*vuelo
+}
+
+// vuelo es una pregunta en la red. listo se cierra cuando la respuesta (o el
+// error) quedó escrita; los que esperan la leen después.
+type vuelo struct {
+	listo     chan struct{}
+	respuesta modelo.Respuesta
+	confianza float64
+	err       error
 }
 
 // usoAcumulado protege la contabilidad con un mutex.
@@ -174,9 +189,10 @@ func Nueva(conf Configuracion) (*Cliente, error) {
 		httpCliente = &http.Client{Timeout: conf.TiempoLimite}
 	}
 	return &Cliente{
-		conf: conf,
-		http: httpCliente,
-		sem:  make(chan struct{}, conf.Concurrentes),
+		conf:   conf,
+		http:   httpCliente,
+		sem:    make(chan struct{}, conf.Concurrentes),
+		vuelos: map[string]*vuelo{},
 	}, nil
 }
 
@@ -242,16 +258,47 @@ func (c *Cliente) DecideUmbral(ctx context.Context, state string, pregunta model
 		return c.evalua(cacheado, umbral)
 	}
 
-	item, err := c.llama(ctx, crudo, pregunta.ID)
+	respuesta, confianza, err := c.unaVez(ctx, llave, func() (modelo.Respuesta, float64, error) {
+		item, err := c.llama(ctx, crudo, pregunta.ID)
+		if err != nil {
+			return modelo.Respuesta{}, 0, err
+		}
+		respuesta, confianza, err := aRespuesta(pregunta, item)
+		if err != nil {
+			return modelo.Respuesta{}, 0, err
+		}
+		c.guardaCache(ctx, llave, respuesta)
+		return respuesta, confianza, nil
+	})
 	if err != nil {
 		return modelo.Respuesta{}, err
 	}
-	respuesta, confianza, err := aRespuesta(pregunta, item)
-	if err != nil {
-		return modelo.Respuesta{}, err
-	}
-	c.guardaCache(ctx, llave, respuesta)
 	return c.evaluaConConfianza(respuesta, confianza, umbral)
+}
+
+// unaVez ejecuta pide una sola vez por llave entre las llamadas simultáneas: la
+// primera viaja y las demás esperan su resultado, o su propio contexto.
+func (c *Cliente) unaVez(ctx context.Context, llave string, pide func() (modelo.Respuesta, float64, error)) (modelo.Respuesta, float64, error) {
+	c.vuelosMu.Lock()
+	if v, hay := c.vuelos[llave]; hay {
+		c.vuelosMu.Unlock()
+		select {
+		case <-v.listo:
+			return v.respuesta, v.confianza, v.err
+		case <-ctx.Done():
+			return modelo.Respuesta{}, 0, c.errorDeContexto(ctx, nil)
+		}
+	}
+	v := &vuelo{listo: make(chan struct{})}
+	c.vuelos[llave] = v
+	c.vuelosMu.Unlock()
+
+	v.respuesta, v.confianza, v.err = pide()
+	c.vuelosMu.Lock()
+	delete(c.vuelos, llave)
+	c.vuelosMu.Unlock()
+	close(v.listo)
+	return v.respuesta, v.confianza, v.err
 }
 
 // evalua aplica el umbral a una respuesta que viene de la caché.
