@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -222,22 +223,95 @@ func TestEjecutaDescargaYAnonimizaLaMuestra(t *testing.T) {
 	}
 }
 
-// La contabilidad del modelo llega a los conteos de la corrida tal como la
-// reporta el cliente de Jev: es lo que /run/{id} publica en cost.tokens_in y
-// cost.tokens_out (C23, D13). Las cifras son de la prueba.
-func TestEjecutaReportaLaContabilidadDelModelo(t *testing.T) {
-	muestra := muestraDeCorpus(t)
-	srv := httptest.NewServer(apiFalsa(t, muestra))
-	defer srv.Close()
+// contabilidad es la del cliente de Jev tal como la ve el ejecutor: acumulada
+// desde que arrancó el proceso y creciente entre corridas. El mismo cliente
+// sirve a /run y a /anonymize, que es de donde salió el bug de sumar a cada job
+// el costo de los anteriores.
+type contabilidad struct {
+	mu sync.Mutex
+	v  llm.Uso
+}
 
-	quiero := llm.Uso{Llamadas: 2, Aciertos: 1, TokensEntrada: 321, TokensSalida: 99}
-	ejecutor := ejecutorConContabilidad(t, func() llm.Uso { return quiero })
-	conteos, err := ejecutor.Ejecuta(context.Background(), srv.URL+"/v1", tokenFuentes, t.TempDir())
-	if err != nil {
-		t.Fatalf("Ejecuta: %v", err)
+func (c *contabilidad) Uso() llm.Uso {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.v
+}
+
+// gasta suma el consumo de una corrida al acumulado, como lo hace anotaUso.
+func (c *contabilidad) gasta(u llm.Uso) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.v.Llamadas += u.Llamadas
+	c.v.Aciertos += u.Aciertos
+	c.v.Fallos += u.Fallos
+	c.v.TokensEntrada += u.TokensEntrada
+	c.v.TokensSalida += u.TokensSalida
+	c.v.CostoUSD += u.CostoUSD
+}
+
+// apiFalsaQueGasta es el API de fuentes con el gasto de la corrida: suma gasta
+// al acumulado cuando sirve el índice, que es lo primero que pide el ejecutor
+// después de fotografiar la contabilidad. Es el modelo interviniendo a mitad de
+// la corrida, que es lo que la cifra tiene que separar.
+func apiFalsaQueGasta(t *testing.T, muestra string, c *contabilidad, gasta llm.Uso) http.Handler {
+	t.Helper()
+	manejador := apiFalsa(t, muestra)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v1/record_index" {
+			c.gasta(gasta)
+		}
+		manejador.ServeHTTP(w, r)
+	})
+}
+
+// /run/{id} publica el consumo DE ESA CORRIDA en cost.tokens_in y
+// cost.tokens_out (C23, D13): la diferencia entre la contabilidad al terminar y
+// la que había al empezar, no el acumulado del proceso. Las cifras son de la
+// prueba: el cliente llega a 1000/100 y luego a 1500/180, así que la segunda
+// corrida reporta 500/80 y la que no gastó nada, cero.
+func TestEjecutaReportaElConsumoTokensDeCadaCorrida(t *testing.T) {
+	muestra := muestraDeCorpus(t)
+	acumulada := &contabilidad{}
+	ejecutor := ejecutorConContabilidad(t, acumulada.Uso)
+
+	corridas := []struct {
+		nombre string
+		gasta  llm.Uso
+		quiero llm.Uso
+	}{
+		{
+			"primera corrida",
+			llm.Uso{Llamadas: 12, TokensEntrada: 1000, TokensSalida: 100, CostoUSD: 0.5},
+			llm.Uso{Llamadas: 12, TokensEntrada: 1000, TokensSalida: 100, CostoUSD: 0.5},
+		},
+		{
+			"segunda corrida",
+			llm.Uso{Llamadas: 6, Aciertos: 4, TokensEntrada: 500, TokensSalida: 80, CostoUSD: 0.25},
+			llm.Uso{Llamadas: 6, Aciertos: 4, TokensEntrada: 500, TokensSalida: 80, CostoUSD: 0.25},
+		},
+		{
+			"corrida que sirvió todo de caché",
+			llm.Uso{},
+			llm.Uso{},
+		},
 	}
-	if conteos.Modelo != quiero {
-		t.Fatalf("contabilidad = %+v, quiero %+v", conteos.Modelo, quiero)
+	for _, corrida := range corridas {
+		t.Run(corrida.nombre, func(t *testing.T) {
+			srv := httptest.NewServer(apiFalsaQueGasta(t, muestra, acumulada, corrida.gasta))
+			defer srv.Close()
+			conteos, err := ejecutor.Ejecuta(context.Background(), srv.URL+"/v1", tokenFuentes, t.TempDir())
+			if err != nil {
+				t.Fatalf("Ejecuta: %v", err)
+			}
+			if conteos.Modelo != corrida.quiero {
+				t.Fatalf("consumo = %+v, quiero %+v (el acumulado del cliente es %+v)",
+					conteos.Modelo, corrida.quiero, acumulada.Uso())
+			}
+		})
+	}
+	if acumulado := acumulada.Uso(); acumulado.TokensEntrada != 1500 || acumulado.TokensSalida != 180 {
+		t.Fatalf("acumulado = %+v, quiero 1500/180: dos corridas de 1000/100 y 500/80", acumulado)
 	}
 }
 

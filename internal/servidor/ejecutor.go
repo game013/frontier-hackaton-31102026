@@ -50,7 +50,8 @@ type EjecutorFuentes struct {
 //
 // uso es la contabilidad del modelo (lo que el cliente de Jev devuelve en Uso);
 // nil deja la corrida reportando cero tokens, que es lo correcto sin modelo. Se
-// pide al terminar y no al empezar porque el cliente acumula durante la corrida.
+// lee dos veces, al empezar y al terminar, y lo que la corrida reporta es la
+// diferencia: el cliente acumula y el mismo sirve a /anonymize.
 func NuevoEjecutor(corredor *nucleo.Nucleo, lector *docs.Lector, uso func() llm.Uso) (*EjecutorFuentes, error) {
 	if corredor == nil {
 		return nil, errors.New("ejecutor: falta el núcleo de /run")
@@ -67,6 +68,12 @@ func NuevoEjecutor(corredor *nucleo.Nucleo, lector *docs.Lector, uso func() llm.
 func (e *EjecutorFuentes) Ejecuta(ctx context.Context, sourcesURL, token, dirSalida string) (Conteos, error) {
 	if strings.TrimSpace(dirSalida) == "" {
 		return Conteos{}, errors.New("ejecutor: falta el directorio de la corrida")
+	}
+	// La contabilidad se fotografía antes de la primera llamada: lo que la
+	// corrida costó es la diferencia con el acumulado del cliente al terminar.
+	var usoAntes llm.Uso
+	if e.uso != nil {
+		usoAntes = e.uso()
 	}
 	cliente, err := fuentes.Nuevo(fuentes.Opciones{
 		Base: sourcesURL, Token: token, Timeout: plazoPeticion,
@@ -97,10 +104,10 @@ func (e *EjecutorFuentes) Ejecuta(ctx context.Context, sourcesURL, token, dirSal
 	}
 
 	conteos := cuentaPorFuente(resultado.Registros)
-	// La contabilidad se lee después de que el núcleo terminó: es el costo de
-	// esta corrida y va en /run/{id} (D13).
+	// La contabilidad se lee después de que el núcleo terminó y se le resta la
+	// de antes: es el costo de esta corrida y va en /run/{id} (D13).
 	if e.uso != nil {
-		conteos.Modelo = e.uso()
+		conteos.Modelo = consumoDeLaCorrida(usoAntes, e.uso())
 	}
 	// El índice va primero y se compara al final: declara todos los ids que la
 	// salida debe contener, así que un id declarado y ausente es una fuente
@@ -287,6 +294,21 @@ func nombreSeguro(valor string) (string, error) {
 		return "", errors.New("ejecutor: la fuente trae un nombre de archivo fuera de la carpeta de la corrida")
 	}
 	return valor, nil
+}
+
+// consumoDeLaCorrida resta a la contabilidad del final la del principio del
+// proceso. El cliente de Jev es uno solo para /run y /anonymize, así que su
+// acumulado no es el de la corrida: publicarlo tal cual le sumaría a cada job
+// el costo de los anteriores.
+func consumoDeLaCorrida(antes, despues llm.Uso) llm.Uso {
+	return llm.Uso{
+		Llamadas:      despues.Llamadas - antes.Llamadas,
+		Aciertos:      despues.Aciertos - antes.Aciertos,
+		Fallos:        despues.Fallos - antes.Fallos,
+		TokensEntrada: despues.TokensEntrada - antes.TokensEntrada,
+		TokensSalida:  despues.TokensSalida - antes.TokensSalida,
+		CostoUSD:      despues.CostoUSD - antes.CostoUSD,
+	}
 }
 
 // cuentaPorFuente cuenta los registros de la salida por fuente: es lo que
