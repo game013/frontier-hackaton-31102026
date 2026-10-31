@@ -166,7 +166,10 @@ func (i *Indice) AgregaPersona(p modelo.Persona) bool {
 		}
 		return false
 	}
+	// Las formas se guardan por AgregaForma, que es la única que actualiza el
+	// índice de búsqueda: copiarlas antes dejaría a la persona sin índice.
 	copia := p
+	copia.Formas = nil
 	i.personas[p.Llave] = &copia
 	i.orden = append(i.orden, p.Llave)
 	i.fichas[p.Llave] = &Ficha{Llave: p.Llave, Rol: p.Rol, Genero: p.Genero}
