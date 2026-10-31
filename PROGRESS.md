@@ -128,6 +128,8 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 15:00 · — · claude · `master` recibe `integracion/c0-c11` por fast-forward (71 commits, sin merge commit). Sin push:
+  publicar primero exige limpiar del historial los blobs con datos de la muestra anteriores a `8f809f2`.
 - 14:52 · — · claude · Tercera revisión atendida: los 422 ya no citan valores, `/v1/health` cae al snapshot fijo de Jev
   si no hay `MODELOS` ni `LLM_MODEL` (con prueba), la metadata del PDF tiene prueba propia, y fuera de `scripts/` los
   comentarios con cédulas de la muestra. Cruzadas 921 formas de la muestra y del corpus contra lo versionado: solo
