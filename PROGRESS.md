@@ -16,11 +16,11 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 ## Hitos de hoy (Bogotá, UTC−5)
 
 - [x] 12:45 · C0 hecha: `go.mod`, paquetes y tipos compartidos en `integracion/c0-c11`.
-- [ ] 13:30 · Servicio en Railway con `/v1/health` y `/v1/anonymize` de eco (C1).
+- [x] 13:30 · Servicio en Railway con `/v1/health` y `/v1/anonymize` de eco (C1): `frontier-31102026-production.up.railway.app`.
 - [ ] 14:15 · Pipeline completo sobre `sample/`: validador OK, 13/13 tests y J-REC 100 % (C17).
 - [ ] 14:45 · Pipeline sobre `fuentes/`: validador OK, barrido 0, dos corridas idénticas (C18).
 - [ ] 15:00 · **Congelar** y desplegar. Después de esta hora solo entran arreglos de C18.
-- [ ] 15:15 · Smoke test público: `/v1/health` y `/v1/anonymize` con un registro de la muestra.
+- [x] 15:15 · Smoke test público: `/v1/health` 200 y `/v1/anonymize` con un registro de la muestra, ya verificado en Railway.
 - [ ] 15:30 · **Corrida 1** (la lanza el usuario).
 - [ ] Tras el crecimiento: corridas 2 y 3 (las propone el agente; las lanza el usuario).
 
@@ -78,7 +78,7 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 | C8 | Formas: un renderizador por tipo (completo, corto, pila, MAYÚSCULAS sin tildes, slug, usuario, correo, correo deletreado, cédula con y sin puntos, `CC<num>`, celular en 3 formatos, dirección, fecha ISO / en palabras / US, placa, pasaporte). Lo usan el registro (formas reales) y la fábrica (formas falsas). | `internal/formas/` | C0 | Cada renderizador probado contra ejemplos de `sample/expected_output` | orquestador | hecha | 8b49233 |
 | C9 | Catálogos embebidos: nombres de pila colombianos por género, unisex y extranjeros; apellidos con tildes; dominios públicos; barrios por ciudad; ocupación → 13 sectores (D18). | `internal/catalogo/` | C0 | Conteos mínimos (≥300 por género, ≥400 apellidos) y sin ninguna forma real de `fuentes/` | orquestador | hecha | 4314456 |
 | C10 | Cliente de Jev 1.14: OpenRouter `POST /api/alpha/decisions` (`state`, `questions` `choice`/`noul`/`score`), una llamada por mención con su propio `state`, en paralelo con tope de 16 (D28), umbrales sobre `probabilities` (D31), snapshot fijo `typesafe/jev-1.14-20261014` en la llave de caché (D32), timeout, caché en SQLite por hash, contabilidad de tokens y costo, modelo por `LLM_MODEL`, enmascarado de formas conocidas (D15). | `internal/llm/` | C0 | Prueba con servidor falso: caché, timeout, JSON inválido; una prueba real opcional con datos inventados | orquestador | hecha | a2a21ec |
-| C11 | Juez base: `cmd/juez` corre `validar.mjs`, los 13 tests de `tests_sample.json` y los 5 públicos por familia, J-GLO, J-DIC y **J-REC** (cobertura de personas contra `sample/expected_output/entities.json`, D34); imprime puntaje por juez. | `cmd/juez/`, `internal/juez/` | C0 | Sobre `sample/expected_output` da 13/13, J-GLO 0 y J-REC 100 % | orquestador | en curso | — |
+| C11 | Juez base: `cmd/juez` corre `validar.mjs`, los 13 tests de `tests_sample.json` y los 5 públicos por familia, J-GLO, J-DIC y **J-REC** (cobertura de personas contra `sample/expected_output/entities.json`, D34); imprime puntaje por juez. | `cmd/juez/`, `internal/juez/` | C0 | Sobre `sample/expected_output` da 13/13, J-GLO 0 y J-REC 100 % | orquestador | hecha | 0d26441 |
 
 ### Ola 2 · pipeline
 
@@ -128,6 +128,10 @@ tarea (reglas 0–2). Orden sugerido: C25 primero (bloquea el hito de las 14:15)
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 14:20 · — · claude · Ola 1 cerrada: C1–C11 integradas y verdes. Juez sobre la muestra: validador OK, 13/13, J-GLO 0,
+  J-DIC y J-REC 100 %. Servicio desplegado en `frontier-31102026-production.up.railway.app` (health y `/anonymize`
+  de eco verificados). Faltan en el panel de Railway: variables (`LLM_MODEL`, `OPENROUTER_API_KEY`, secreto HMAC) y
+  volumen en `/data`; los pone el usuario.
 - 14:10 · — · claude · Ola 1 integrada: C1–C10 en `integracion/c0-c11` con `go build`/`go vet`/`go test`
   en verde; smoke local de C1 (health, `/anonymize` de eco, 404 de `/output`). C11 sigue en curso.
 - 14:05 · C0 · claude · Revisión de C0 atendida: fixture versionada para la prueba de ida y vuelta, tags JSON de
