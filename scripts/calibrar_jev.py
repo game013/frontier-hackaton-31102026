@@ -45,22 +45,114 @@ TIMEOUT = 45
 MASCARA = "[DATO]"
 
 
-# ---------------------------------------------------------------- normalización
+# ------------------------------------------------------------ normalización del jurado
+#
+# Port de `docs/validar.mjs` (juez/texto.ts), con los mismos nombres que el jurado para
+# poder comparar función por función, igual que `internal/norm` en Go. La paridad con el
+# jurado se verifica pasando los casos de `internal/norm/testdata/casos.json` (los genera
+# Node desde el propio jurado) contra estas funciones: con un criterio más débil,
+# `verificar_informe` puede dar OK mientras el jurado marca fuga (AGENTS.md define fuga
+# bajo esta normalización).
+
+ESPACIO = r"\t\n\v\f\r \x1c-\x1f\x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000"
+
+CONFUSABLES = {
+    "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "х": "x", "у": "y",
+    "і": "i", "ј": "j", "ѕ": "s",
+    "А": "A", "Е": "E", "О": "O", "Р": "P", "С": "C", "Х": "X", "У": "Y",
+    "І": "I", "Ј": "J", "Ѕ": "S", "В": "B", "Н": "H", "К": "K", "М": "M",
+    "Т": "T",
+    "ο": "o", "α": "a", "ρ": "p", "ν": "v", "ι": "i",
+    "ℓ": "l", "ı": "i", "ɑ": "a",
+}
+
+SEPARADORES_DIGITOS = set(" .,'’`´·/-–—_") | set(
+    "\t\n\v\f\r\x1c\x1d\x1e\x1f\x85\xa0"
+    "\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a"
+    "\u2028\u2029\u202f\u205f\u3000"
+)
+
+
+def _espacio_raro(caracter: str) -> bool:
+    r"""Réplica de RX_ESPACIO_RARO: `\p{Zs}` o un blanco de control."""
+    return caracter in "\t\r\n\v\f" or unicodedata.category(caracter) == "Zs"
+
+
+def clean(texto: str) -> str:
+    """Port de clean(): NFKC, confusables a ASCII, sin formatos y espacios raros a uno."""
+    base = unicodedata.normalize("NFKC", texto or "")
+    base = "".join(CONFUSABLES.get(c, c) for c in base)
+    salida = "".join(
+        " " if _espacio_raro(c) else c for c in base if unicodedata.category(c) != "Cf"
+    )
+    return re.sub(r" {2,}", " ", salida)
+
+
+def quitar_tildes(texto: str) -> str:
+    r"""Port de quitarTildes(): NFD sin marcas no espaciadas (`\p{Mn}`)."""
+    return "".join(
+        c
+        for c in unicodedata.normalize("NFD", texto or "")
+        if unicodedata.category(c) != "Mn"
+    )
+
+
+def plegar(texto: str) -> str:
+    """Port de plegar(): minúsculas, ß→ss, ς→σ, ſ→s."""
+    return (texto or "").lower().replace("ß", "ss").replace("ς", "σ").replace("ſ", "s")
 
 
 def norm(texto: str) -> str:
-    """Minúsculas, sin tildes y con espacios colapsados (base de comparación)."""
-    descompuesto = unicodedata.normalize("NFKD", texto or "")
-    sin_marcas = "".join(c for c in descompuesto if not unicodedata.combining(c))
-    return re.sub(r"\s+", " ", sin_marcas.lower()).strip()
+    """Port de norm(): plegar(quitarTildes(clean(s))), el espacio donde busca el jurado."""
+    return plegar(quitar_tildes(clean(texto)))
+
+
+def partir(texto: str) -> list[str]:
+    """Port de partir(): trozos separados por la clase ESPACIO del jurado."""
+    return [p for p in re.split(rf"[{ESPACIO}]+", texto) if p]
 
 
 def solo_digitos(texto: str) -> str:
+    r"""Port de soloDigitos(): deja solo dígitos decimales (`\p{Nd}`)."""
     return re.sub(r"\D", "", texto or "")
 
 
+def digitos_compactos(texto: str) -> str:
+    """Port de digitosCompactos(): clean() y fuera los separadores entre dos dígitos."""
+    limpio = clean(texto)
+    salida: list[str] = []
+    for posicion, caracter in enumerate(limpio):
+        if (
+            0 < posicion < len(limpio) - 1
+            and caracter in SEPARADORES_DIGITOS
+            and limpio[posicion - 1].isdecimal()
+            and limpio[posicion + 1].isdecimal()
+        ):
+            continue
+        salida.append(caracter)
+    return "".join(salida)
+
+
+def digitos_en(pajar: str, digitos: str) -> bool:
+    """Port de digitosEn(): la secuencia sin separadores ni dígito pegado, con el 57 opcional."""
+    compacto = digitos_compactos(pajar)
+    candidatos = [digitos]
+    if len(digitos) == 12 and digitos.startswith("57"):
+        candidatos.append(digitos[2:])
+    return any(
+        re.search(rf"(?<!\d)(?:57)?{re.escape(d)}(?!\d)", compacto) for d in candidatos
+    )
+
+
+def es_texto_solo(texto: str) -> bool:
+    r"""Réplica de RX_TEXTO: `^[\p{L}\p{N}_ .'_-]+$`."""
+    if not texto:
+        return False
+    return all(c in " .'-_" or c.isalpha() or c.isnumeric() for c in texto)
+
+
 def contiene(pajar: str, aguja: str) -> bool:
-    """Mismo criterio que `contiene()` de docs/validar.mjs, sin la tabla de confusables."""
+    """Port de contiene() de docs/validar.mjs: la vara con la que el jurado mide una fuga (D5)."""
     if not aguja:
         return False
     digitos = solo_digitos(aguja)
@@ -70,20 +162,20 @@ def contiene(pajar: str, aguja: str) -> bool:
         and len(digitos) >= 0.6 * len(aguja)
         and not re.search(r"[a-zA-Z]", aguja)
     ):
-        return digitos in solo_digitos(pajar)
+        return digitos_en(pajar, digitos)
     h, n = norm(pajar), norm(aguja)
-    if re.search(r"[a-z]", n):
+    if es_texto_solo(n) and re.search(r"[a-z]", n):
         if re.search(rf"(?<![a-z0-9]){re.escape(n)}(?![a-z0-9])", h):
             return True
-        palabras = n.split()
+        palabras = partir(n)
         if len(palabras) >= 2 and all(len(p) >= 3 for p in palabras):
-            patron = r" *".join(re.escape(p) for p in palabras)
+            patron = rf"[{ESPACIO}]*".join(re.escape(p) for p in palabras)
             return bool(re.search(rf"(?<![a-z0-9]){patron}(?![a-z0-9])", h))
         return False
     return n in h
 
 
-def plegar(texto: str) -> tuple[str, list[int]]:
+def plegar_con_mapa(texto: str) -> tuple[str, list[int]]:
     """Texto plegado (sin tildes, minúsculas) y mapa índice plegado → índice original."""
     partes: list[str] = []
     mapa: list[int] = []
@@ -111,7 +203,7 @@ def spans_de(texto_plegado: str, mapa: list[int], aguja: str) -> list[tuple[int,
     Solo cuenta apariciones que empiezan y terminan en borde de palabra: «Ana» no está
     dentro de «manager» ni «Juli» dentro de «julio».
     """
-    plegada = plegar(aguja)[0]
+    plegada = plegar_con_mapa(aguja)[0]
     if not plegada:
         return []
     rangos: list[tuple[int, int]] = []
@@ -122,12 +214,6 @@ def spans_de(texto_plegado: str, mapa: list[int], aguja: str) -> list[tuple[int,
             rangos.append((mapa[inicio], mapa[fin - 1] + 1))
         inicio = texto_plegado.find(plegada, fin)
     return rangos
-
-
-def aparece(texto: str, aguja: str) -> bool:
-    """Aparición literal (sin tildes ni caja, en borde de palabra) de `aguja` en `texto`."""
-    plegado, mapa = plegar(texto)
-    return bool(spans_de(plegado, mapa, aguja))
 
 
 # ---------------------------------------------------------------- registro y ventanas
@@ -393,7 +479,7 @@ class Enmascarador:
     def _ocurrencias(self, texto: str) -> tuple[str, list[int], list[tuple[int, int, str]]]:
         if texto in self._cache:
             return self._cache[texto]
-        plegado, mapa = plegar(texto)
+        plegado, mapa = plegar_con_mapa(texto)
         ocupados: list[tuple[int, int]] = []
         cambios: list[tuple[int, int, str]] = []
         for forma in self._formas:
@@ -497,8 +583,9 @@ NEGATIVOS_CURADOS = [
 
 
 def ventana_para(forma: str, ventanas: list[Ventana], preferida: Ventana | None) -> Ventana | None:
+    """Ventana más limpia donde el jurado encontraría la forma, o la ficha del registro."""
     orden = {"chat": 0, "doc": 1, "tabla": 2, "ficha_usuario": 3, "chat_adjunto": 4}
-    candidatas = [v for v in ventanas if aparece(v.texto, forma)]
+    candidatas = [v for v in ventanas if contiene(v.texto, forma)]
     if candidatas:
         return min(candidatas, key=lambda v: (orden.get(v.tipo, 9), len(v.texto)))
     return preferida
