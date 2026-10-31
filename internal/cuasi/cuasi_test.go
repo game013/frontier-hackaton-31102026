@@ -530,6 +530,21 @@ func TestCE44AnioConArticuloYOrdenInvertido(t *testing.T) {
 			"Desde 2021 el banco no responde.",
 			"Desde 2021 el banco no responde.",
 		},
+		{
+			"invertido con es y sustantivo singular",
+			"Desde 2020 es usuaria y pide el certificado.",
+			"Desde hace unos años es usuaria y pide el certificado.",
+		},
+		{
+			"invertido de negocio con clientes en plural",
+			"Desde 2021 los clientes reportan fallas en la app.",
+			"Desde 2021 los clientes reportan fallas en la app.",
+		},
+		{
+			"invertido de negocio con usuarios en plural",
+			"Desde 2020 los usuarios pueden pagar con QR.",
+			"Desde 2020 los usuarios pueden pagar con QR.",
+		},
 	}
 	for _, c := range casos {
 		t.Run(c.nombre, func(t *testing.T) {

@@ -136,6 +136,9 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 15:51 · C19 · pi · `CASO:` CE-44 corrige CE-39: el orden invertido ya no generaliza «Desde 2021 los clientes reportan
+  fallas» ni «Desde 2020 los usuarios pueden pagar con QR»; solo ata el año una primera persona o «es» delante de un
+  sustantivo en singular («soy cliente», «es usuaria»).
 - 17:50 · — · pi · `DECISIÓN:` D21 cambia con el visto bueno del usuario: la corrida 1 va con la generalización de
   cuasi-identificadores en texto y maestro, no apagada. `cuasi` corre siempre dentro del núcleo y no lleva interruptor;
   al cerrar la ola 3 ya estaba validada (muestra 13/13 con `sample_08`, validador OK en muestra y corpus).
