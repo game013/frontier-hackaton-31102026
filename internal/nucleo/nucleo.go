@@ -3,7 +3,8 @@
 // (D8). Encadena las piezas en este orden:
 //
 //	registro → detección (pasada 1) → residuo (modelo) → resolución →
-//	fábrica y bóveda → reemplazo → entities.json → compuerta (pasada 2)
+//	fábrica y bóveda → reemplazo → cuasi-identificadores → entities.json →
+//	compuerta (pasada 2)
 //
 // Dos pasadas son obligatorias (D14): una forma que aparece por primera vez en
 // el registro 900 ya se habría escapado en el 12 si se reemplazara en la misma
@@ -19,6 +20,7 @@ import (
 	"time"
 
 	"github.com/game013/frontier-hackaton-31102026/internal/compuerta"
+	"github.com/game013/frontier-hackaton-31102026/internal/cuasi"
 	"github.com/game013/frontier-hackaton-31102026/internal/detecta"
 	"github.com/game013/frontier-hackaton-31102026/internal/detecta/residuo"
 	"github.com/game013/frontier-hackaton-31102026/internal/ingesta/chats"
@@ -152,9 +154,16 @@ func (n *Nucleo) Corrida(ctx context.Context, entrada Entrada) (modelo.Resultado
 	if err != nil {
 		return modelo.Resultado{}, fmt.Errorf("nucleo: reemplazo: %w", err)
 	}
+	// Los cuasi-identificadores se generalizan sobre el texto ya reemplazado:
+	// ocupación, barrio y año no son formas de persona, y así la compuerta no
+	// tiene que deshacer nada (D9).
+	generalizados, err := cuasi.Generaliza(reemplazados, indice)
+	if err != nil {
+		return modelo.Resultado{}, fmt.Errorf("nucleo: cuasi-identificadores: %w", err)
+	}
 	// Pasada 2: la compuerta barre lo que haya quedado y lo corrige con la
 	// bóveda ya completa (D11, D25).
-	limpios, fugas, err := compuerta.Barre(lote, reemplazados, indice, perfiles, n.allowlist)
+	limpios, fugas, err := compuerta.Barre(lote, generalizados, indice, perfiles, n.allowlist)
 	if err != nil {
 		return modelo.Resultado{}, fmt.Errorf("nucleo: compuerta: %w", err)
 	}
