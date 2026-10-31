@@ -1,180 +1,177 @@
 # Estrategia de demo: vende los datos sin vender a la gente
 
-## 1. Decisión de posicionamiento
+## 1. Posicionamiento y estado
 
 **Vendemos un corpus aprovechable para entrenar atención al cliente, con identidades sustituidas y relaciones conservadas.** El comprador necesita aprender cómo se resuelve un cobro, no conocer a quien lo reclamó.
 
-Frase central del pitch:
+> «Kipu Pay tiene tres años de experiencia atendiendo clientes. Hacemos que esa experiencia pueda aprovecharse sin entregar las identidades originales al comprador».
 
-> «Kipu Pay tiene tres años de experiencia atendiendo clientes. Hacemos que esa experiencia pueda aprovecharse sin entregar las identidades de sus clientes».
+- **Cliente inicial:** la fintech que prepara el corpus para un comprador de datos de entrenamiento.
+- **Usuario:** el equipo de datos, con revisión de privacidad y seguridad.
+- **Valor:** reducir preparación y revisión sin destruir conversaciones ni relaciones útiles. Es una hipótesis comercial: no afirmar ahorros ni mejoras de entrenamiento sin medirlos.
+- **Diferenciador:** una persona ficticia coherente entre fuentes y entre corridas; personas distintas no se fusionan por compartir nombre.
+- **Alcance:** los formatos y condiciones del reto. No es una plataforma universal ni una certificación de anonimato o cumplimiento legal.
 
-La audiencia debe recordar tres pruebas: **la historia sigue sirviendo; cada persona conserva su identidad ficticia; un dato nuevo recibe el mismo tratamiento**.
+**Estado de esta revisión:** se revisaron `DISEÑO.md` v2, sus decisiones D1–D34, `CASOS_ESQUINA.md` y `PROGRESS.md`. El tablero aún sitúa la implementación al comienzo; no se verificó un servicio funcional ni resultados propios. Todo comportamiento del guion está condicionado a evidencia antes de presentarlo. La salida de `sample/expected_output/` pertenece al organizador, no es un resultado nuestro.
 
-- Cliente inicial: la fintech que prepara el corpus para un comprador de datos de entrenamiento.
-- Usuario: el equipo de datos, con revisión de privacidad y seguridad.
-- Valor: reducir el trabajo de preparación y revisión, preservando conversaciones y relaciones útiles. Es una hipótesis de valor; no afirmar ahorros sin medirlos.
-- Diferenciador a demostrar: resolver identidad entre fuentes, incluso con homónimos y nuevas incorporaciones. Detectar un correo es solo una parte del problema.
-- Alcance: este reto y sus formatos. No presentar todavía una plataforma universal ni prometer cumplimiento legal automático.
+## 2. Prioridades según la rúbrica
 
-**Estado al redactar:** el repo contiene el enunciado, fuentes, muestra, rúbrica y análisis; no se ha verificado un servicio funcional ni resultados propios. Este documento es un plan de producto y demostración, no evidencia de capacidades implementadas. Los ejemplos de `sample/expected_output/` son del organizador.
-
-## 2. Cómo competir según la rúbrica
-
-| Etapa | Peso | Cómo contribuye esta estrategia |
+| Etapa | Peso global | Implicación |
 | --- | --- | --- |
-| Systems design | 30 % | Decidir desde ahora qué pruebas construiremos, cómo se medirán y qué trade-offs explicar. No sustituye el documento de diseño ni el diagrama exigidos. |
-| Ejecución | 40 % | Priorizar pipeline, contrato HTTP, validación y estabilidad. La demo consume el servicio real; no una transformación distinta en el navegador. |
-| Demo day | 15 % | Una historia concreta, prueba entre fuentes, interacción en vivo y cierre con evidencia. |
-| Profundidad técnica | 15 % | Reservar decisiones, límites y casos difíciles para el debrief individual. |
+| Systems design | 30 % | Decisiones, alternativas y medición explícitas en el documento y diagrama exigidos. |
+| Ejecución | 40 % | Pipeline, contrato HTTP, estabilidad y entregables antes que presentación ornamental. |
+| Demo day | 15 % | Una historia comprensible, transformación visible, prueba nueva y evidencia. |
+| Profundidad técnica | 15 % | Cada integrante prepara el debrief individual; el pitch deja una muestra de las decisiones. |
 
-El puntaje automático del corpus tiene otra distribución: **fuga 45, utilidad 35, consistencia 20**. No confundirla con los pesos globales. La demo debe hacer visibles esas tres dimensiones, no inventar una fórmula de calificación del pitch.
+La evaluación automática del corpus tiene otra distribución: **fuga 45, utilidad 35, consistencia 20**. No confundirla con los pesos globales ni inventar una fórmula de evaluación del pitch. Falta el detalle de criterios de Demo day en `RUBRICA.md`.
 
-`RUBRICA.md` advierte que no se capturó el detalle de criterios de Demo day. Esta estrategia se apoya en los pesos conocidos y el enunciado; ajustar si aparecen criterios adicionales.
+**Regla de inversión:** no sacrificar el 70 % de diseño y ejecución por embellecer el 15 % del pitch. La demo usa resultados y servicio reales; no un motor distinto en el navegador.
 
-**Regla de inversión:** no sacrificar el 70 % de diseño y ejecución para embellecer el 15 % del pitch. Una vista comparativa fiable vale más que un dashboard amplio sin pipeline detrás.
+La última corrida anterior al crecimiento vale 30 % del componente automático y la última posterior, 70 %. No equivale al 70 % de toda la hackathon. Las tres corridas oficiales las lanza el usuario; no son ensayos de presentación.
 
-## 3. La historia que vamos a mostrar
+## 3. Una historia y un caso difícil
 
-Seguir **un reclamo por una cuota ya pagada** desde el chat hasta su referencia en una tabla y un documento.
+Seguir **un reclamo por una cuota ya pagada** en chat, tabla y documento. Después de sustituir identidades, el comprador todavía entiende qué se reclamó, que el pago llegó por PSE desde Bancolombia, por qué hubo retraso y cómo se resolvió.
 
-Antes de sustituir identidades, la conversación contiene datos personales. Después, el comprador todavía entiende:
+El caso de muestra asociado a `CL-88627` permite ensayar esta narrativa. Su documento es Markdown, no PDF. Los seudónimos definitivos deben salir de nuestro motor. Si se muestra la salida ideal antes de implementar, rotular «ejemplo del organizador» y no presentarla como prueba propia.
 
-- Qué reclamó la persona y cómo respondió soporte.
-- Que el pago llegó por PSE desde Bancolombia y hubo un retraso.
-- Qué caso corresponde a qué persona a través de las fuentes.
+En el pitch añadir **un solo caso difícil, con un recuadro preparado**, sin abrir otra historia:
 
-El nombre, el correo y la cédula cambian; la explicación del cobro permanece. PSE y Bancolombia no desaparecen.
+- **Preferido: homónimos.** Dos personas con el mismo nombre, evidencia distinta y dos perfiles. Seleccionar un caso probado de CE-01 o CE-02; mostrar la referencia que realmente resolvió el motor. No inventar que un radicado hizo el desempate si no fue así.
+- **Alternativa si es más clara y está implementada: riesgo indirecto.** Mostrar la combinación de ocupación, barrio y año antes/después, junto a la fila vinculada; comprobar CE-12/CE-13 con J-IND. Cambiar solo el chat no basta. La política distingue texto y tablas: barrio a ciudad en texto, barrio sintético en la tabla; no afirmar que ambos se transforman igual.
 
-El caso de la muestra de Manuela Castaño y `CL-88627` permite preparar esta narrativa. **Los seudónimos de nuestra demo deben salir de nuestro motor**, no copiarse de la salida ideal. Si usamos la muestra antes de tener implementación, rotularla como «ejemplo del organizador».
+Elegir antes del ensayo, no narrar ambas alternativas. Si ninguna tiene evidencia suficiente, retirar el recuadro y la afirmación. Metadatos y el segundo caso difícil quedan para el video o preguntas.
 
-Preparar además dos casos de respaldo para preguntas, fuera del guion de tres minutos, seleccionados por evidencia real:
+## 4. Pitch de tres minutos
 
-1. Un nombre escondido en un adjunto o metadato: cambiar solo el cuerpo no alcanza.
-2. Dos personas con el mismo nombre: necesitan identidades ficticias distintas, desempatadas con evidencia entre fuentes, no por adivinar a partir del nombre.
+Duración confirmada por el equipo: **3 minutos**. Ensayar **2:45 de contenido + 15 segundos de margen**. Una persona conduce; otra opera si hay equipo. Una pantalla comparativa y una tarjeta de evidencia; sin recorrido por endpoints o arquitectura.
 
-El caso indirecto de barrio + ocupación + año queda como respaldo técnico o reemplazo del caso de adjunto. Mostrarlo solo si podemos probar que la combinación también se rompió al unir las fuentes.
+Los textos siguientes son afirmaciones a habilitar al verificar el comportamiento, no resultados ya obtenidos.
 
-## 4. Guion de tres minutos
-
-Duración del pitch confirmada por el equipo: **3 minutos**. Objetivo de ensayo: **2:45 de contenido y 15 segundos de margen**. El video de cinco minutos mencionado en el enunciado es un entregable separado, salvo aclaración de la organización.
-
-Una persona conduce; otra opera si hay equipo. Una historia, una petición en vivo y una tarjeta de evidencia. Sacar del escenario el diagrama, el segundo caso y las explicaciones de endpoints; reservarlos para preguntas.
-
-| Tiempo | Pantalla y acción | Guion hablado propuesto |
+| Tiempo | Pantalla y acción | Guion hablado |
 | --- | --- | --- |
-| 0:00–0:20 | Problema, una sola diapositiva | «Kipu Pay tiene tres años de conversaciones y un comprador que quiere usarlas para entrenar atención al cliente. Pero esas conversaciones contienen identidades. Queremos conservar lo que sirve para aprender, sin entregar quién vivió cada problema». |
-| 0:20–0:55 | Antes/después del reclamo; señalar nombre, correo y frase de negocio | «Aquí una clienta reclama una cuota que ya pagó. Cambiamos su nombre y sus datos de contacto. Pero conservamos lo importante: pagó por PSE desde Bancolombia, hubo un retraso y soporte retiró el cobro. El comprador todavía puede aprender cómo resolver este caso». |
-| 0:55–1:20 | Chat, tabla y documento en una misma vista | «La dificultad es que esa persona aparece en varias fuentes. Aquí conserva la misma identidad ficticia en el chat, la tabla y el documento. Sustituimos fragmentos personales, sin reescribir la conversación ni romper sus relaciones». |
-| 1:20–2:00 | Editar una frase ficticia en un registro nuevo y enviarlo al servicio | «Probemos un mensaje nuevo sobre esta misma persona». Editar y enviar. Al recibir: «El mensaje no estaba en el corpus. Recibe el mismo seudónimo y conserva el detalle de negocio que acabamos de agregar». Dejar tiempo para que se lea la respuesta. |
-| 2:00–2:30 | Tarjeta de evidencia, máximo tres cifras | «Esto es lo que medimos en la corrida que están viendo: conservamos [X de X registros], aprobamos [Y de Z pruebas locales] y procesamos el corpus en [T]. Son resultados de esta versión, no una garantía absoluta contra reidentificación». Usar solo cifras verificadas; si hay puntaje oficial, sustituir una de las métricas e identificarlo. |
-| 2:30–2:45 | Resultado final, sin nueva navegación | «El comprador necesita aprender cómo se resolvió el problema, no conocer a quien lo tuvo. Nuestra solución conserva esa experiencia y sustituye las identidades». |
-| 2:45–3:00 | Margen | No abrir otra funcionalidad. Absorber latencia o pausas. |
+| 0:00–0:20 | Problema, una diapositiva | «Kipu Pay tiene tres años de conversaciones y un comprador que quiere usarlas para entrenar atención al cliente. El comprador necesita aprender cómo se resuelve un reclamo, no conocer a quien lo hizo». |
+| 0:20–0:50 | Antes/después: chat y referencias a tabla y documento | «Aquí una clienta reclama una cuota que ya pagó. Sustituimos nombre, cédula y correo. El pago por PSE desde Bancolombia y la solución siguen intactos. Y la misma persona conserva su identidad ficticia en las tres fuentes». |
+| 0:50–1:15 | Recuadro del caso difícil y decisión técnica | «Un mismo nombre puede pertenecer a dos personas: aquí, [evidencia verificada] nos permite distinguirlas y darles perfiles distintos. Sustituimos los fragmentos personales, sin reescribir la conversación». |
+| 1:15–1:55 | Un clic: enviar dos registros nuevos; mostrar ambas respuestas | «Ahora enviamos dos mensajes que no estaban en el corpus: uno sobre una persona conocida y otro sobre una persona ficticia nueva». Al responder: «La primera conserva su seudónimo; la segunda recibe un perfil nuevo. El detalle de negocio que acabamos de editar también permanece». |
+| 1:55–2:30 | Tarjeta de evidencia con versión y alcance | «En esta corrida conservamos [X de X registros]. Tras incorporar nuevos datos, [N de N personas anteriores] conservaron su seudónimo: guardamos los perfiles, no los sorteamos de nuevo. El barrido final encontró [F coincidencias de formas originales conocidas]». Usar solo resultados medidos y aprobados para presentar. |
+| 2:30–2:45 | Resultado final, sin navegación | «El comprador puede aprender de cómo resolvemos un problema sin necesitar la identidad original del cliente. Conservamos la experiencia de soporte y sustituimos las identidades». |
+| 2:45–3:00 | Margen | Absorber latencia, pausas y transiciones; no añadir otra funcionalidad. |
 
-Los espacios de cada bloque incluyen acciones y lectura de pantalla: no llenarlos con más discurso. Reemplazar los marcadores de métricas antes del ensayo final; si falta evidencia, quitar la afirmación.
+**Alternativa de diez segundos si se elige riesgo indirecto:** «Aunque quitemos el nombre, barrio, profesión y año pueden señalar a alguien. Aquí rompemos esa combinación también al cruzar las fuentes». Reemplaza la frase de homónimos, no se añade a ella.
 
-**Recorte editorial:** homónimos, metadatos, cuasi-identificadores, costo en tokens y arquitectura van al debrief. La profundidad técnica del pitch queda concentrada en una decisión —reemplazar sin reescribir— y una prueba —consistencia entre fuentes y un registro nuevo—.
+La profundidad técnica cabe en dos decisiones y una prueba: **reemplazar sin reescribir; guardar un perfil por persona; distinguir personas con evidencia**. El crecimiento se demuestra en la tarjeta, no con otra ejecución pesada durante el pitch.
 
-### Interacción en vivo acotada, pero auténtica
+No llenar cada intervalo con discurso: incluye clics y lectura de pantalla. Si falta una medición, quitar la afirmación o sustituirla por otra verificada; nunca leer marcadores ni presentar objetivos como resultados. No afirmar «cero fugas» sin el calificativo «conocidas en estas comprobaciones». Si el barrido detecta fugas conocidas, corregir antes de presentar la salida como lista.
 
-- Pedir **datos ficticios**, nunca nombres, cédulas o teléfonos reales del público.
-- Usar un registro normalizado válido según `docs/api/participante.openapi.yaml`; la interfaz construye el sobre y deja editar el texto. El editor libre no debe romper el contrato.
-- Llevar preparado un registro nuevo sobre una persona ya procesada y editar en escena una frase de negocio ficticia. No abrir una ronda de propuestas del público en el guion de tres minutos. La persona ficticia nueva queda como respaldo o para preguntas.
-- La interfaz debe mostrar qué se envió y qué devolvió el servicio. No precalcular la respuesta del texto editado ni presentar una grabación como petición en vivo.
-- No prometer resolver homónimos con un nombre aislado. El caso preparado debe contener las referencias que el motor realmente necesita.
-- Si la respuesta tarda más de 10 segundos, continuar explicando la evidencia anterior; a los 15, usar el respaldo. Son umbrales de presentación, no límites del contrato: el reto permite 60 segundos por lote de hasta 50 registros.
+### Prueba en vivo: dos registros, una petición
 
-## 5. Qué construir para sostener la demo
+- Un lote de la misma fuente, válido según `docs/api/participante.openapi.yaml`. La interfaz construye el sobre; no hace falta un editor OpenAPI.
+- **A, persona conocida:** referencia suficiente para que el motor la vincule al corpus, mediante identificador o hilo conocido. El nombre aislado no garantiza identidad (D29).
+- **B, persona ficticia nueva:** nombre y datos ficticios comprobados como ajenos al corpus y a los perfiles existentes. Verificar detección, formato del perfil y ausencia de colisiones en el mapa; ver dos nombres distintos no basta.
+- Editar una frase de negocio ficticia antes de enviar para que sea visible que el payload puede variar. No pedir PII real ni abrir una ronda de propuestas del público.
+- Mostrar el texto enviado y los campos relevantes de la respuesta real. Para A, comparación con el perfil del corpus; para B, perfil nuevo y comprobación de unicidad. No mostrar el diccionario completo.
+- Esta petición demuestra continuidad y creación de perfil, **no** estabilidad tras regenerar el corpus ni los dos homónimos. Esas pruebas son separadas.
+- D24 mantiene las personas creadas en vivo en almacenamiento separado: reservan seudónimo, pero no se agregan al `entities.json` de la última corrida. No prometer que B ya forma parte del corpus entregable ni que se integrará automáticamente al crecer las fuentes.
 
-### P0 — producto evaluable
+### Latencia y transición al respaldo
 
-1. Servicio público con el contrato requerido, `run.sh` y regeneración completa dentro del límite.
-2. Resolución de identidad entre fuentes y mapa estable de seudónimos entre corridas.
-3. Transformación de texto, tablas, autores, nombres de archivo y metadatos; conservar campos e ids.
-4. `/anonymize` usando el mismo motor y mapa que el procesamiento del corpus.
-5. Validación local, evaluación de las seis familias de casos y medición de tiempo/tokens.
-6. Descubrimiento de fuentes nuevas y prueba de continuidad tras el crecimiento del dataset.
+Medir el servicio desplegado con el lote exacto, incluyendo estado frío/caliente, casos nuevos y dependencia del modelo. No prometer `<300 ms`: D28 permite decisiones externas por mención; no todo es un lookup.
 
-### P1 — superficie mínima de demostración
+Al enviar, explicar qué se compara, sin silencio. **A los 3 segundos sin respuesta**, continuar con una captura o grabación de una ejecución real, rotulada con versión y «respaldo grabado». El umbral es de presentación: no implica cancelar necesariamente la petición ni modifica los timeouts del servicio. Nunca usar un mock como prueba de ejecución.
 
-Una sola página con tres vistas, sin navegación compleja:
+## 5. Superficie mínima y límite de inversión
 
-- **Comparar:** entrada y salida lado a lado, cambios resaltados y etiquetas «identidad sustituida» / «dato de negocio conservado».
-- **Seguir una persona:** sus referencias en chat, tabla y documento. El original solo en la vista de revisión del entorno de demo.
-- **Probar mensaje:** editor, botón de envío, estado y respuesta real de `/anonymize`.
+### P0 — servicio y evidencia
 
-Pie de pantalla con versión, identificador de corrida y procedencia de las métricas. El diagrama y los resultados pueden ser diapositivas; no hace falta construir un panel administrativo.
+1. Servicio público con el contrato, `run.sh`, regeneración completa y salidas válidas.
+2. Resolución entre fuentes, perfiles persistidos y comprobación de estabilidad al crecer el corpus.
+3. Tratamiento de texto, tablas, autores, metadatos y nombres de archivo sin pérdida de esquema.
+4. Mismo núcleo para `/run` y `/anonymize`; persistencia de personas nuevas según D24.
+5. Validador, jueces por mecanismo, cobertura de personas en la muestra y mediciones de tiempo/tokens.
+6. Un caso difícil verificado, una prueba en vivo reproducible y respaldo de la misma versión.
 
-No incluir antes de estabilizar P0: login ornamental, conectores fuera del reto, chatbot sobre el corpus, entrenamiento de un modelo o gráficos sin función probatoria.
+### P1 — una sola pantalla, sin navegación
 
-## 6. Evidencia que debemos capturar
+- **Izquierda:** fragmentos de entrada del chat, la fila y el documento; no archivos completos.
+- **Derecha:** salida real de esos fragmentos, con etiquetas de identidad sustituida, marca conservada y continuidad entre fuentes. Resaltados preparados: no construir un diff genérico.
+- **Recuadro:** un único caso difícil verificado.
+- **Panel inferior:** dos registros preparados, un campo editable y **un botón** que envía el lote al backend configurado. Respuesta legible, estado y procedencia visibles.
 
-| Afirmación | Evidencia mínima | Cómo decirlo |
+Sin SPA, editor de esquemas, visualizador de grafos ni dashboard administrativo. Elegir la herramienta más barata para el equipo, sin imponer un framework nuevo. No asumir localhost: ensayar contra la URL que realmente se usará.
+
+**Presupuesto P1: máximo 60 minutos una vez estable P0.** Si no está lista o legible al cerrar ese bloque, usar diapositivas de salidas reales y un cliente HTTP ya disponible para la petición, con texto grande y sin secretos. No consumir tiempo de correcciones del pipeline para acabar la interfaz. El respaldo grabado se prepara en cualquier caso.
+
+## 6. Qué tomar del diseño actualizado
+
+| Decisión | Valor para el comprador | Uso en la demo |
 | --- | --- | --- |
-| Conservamos todos los registros | Conteos por fuente comparados con el `record_index` de la corrida y validador aprobado. | «Conservamos X de X registros de esta versión del corpus». |
-| Protegemos las formas detectadas | Barrido global y pruebas con alcance documentado. | «No detectamos fugas en estas comprobaciones». No «es imposible reidentificar». |
-| El contenido sigue sirviendo | Frase de negocio intacta, marcas preservadas y relaciones verificadas. | «Se conserva el contexto de este reclamo». No afirmar calidad de entrenamiento sin evaluarla. |
-| Mantenemos identidades consistentes | Una persona en varias fuentes, homónimos distintos y comparación entre corridas. | «En estas pruebas, las personas conservaron su seudónimo». |
-| Procesamos el corpus de forma operativa | Duración, tokens y, si existe, costo monetario medido con base explícita. | «Esta corrida tardó X y consumió Y tokens». |
-| Funcionamos con registros nuevos | Petición en vivo contra el servicio desplegado. | «Este mensaje nuevo reutiliza el mismo seudónimo». |
+| D2, D3, D10, D29: persona y perfil completo; identidad por evidencia | Conserva relaciones sin fusionar personas por nombre. | Comparativa y caso difícil. En vivo, referencias suficientes y no solo `author`. |
+| D4, D22: bóveda persistente de solo agregar y llaves estables | Una entrega ampliada mantiene la continuidad con la anterior. | «Guardamos los perfiles, no los sorteamos de nuevo», respaldado por J-CRE. La semilla sola no sustituye la bóveda ni su respaldo. |
+| D8: mismo núcleo para corpus y mensajes nuevos | El comportamiento mostrado en vivo es el que transforma los datos entregados. | Petición al servicio real; sin motor alternativo en el frontend. |
+| D6: reemplazo literal | Se conserva la explicación del reclamo sin inventar montos o soluciones. | Una frase en el pitch; detalles en video. |
+| D11, D17, D34: compuerta, jueces por mecanismo y cobertura de personas | Se revisan fallos distintos; buscar solo lo ya detectado dejaría puntos ciegos. | Barrido conocido en la tarjeta; J-REC y casos de regresión en video. Ninguno prueba ausencia universal de reidentificación. |
+| D13, D15, D26, D28, D30–D32: reglas primero, modelo para decisiones cerradas y residuo | Evita delegar la redacción del corpus; limita el contexto enviado y conserva decisiones. | Preguntas/video, no una lista de proveedores en el pitch. No vender como «todo local» ni «ningún dato sale»: hay riesgo residual de exposición al proveedor declarado en D15. |
+| D19, D20: ambigüedad registrada en vez de fusión silenciosa | Hace visibles los casos que necesitan revisión. | Debrief: explicar el costo en consistencia de crear una persona dudosa. No prometer desambiguación infalible. |
 
-En pantalla, máximo tres cifras: cobertura, pruebas locales aprobadas/ejecutadas y duración. Si existe puntaje oficial, sustituir una de las dos últimas métricas. Cada una con versión y alcance. No convertir el porcentaje de tests locales aprobados en un supuesto «porcentaje de privacidad».
+No llevar al pitch nombres de librerías, número de goroutines, umbrales de confianza ni snapshot del modelo. Son decisiones de implementación, no el argumento comercial principal. Este documento consume el diseño; no modifica sus decisiones.
 
-Los 8.297 ids y aproximadamente 435 mil tokens del enunciado describen el corpus inicial, no un resultado nuestro ni necesariamente el corpus tras crecer. Los resultados orientativos del enunciado tampoco son nuestro benchmark.
+## 7. Evidencia y límites de las afirmaciones
 
-## 7. Profundidad técnica: una decisión en escena, diez minutos preparados
-
-Para preguntas y debrief, usar este esquema; no necesita una pantalla propia durante el pitch:
-
-**Fuentes heterogéneas → identidad entre fuentes → sustitución consistente → validación y salida**.
-
-Decisión candidata, sujeta a que sea la implementada:
-
-> «Sustituimos fragmentos personales en lugar de reescribir conversaciones enteras. Así evitamos alterar montos, fechas de negocio y la solución del reclamo».
-
-No explicar expresiones regulares, estructuras de datos o proveedores salvo pregunta. La profundidad está en demostrar consecuencias de las decisiones.
-
-Cada integrante debe poder responder, con un ejemplo y una limitación:
-
-| Pregunta probable | Qué debe contener la respuesta |
+| Afirmación | Prueba necesaria |
 | --- | --- |
-| ¿Por qué no basta detectar nombres y correos? | Variantes, metadatos, terceros mencionados y combinaciones indirectas. |
-| ¿Cómo distinguen homónimos? | Evidencia concreta entre fuentes, regla de desempate y comportamiento ante ambigüedad. |
-| ¿Cómo conservan los seudónimos con fuentes nuevas? | Mecanismo implementado de persistencia/estabilidad y prueba comparando dos corridas. |
-| ¿Por qué no borrar o hashear todo? | Se pierden categoría, relaciones y utilidad; hashes simples de identificadores no garantizan protección. |
-| ¿Cómo evitan destruir el texto? | Reemplazos acotados, preservación de estructura y tests de falsos positivos. |
-| ¿Cómo tratan barrio, ocupación y año? | Riesgo por combinación y evaluación sobre la unión de fuentes; política de generalización y sus límites. |
-| ¿Dónde usan modelos? | Uso real, costo medido, datos enviados y alternativa descartada. Si no se usan, decirlo sin disculparse. |
-| ¿Esto garantiza anonimato legal? | No. Es seudonimización con controles evaluados en el reto, no certificación ni prueba universal contra reidentificación. |
-| ¿Qué ocurre con el diccionario? | `entities.json` contiene originales: es un artefacto restringido para el jurado, nunca parte del corpus comercial. |
+| Conservamos X de X registros | Comparación por fuente con el `record_index` de la corrida, ids únicos y validador. |
+| Conservamos campos y contenido | Comparación de claves/columnas con la entrada y controles de texto y estructura; el OK del validador no sustituye todo esto. D33 puede producir un cuerpo PDF vacío tras fallar los extractores: conservar el id no significa conservar su utilidad. Contar y declarar esos fallos. |
+| No encontramos fugas conocidas | Barrido global con alcance, resultado y versión; además pruebas de cobertura J-REC sobre la muestra para no medir solo personas ya detectadas. No extrapolar su cobertura a todo el corpus. |
+| Los seudónimos anteriores no cambiaron | J-CRE: corrida con subconjunto, nueva corrida ampliada y comparación por persona. Declarar si es simulación local o crecimiento real del API. |
+| Dos homónimos son distintos | Evidencia de identidad y perfiles distintos; J-HOM y J-CON. |
+| La persona nueva tiene perfil único | J-VIV y comprobación contra los perfiles reservados, no solo inspección visual. |
+| El procesamiento es operativo | Tiempo y tokens reales; costo monetario solo con base de cálculo explícita. |
 
-**Límite importante:** el reto exige endpoints sin autenticación y acceso del jurado al diccionario. Eso no es una arquitectura de producción segura. Para comercializar harían falta separación de accesos, protección del mapa y una política de entrega; no afirmar que esos controles ya existen.
+La tarjeta del pitch prioriza **cobertura de registros, estabilidad entre corridas y barrido conocido**. Máximo tres cifras con versión y alcance. Puntaje oficial o duración pueden sustituir una, no sumarse. Mantener disponible el resto para preguntas. Las puntuaciones del juez propio no son puntajes oficiales ni porcentajes de privacidad.
 
-## 8. Ensayo, contingencias y entrega
+El `entities.json` de una corrida ampliada **debe poder crecer**: lo que no cambia es el perfil de las personas anteriores, no el archivo completo. La prueba entre corridas no puede reemplazarse por una sola llamada a `/anonymize`.
 
-### Antes de consumir corridas oficiales
+No afirmar resultados de entrenamiento, ahorros económicos, anonimato absoluto, cumplimiento legal automático o que jamás se exponen datos a terceros. `entities.json` contiene originales y nunca viaja con el corpus comercial. El reto exige endpoints sin autenticación; comercializar requeriría separación de accesos, protección del mapa y política de entrega, no implementadas por el mero contrato del reto.
 
-- Aprobar el validador local y comprobar el servicio desplegado sin disparar evaluaciones innecesarias.
-- Planear las tres corridas: obtener una válida antes del cambio de fuentes y reservar capacidad para después. La última anterior vale 30 % del componente automático y la última posterior, 70 %. No usar las tres como ensayos de presentación.
-- Separar la ejecución pesada del corpus de la petición interactiva; no lanzar `/run` durante el pitch.
+## 8. Video de cinco minutos: misma narrativa, versión extendida
+
+El pitch de tres minutos está confirmado; el enunciado pide una demo de cinco y la rúbrica menciona video. Planear ambos y confirmar el formato final de subida. Comparten caso, versión y evidencia, con dos guiones propios. El video extendido es la referencia narrativa completa; el pitch destila sus pruebas esenciales, no añade una historia distinta.
+
+| Tiempo del video | Contenido |
+| --- | --- |
+| 0:00–2:30 | Problema, antes/después, caso difícil, lote conocido/nuevo y evidencia esencial. Misma narrativa del pitch, sin duplicar luego las mismas métricas. |
+| 2:30–3:35 | Diagrama breve: fuentes → registro de personas → detección/resolución → perfil persistido → reemplazo → validación. Una alternativa descartada: reescritura total. Ampliar el caso difícil con la evidencia real de desempate, o generalización sobre la unión si fue el caso elegido. |
+| 3:35–4:20 | Prueba de crecimiento: comparación de dos corridas, perfiles anteriores estables y registros nuevos. Explicar bóveda, llaves estables y respaldo; no afirmar que `entities.json` queda idéntico. |
+| 4:20–4:45 | Límites y control: barrido de formas conocidas, cobertura J-REC en muestra, cola de dudosos y uso acotado del modelo con riesgo residual declarado. Solo mostrar controles ya implementados. |
+| 4:45–5:00 | Cierre con la experiencia de soporte preservada. |
+
+El video refuerza diseño y profundidad, pero no sustituye documento, diagrama ni debrief individual. No usar cifras de costo o latencia del modelo con datos inventados como si fueran el costo o latencia del pipeline completo.
+
+## 9. Debrief y preparación operativa
+
+Cada integrante prepara un ejemplo, una decisión y una limitación para: identidad frente a cadena; homónimos y rol en el hilo; cuasi-identificadores sobre la unión; metadatos y adjuntos; bóveda y recuperación; D24 en vivo; modelo y exposición residual; casos dudosos; cobertura de personas frente a barrido conocido.
 
 ### Antes de presentar
 
-- Elegir los casos definitivos desde salidas propias verificadas y fijar su versión.
-- Capturar video corto, entrada/salida y métricas de esa misma versión como respaldo.
-- Ensayar tres veces con cronómetro, incluyendo una respuesta lenta y un fallo de red.
-- Comprobar legibilidad desde lejos y evitar terminales con JSON extenso.
-- Mantener separado el pitch de tres minutos del video de cinco minutos indicado en el enunciado. En el video se puede ampliar un caso difícil y la arquitectura, con la misma evidencia; confirmar los requisitos finales del entregable.
-- No mostrar `.env`, tokens, logs sensibles ni el diccionario completo. Usar la muestra del organizador o datos ficticios para la interacción pública.
+- Verificar los resultados y habilitar solo las frases respaldadas por esa versión. No marcar C23 como completada por tener esta estrategia: aún requiere `DECISIONS.md` y cifras de ejecución.
+- Congelar el caso, datos ficticios nuevos y perfiles del corpus; comprobar los dos registros contra el servicio desplegado.
+- Capturar entrada, salida, tarjeta y grabación de respaldo de la misma versión. No mostrar `.env`, tokens, logs sensibles, diccionario completo ni PII real del corpus en la proyección pública.
+- Si el caso difícil viene del corpus real, representarlo con un fixture ficticio equivalente y validarlo por separado; distinguir esa demostración de los resultados agregados del corpus. No alterar evidencia y seguir llamándola ejecución original.
+- Probar latencia fría/caliente, un caso nuevo y fallo de red. Ensayar tres veces a 2:45, incluida transición al respaldo en tres segundos.
+- No ejecutar `/run` en escena ni consumir corridas oficiales para ensayar. Comprobar versión y salud del servicio antes del turno.
+- Asegurar legibilidad desde lejos: fragmentos cortos, sin JSON extenso ni tablas diminutas.
 
 ### Si algo falla
 
-- **Servicio o red:** «La petición en vivo no respondió; este es el resultado grabado de la versión X». Mostrar el respaldo identificado como tal.
-- **Respuesta incorrecta:** reconocer el caso que falló, mostrar el alcance real de las pruebas y continuar. No cambiar silenciosamente de entrada.
-- **Sin puntaje oficial:** presentar métricas locales rotuladas. No inventar una equivalencia.
-- **Tiempo reducido:** conservar problema → antes/después → continuidad entre fuentes → prueba o evidencia → cierre. Quitar primero el caso difícil secundario y el diagrama.
+- **Red o espera:** «La petición sigue pendiente; esta es una ejecución grabada de la versión X». Mostrar respaldo rotulado, no un mock.
+- **Resultado incorrecto:** reconocer el fallo y continuar con evidencia de alcance real; no cambiar silenciosamente de entrada.
+- **Sin crecimiento probado:** retirar la cifra de estabilidad; mencionar el mecanismo solo como diseño, sin prometer resultado.
+- **Sin puntaje oficial:** métricas locales identificadas, sin equivalencias inventadas.
+- **Tiempo reducido:** quitar primero el recuadro difícil y sus frases; conservar valor → transformación → prueba/evidencia → cierre.
 
-## 9. Criterio de demo lista
+## 10. Criterio de demo lista
 
-La demo está lista cuando, en menos de tres minutos, una persona no técnica puede explicar **qué obtiene el comprador, qué cambia para proteger a las personas y qué pruebas respaldan el resultado**; y una persona técnica puede rastrear cada afirmación hasta una corrida, una decisión y una limitación.
+En menos de tres minutos una persona no técnica entiende **qué obtiene el comprador, qué cambia para proteger identidades y qué evidencia respalda el resultado**. Una persona técnica puede rastrear cada afirmación hasta una corrida, una decisión y una limitación. El ensayo incluye el fallo de red sin exceder el tiempo.
 
-Fuentes: `docs/ENUNCIADO.md`, `RUBRICA.md`, `analisis/01_sample.md`, `fuentes/tests_public.json` y `sample/expected_output/`.
+Fuentes: `docs/ENUNCIADO.md`, `RUBRICA.md`, `DISEÑO.md` §6–9 y D1–D34, `CASOS_ESQUINA.md`, `PROGRESS.md`, `analisis/01_sample.md`, tests públicos y muestra del organizador.
