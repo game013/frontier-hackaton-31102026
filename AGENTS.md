@@ -48,6 +48,7 @@ tabla, actualízala ahí en el mismo commit.
 | `docs/`       | Material del reto: enunciado, contratos OpenAPI, `validar.mjs`. Solo lectura.            |
 | `analisis/`   | Meta-análisis: `00_resumen.md` primero; chats, docs, tablas e identidad, reuso de 10102026. |
 | `DISEÑO.md`   | Diseño, supuestos, decisiones, plan para medir. Entregable de Systems design.            |
+| `CASOS_ESQUINA.md` | Catálogo vivo de casos esquina, cada uno con su juez. Todo caso descubierto se agrega aquí. |
 | `RUBRICA.md`  | Rúbrica de la hackathon y pesos.                                                         |
 | `scripts/`    | Utilidades; `descargar_fuentes.py` baja el API completo a `fuentes/`.                     |
 | `fuentes/`    | Corpus real descargado. Ignorado por git.                                                |
@@ -68,8 +69,8 @@ Al crear un directorio de código (`cmd/`, `internal/`…), agrégalo a esta tab
 
 ## Antes de dar algo por hecho
 
-Un cambio al pipeline está listo cuando el validador da OK, el barrido de fuga da 0 y los 13 tests de la muestra
-pasan. Cada test compara contra un resultado esperado y cada paso de red lleva timeout.
+Un cambio al pipeline está listo cuando el validador da OK, el barrido de fuga da 0, los 13 tests de la muestra
+pasan y el juez propio deja en verde todos los casos de `CASOS_ESQUINA.md`. Cada test compara contra un resultado esperado y cada paso de red lleva timeout.
 
 Las corridas oficiales son tres y las lanza el usuario con VALIDAR ENTRYPOINT: propónselas, no las supongas.
 

@@ -1,6 +1,6 @@
 # Diseño: Vende los datos sin vender a la gente
 
-Versión inicial · 2026-10-31 · Reto Frontier, Kipu Pay
+Versión 2 · 2026-10-31 · Reto Frontier, Kipu Pay
 
 ## 1. El problema en una frase
 
@@ -78,17 +78,25 @@ registros que no hemos visto.
 flowchart TD
     API[(API de fuentes)] -->|ETag| ING[1 · Ingesta y normalización<br/>chats · docs · tablas → registros canónicos]
     ING --> REG[2 · Registro de personas<br/>maestro + empleados + users.json<br/>variantes de cada forma]
-    ING --> DET[3 · Detección de menciones<br/>a. formas conocidas<br/>b. patrones<br/>c. nombres desconocidos + LLM<br/>d. allowlist]
+    ING --> DET[3 · Detección · pasada 1 descubre<br/>a. formas conocidas · b. patrones<br/>c. nombres desconocidos · d. allowlist]
     REG --> DET
-    DET --> RES[4 · Resolución mención → persona<br/>ids duros > hilo/rol > LLM desempate]
-    RES --> BOV[(5 · Bóveda SQLite<br/>persona → perfil falso<br/>solo agrega)]
-    BOV --> REP[6 · Reemplazo con estilo]
+    DET -->|formas nuevas| REG
+    DET -->|residuo enmascarado| LLM{{Claude Haiku vía OpenRouter<br/>solo señala fragmentos<br/>riesgo de filtración declarado D15}}
+    LLM --> DET
+    DET --> RES[4 · Resolución mención → persona<br/>ids duros > hilo/rol > nombre único<br/>> LLM desempate > persona nueva dudosa]
+    RES --> DUD[(Cola de dudosos<br/>regla + confianza)]
+    RES --> BOV[(5 · Bóveda SQLite<br/>persona → perfil falso<br/>solo agrega · único lugar con datos reales)]
+    BOV --> REP[6 · Reemplazo con estilo · pasada 2]
     RES --> REP
     REP --> GEN[7 · Generalización de<br/>cuasi-identificadores]
     GEN --> GATE[8 · Compuerta de fuga<br/>port de contiene del validador]
     GATE --> OUT[(output/<br/>chats · docs · tables · entities)]
     LIVE[POST /anonymize] --> DET
     GATE --> LIVE
+    OUT --> JUEZ[Juez propio<br/>un juez por familia de caso esquina]
+    CAT[(CASOS_ESQUINA.md<br/>catálogo vivo)] --> JUEZ
+    DUD -.->|caso nuevo| CAT
+    JUEZ -.->|regresión| DET
 ```
 
 **Un solo núcleo, dos entradas.** `/run` y `/anonymize` llaman la misma función `Anonymize(records)`. La ingesta
@@ -117,7 +125,13 @@ sin tildes, minúsculas, dígitos sin separadores) con un mapa de offsets para v
   placa, pasaporte, cuenta, dirección, fechas, URLs con usuario, tokens en nombres de archivo.
 - c. **Nombres desconocidos**: diccionario de nombres y apellidos colombianos más mayúscula inicial. Lo que queda
   dudoso va a **Claude Haiku 5.5**, que devuelve fragmentos y tipo, nunca texto reescrito.
-- d. **Allowlist** de entidades a conservar (≈30 vistas), con la regla de apellido-lugar.
+- d. **Allowlist** de entidades a conservar (≈30 vistas), con la regla de apellido-lugar, más reglas genéricas
+  (sufijos `S.A.S.`, "Banco …", mayúscula sin nombre de pila delante) para lo que llegue con el crecimiento.
+- **Dos pasadas (D14).** La pasada 1 recorre todo el corpus y devuelve al registro las formas descubiertas en el texto
+  (cédula del usuario borrado, terceros, apodos). La pasada 2 reemplaza con el registro ya completo.
+- **Lo que ve el LLM (D15).** Antes de enviar, toda forma conocida se enmascara (`[PERSONA_1]`); viaja solo una
+  ventana de contexto alrededor del residuo, con proveedores sin retención en OpenRouter y caché por hash. El residuo
+  son, por definición, datos reales que nadie más detectó: **puede filtrarse al proveedor del LLM** y así se declara.
 
 **4. Resolución.** Para cada mención, la evidencia se ordena por fuerza:
 1. Identificador duro: cédula, correo, celular, `CL-`, `PQR-` → `pqrs.xml`, placa, fecha + monto → `transacciones`.
@@ -125,12 +139,21 @@ sin tildes, minúsculas, dígitos sin separadores) con un mapa de offsets para v
 3. Nombre: solo si hay un único candidato compatible.
 4. LLM: solo para desempatar entre candidatos, con el contexto del registro.
 Si nada vincula, se crea una persona nueva con llave de contexto, que se persiste.
+Los pasos 1–3 son consultas a índices construidos en la fase de registro, sobre entradas ordenadas por id: son
+deterministas. Un empate nunca se resuelve escogiendo uno cualquiera: va al LLM, y si el LLM no está (timeout de
+`/anonymize`), se crea una persona nueva con llave de contexto marcada como dudosa (D19). Cada mención guarda la regla
+que la resolvió y su confianza; las de baja confianza van a la cola de dudosos en SQLite (D20), que alimenta el
+catálogo de casos esquina.
 
 **5. Fábrica de seudónimos y bóveda.**
+- Nombres de un catálogo embebido de nombres de pila colombianos por género y apellidos con tildes (D18). El género
+  sale del nombre de pila real en ese catálogo; el respaldo es la ocupación flexionada ("fotógrafa") o el contexto
+  ("la clienta"). Se conserva la estructura: dos nombres y dos apellidos producen dos y dos.
 - Perfil completo por persona: nombre del mismo género (1 o 2 nombres de pila + 2 apellidos), correo
   `inicial+apellido@<dominio público>` o `nombre.apellido@kipupay.co`, cédula de la misma longitud y prefijo,
   celular 3xx, dirección colombiana, fecha de nacimiento cercana, placa, pasaporte, barrio de la misma ciudad.
-- Semilla `HMAC(secreto, llave estable)`.
+- Semilla `HMAC(secreto, llave estable)`: el perfil es función de la llave y no del orden; el secreto evita que una
+  llave `p_t_` derivada de un nombre real se revierta por fuerza bruta.
 - Restricciones: seudónimo único y **sin coincidencias con ninguna forma real** del registro (tampoco números de
   otra persona).
 - La bóveda es SQLite en el volumen de Railway y **solo agrega**. Con el registro, es el único lugar con datos
@@ -199,10 +222,31 @@ Detalle en `analisis/05_reuso_10102026.md`.
 | D11| Compuerta de fuga obligatoria al final                    | Confiar en la detección                         | Un falso negativo es fuga en cada registro de la persona; el barrido es barato               |
 | D12| SQLite en volumen                                          | Postgres gestionado / archivos JSON             | Un solo proceso, sin red extra; JSON no da transacciones si `/anonymize` y `/run` coinciden |
 | D13| Haiku 5.5 vía OpenRouter para el residuo                  | Sonnet / Opus                                   | La tarea es extraer fragmentos con contexto corto; Haiku basta y cabe en el límite de 60 s; OpenRouter es la llave disponible |
+| D14| Dos pasadas: descubrir y luego reemplazar                 | Una sola pasada                                 | Una forma descubierta en el registro 900 ya se habría escapado en el 12                       |
+| D15| Aceptar que el residuo llega al LLM, con enmascarado previo, ventana mínima, proveedor sin retención y caché | Sin LLM / modelo local | Sin LLM se pierden terceros y desempates; un modelo local no cabe en Railway ni en 60 s. **Riesgo declarado:** los datos reales que solo el LLM detecta o desempata salen hacia OpenRouter y su proveedor |
+| D16| Catálogo vivo de casos esquina con juez asignado          | Set dorado plano y fijo                         | Cada caso descubierto se vuelve regresión; mide por mecanismo, como los tests ocultos          |
+| D17| Juez propio con un juez especializado por familia         | Solo `validar.mjs` y los 13 tests de la muestra | El validador mide forma, no puntos; tres corridas oficiales no alcanzan para iterar            |
+| D18| Catálogo embebido de nombres colombianos por género       | Faker o nombres al azar                         | Conserva género, región y estructura; permite excluir toda forma real del corpus              |
+| D19| Empate sin LLM → persona nueva dudosa                     | Escoger el candidato más probable               | Fusionar a dos personas rompe homónimos y estructura; separar se corrige luego sin fuga        |
+| D20| Regla y confianza por mención; cola de dudosos en SQLite  | Revisar logs                                    | Los logs no llevan PII; la cola se convierte en casos del catálogo                             |
 
 ## 8. Plan para medir
 
 Todo corre en local antes de gastar una corrida oficial.
+
+### 8.1 Catálogo de casos esquina y juez propio
+
+`CASOS_ESQUINA.md` es el catálogo vivo: cada caso tiene id, familia, ejemplo por id de registro, resultado esperado
+y **el juez que lo mide**. Cuando la cola de dudosos, una captura de `/anonymize` o una corrida oficial revelan un
+caso nuevo, se agrega ahí con su ejemplo antes de corregir el pipeline.
+
+El juez (`cmd/juez`) corre sobre `output/` y el catálogo, con un juez especializado por familia: fuga directa,
+fuga oculta, cuasi-identificador, falso positivo, homónimos, consistencia, categoría del seudónimo, estructura,
+"reporta a", honestidad del diccionario, barrido global, crecimiento y en vivo. Cada juez da su propia puntuación
+y la suma se pondera con los pesos del jurado (fuga 45, utilidad 35, consistencia 20; directa 3, oculta 2, resto 1).
+Un caso del catálogo en rojo bloquea la corrida oficial.
+
+### 8.2 Pruebas
 
 | # | Prueba                              | Cómo                                                                                  | Meta                       |
 | - | ----------------------------------- | ------------------------------------------------------------------------------------- | -------------------------- |
@@ -210,11 +254,12 @@ Todo corre en local antes de gastar una corrida oficial.
 | 2 | Muestra                             | Correr el pipeline sobre `sample/input` y aplicar los 13 tests de `tests_sample.json` | 13/13                      |
 | 3 | Parecido con la salida ideal        | Similitud de texto por registro contra `sample/expected_output`                        | ≥ 0,95 de media            |
 | 4 | Barrido de fuga                     | Todas las formas del registro sobre toda la salida, con `contiene()` portado           | 0 coincidencias            |
-| 5 | Set dorado                          | ~60 casos a mano: 8 pares de homónimos, 29 cuasi-identificadores, 8 correos deletreados, adjuntos, usuario borrado, PII disfrazada, apellidos-lugar | 100 % |
+| 5 | Catálogo de casos esquina (juez)    | Todos los casos de `CASOS_ESQUINA.md`; base ~60 a mano: 8 pares de homónimos, 29 cuasi-identificadores, 8 correos deletreados, adjuntos, usuario borrado, PII disfrazada, apellidos-lugar | 100 % |
 | 6 | Falsos positivos                    | Cada entidad de la allowlist sigue en sus registros                                    | 100 %                      |
 | 7 | Consistencia                        | Un seudónimo por persona; unicidad; `reporta_a` resuelve al jefe correcto; los joins entre tablas unen las mismas filas | 100 % |
 | 8 | Honestidad del diccionario          | Para cada persona, todas las `lookup_forms` posibles (estilo `forms` de los tests) están en `originals` | 100 % |
-| 9 | Crecimiento                         | Correr con el 80 % de las fechas y luego con el 100 %; comparar `entities.json`       | 0 seudónimos viejos cambian |
+| 9 | Crecimiento y sobreajuste           | Ajustar con el 80 % de las fechas y medir sobre el 20 % restante; comparar `entities.json` | 0 seudónimos viejos cambian; mismo puntaje del juez en el 20 % |
+| 12| Determinismo                        | Dos corridas seguidas sin LLM; `output/` byte a byte                                   | idénticas                  |
 | 10| Carga en vivo                       | Lotes de 50 registros, incluidas copias alteradas y homónimos nuevos                   | < 60 s, mismo seudónimo    |
 | 11| Tiempo y costo de `/run`            | Medido en Railway                                                                      | < 15 min, costo reportado  |
 
@@ -234,4 +279,6 @@ Todo corre en local antes de gastar una corrida oficial.
 | El volumen de Railway se pierde y cambian los seudónimos | Respaldar la bóveda a disco local (fuera de git) tras cada corrida; semilla determinista como respaldo |
 | El LLM falla o tarda en `/anonymize`              | Timeout de 45 s y respaldo por reglas                                   |
 | Falsos positivos por nombres comunes ("Claro")    | Nombre de pila suelto solo con contexto; set dorado de falsos positivos |
+| Filtración al proveedor del LLM                   | Enmascarado de formas conocidas, ventana mínima, proveedor sin retención; declarado en `DECISIONS.md` (D15) |
+| Sobreajuste al corpus actual                      | Hold-out del 20 % de fechas; reglas genéricas en la allowlist; catálogo por mecanismo |
 | Markdown de PDF distinto al de la salida ideal    | Solo afecta el parecido; se ajusta con lo que muestre la corrida 1     |
