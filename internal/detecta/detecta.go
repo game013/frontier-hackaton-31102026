@@ -204,12 +204,10 @@ func (d *Detector) conocidas(r modelo.Registro, campo campos.Campo, mapa norm.Ma
 			regla = "forma_compartida"
 			confianza = 0.6
 		}
-		// D25: un nombre de pila suelto solo se reemplaza cuando el registro
-		// tiene un único dueño. Con dos candidatos decide la resolución, no la
-		// cadena.
-		if forma.Tipo == modelo.FormaNombrePila && persona == "" {
-			continue
-		}
+		// D25: un nombre de pila suelto se reemplaza cuando hay un único dueño o
+		// cuando el hilo, el autor o la fila del maestro lo atan a alguien. La
+		// cadena sola no decide: la mención queda sin persona para la
+		// resolución.
 		out = append(out, modelo.Mencion{
 			Registro:  r.IDRegistro(),
 			Fuente:    r.FuenteRegistro(),
@@ -258,7 +256,19 @@ func (d *Detector) patrones(r modelo.Registro, campo campos.Campo, mapa norm.Map
 	var out []modelo.Mencion
 	for _, regla := range d.reglas {
 		for _, tramo := range regla.re.FindAllStringIndex(mapa.Texto, -1) {
+			// Un patrón no puede cortar una palabra: "sep202" dentro de
+			// "sep2026" no es una placa.
+			if !bordesDePalabra(mapa.Texto, tramo[0], tramo[1]) {
+				continue
+			}
 			if !regla.conContexto(mapa.Texto, tramo[0], tramo[1], anterior) {
+				continue
+			}
+			fragmentoNormalizado := mapa.Texto[tramo[0]:tramo[1]]
+			if !regla.digitosPlausibles(fragmentoNormalizado, tramo[0], mapa.Texto) {
+				continue
+			}
+			if !regla.fechaPlausible(fragmentoNormalizado) {
 				continue
 			}
 			inicio, fin, ok := mapa.Original(tramo[0], tramo[1])
@@ -266,6 +276,12 @@ func (d *Detector) patrones(r modelo.Registro, campo campos.Campo, mapa norm.Map
 				continue
 			}
 			fragmento := campo.Valor[inicio:fin]
+			if (regla.forma == modelo.FormaPlaca || regla.forma == modelo.FormaPasaporte) &&
+				fragmento != strings.ToUpper(fragmento) {
+				// Las placas y los pasaportes se escriben en mayúsculas; en
+				// minúsculas suele ser un mes o un token del nombre de archivo.
+				continue
+			}
 			if d.conservada(fragmento, campo.Valor, inicio, fin) {
 				continue
 			}
@@ -464,6 +480,123 @@ type patron struct {
 	forma     modelo.TipoForma
 	contexto  []string
 	confianza float64
+	// digitos exige que el tramo tenga entre 6 y 10 dígitos y que no venga
+	// precedido de una señal de dinero o de impuesto (CE-23).
+	digitos bool
+	// fecha exige un año plausible de nacimiento: una fecha de negocio de 2026
+	// no es PII y no puede volverse el cumpleaños de nadie (CE-21, CE-23).
+	fecha bool
+	// soloAntes exige el contexto delante del dato: "cédula" o "placa" anuncian
+	// lo que sigue, y mirar detrás convierte montos en documentos (CE-23).
+	soloAntes bool
+}
+
+// anioMinimo y anioMaximo acotan una fecha de nacimiento plausible.
+const (
+	anioMinimo = 1920
+	anioMaximo = 2012
+)
+
+// fechaPlausible mira el año del tramo y descarta fechas de negocio.
+func (p patron) fechaPlausible(tramo string) bool {
+	if !p.fecha {
+		return true
+	}
+	anio := 0
+	for i := 0; i+3 < len(tramo); i++ {
+		if i+4 <= len(tramo) && esCuatroDigitos(tramo[i:i+4]) && (i == 0 || !esDigito(tramo[i-1])) {
+			anio = numero(tramo[i : i+4])
+			break
+		}
+	}
+	if anio == 0 {
+		return false
+	}
+	return anio >= anioMinimo && anio <= anioMaximo
+}
+
+func esDigito(b byte) bool { return b >= '0' && b <= '9' }
+
+// heredaContexto dice si el mensaje es una respuesta corta a la pregunta del
+// anterior: "Claro, es 1.107.360.039" sí; "el monto fue de 2.390.000 pesos" no,
+// porque trae una señal de dinero y una frase larga (CE-16, CE-23).
+func heredaContexto(texto string) bool {
+	if soloDigitosYSignos(texto) {
+		return true
+	}
+	if len(strings.Fields(texto)) > 7 {
+		return false
+	}
+	for _, senal := range senalesDeDinero {
+		if strings.Contains(texto, senal) {
+			return false
+		}
+	}
+	return true
+}
+
+// soloDigitosYSignos dice si el texto es una respuesta numérica: no hay letras
+// que puedan venir de una frase.
+func soloDigitosYSignos(texto string) bool {
+	for i := 0; i < len(texto); i++ {
+		b := texto[i]
+		if b >= 'a' && b <= 'z' || b >= 0x80 {
+			return false
+		}
+	}
+	return true
+}
+
+func esCuatroDigitos(s string) bool {
+	for i := 0; i < 4; i++ {
+		if !esDigito(s[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func numero(s string) int {
+	n := 0
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return 0
+		}
+		n = n*10 + int(r-'0')
+	}
+	return n
+}
+
+// senalesDeDinero son las palabras que convierten un número con puntos en un
+// monto, un NIT o una referencia, no en una cédula.
+var senalesDeDinero = []string{"$", "monto", "valor", "pago", "cuota", "saldo",
+	"total", "pesos", "deuda", "nit", "factura", "compra", "abono", "interés", "interes"}
+
+// digitosPlausibles rechaza los números que no tienen forma de documento.
+func (p patron) digitosPlausibles(tramo string, inicio int, texto string) bool {
+	if !p.digitos {
+		return true
+	}
+	d := 0
+	for _, r := range tramo {
+		if r >= '0' && r <= '9' {
+			d++
+		}
+	}
+	if d < 6 || d > 10 {
+		return false
+	}
+	desde := inicio - 24
+	if desde < 0 {
+		desde = 0
+	}
+	antes := texto[desde:inicio]
+	for _, senal := range senalesDeDinero {
+		if strings.Contains(antes, senal) {
+			return false
+		}
+	}
+	return true
 }
 
 // conContexto mira la ventana a la izquierda (y algo a la derecha) del tramo: la
@@ -477,11 +610,17 @@ func (p patron) conContexto(texto string, inicio, fin int, anterior string) bool
 		desde = 0
 	}
 	hasta := fin + ventana
+	if p.soloAntes {
+		hasta = fin
+	}
 	if hasta > len(texto) {
 		hasta = len(texto)
 	}
 	zona := texto[desde:hasta]
-	if anterior != "" {
+	// El contexto del mensaje anterior solo vale si este mensaje es la respuesta:
+	// un mensaje que solo trae el número contesta la pregunta de antes. Una
+	// frase con letras no hereda el "cédula" de la pregunta (CE-16, CE-23).
+	if anterior != "" && heredaContexto(texto) {
 		zona = strings.ToLower(anterior) + " " + zona
 	}
 	for _, palabra := range p.contexto {
@@ -523,13 +662,13 @@ func patronesDeReglas() []patron {
 	return []patron{
 		{nombre: "correo_deletreado", re: must(`[a-z0-9]+(?:\s+punto\s+[a-z0-9]+)+\s+arroba\s+[a-z0-9]+(?:\s+punto\s+[a-z0-9]+)+`), forma: modelo.FormaCorreoDeletreado, confianza: 0.9},
 		{nombre: "correo", re: must(`[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.(com|co|net|org|edu|gov|io|info|biz|us|uk|es|mx|ar|cl|pe|ec)`), forma: modelo.FormaCorreo, confianza: 0.95},
-		{nombre: "celular", re: must(`(?:\+57[\s.-]*)?3\d{2}[\s.-]?\d{3}[\s.-]?\d{4}`), forma: modelo.FormaCelular, contexto: contacto, confianza: 0.8},
-		{nombre: "cedula_puntos", re: must(`\d{1,3}(?:\.\d{3}){1,3}`), forma: modelo.FormaCedula, contexto: documento, confianza: 0.8},
-		{nombre: "cedula", re: must(`(?:cc\s*)?\d{6,10}`), forma: modelo.FormaCedula, contexto: documento, confianza: 0.7},
-		{nombre: "fecha_iso", re: must(`\d{4}-\d{2}-\d{2}`), forma: modelo.FormaFechaISO, contexto: nacimiento, confianza: 0.7},
-		{nombre: "fecha_us", re: must(`\d{2}/\d{2}/\d{4}`), forma: modelo.FormaFechaUS, contexto: nacimiento, confianza: 0.7},
-		{nombre: "fecha_palabras", re: must(`\d{1,2} de ` + meses + ` de \d{4}`), forma: modelo.FormaFechaPalabras, contexto: nacimiento, confianza: 0.7},
-		{nombre: "placa", re: must(`[a-z]{3}[\s-]?\d{3}`), forma: modelo.FormaPlaca, contexto: []string{"placa", "vehiculo", "carro", "moto"}, confianza: 0.7},
-		{nombre: "pasaporte", re: must(`[a-z]{1,2}\d{6,8}`), forma: modelo.FormaPasaporte, contexto: []string{"pasaporte"}, confianza: 0.7},
+		{nombre: "celular", re: must(`(?:\+57[\s.-]*)?3\d{2}[\s.-]?\d{3}[\s.-]?\d{4}`), forma: modelo.FormaCelular, contexto: contacto, confianza: 0.8, soloAntes: true},
+		{nombre: "cedula_puntos", re: must(`\d{1,3}(?:\.\d{3}){1,3}`), forma: modelo.FormaCedula, contexto: documento, confianza: 0.8, digitos: true, soloAntes: true},
+		{nombre: "cedula", re: must(`(?:cc\s*)?\d{6,10}`), forma: modelo.FormaCedula, contexto: documento, confianza: 0.7, digitos: true, soloAntes: true},
+		{nombre: "fecha_iso", re: must(`\d{4}-\d{2}-\d{2}`), forma: modelo.FormaFechaISO, contexto: nacimiento, confianza: 0.7, fecha: true, soloAntes: true},
+		{nombre: "fecha_us", re: must(`\d{2}/\d{2}/\d{4}`), forma: modelo.FormaFechaUS, contexto: nacimiento, confianza: 0.7, fecha: true, soloAntes: true},
+		{nombre: "fecha_palabras", re: must(`\d{1,2} de ` + meses + ` de \d{4}`), forma: modelo.FormaFechaPalabras, contexto: nacimiento, confianza: 0.7, fecha: true, soloAntes: true},
+		{nombre: "placa", re: must(`[a-z]{3}[\s-]?\d{3}`), forma: modelo.FormaPlaca, contexto: []string{"placa", "vehiculo", "carro", "moto"}, confianza: 0.7, soloAntes: true},
+		{nombre: "pasaporte", re: must(`[a-z]{1,2}\d{6,8}`), forma: modelo.FormaPasaporte, contexto: []string{"pasaporte"}, confianza: 0.7, soloAntes: true},
 	}
 }

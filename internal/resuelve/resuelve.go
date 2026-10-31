@@ -173,9 +173,11 @@ func (r *Resolutor) desempata(ctx context.Context, c *contexto, m *modelo.Mencio
 // personaNueva crea la persona que la evidencia no alcanzó a identificar y la
 // marca dudosa (D19). La llave sale del valor y su ancla, nunca del orden.
 func (r *Resolutor) personaNueva(ctx context.Context, m *modelo.Mencion) error {
-	if m.Forma == modelo.FormaNombrePila {
-		// Un nombre de pila suelto sin dueño único no crea una persona: sería
-		// inventar a alguien a partir de una palabra común (D25).
+	// Un nombre de pila suelto o una fecha sin dueño no identifican a nadie por
+	// sí solos: inventar una persona a partir de ellos contamina la bóveda y la
+	// compuerta barrería fechas de negocio (D25, CE-23).
+	switch m.Forma {
+	case modelo.FormaNombrePila, modelo.FormaFechaISO, modelo.FormaFechaUS, modelo.FormaFechaPalabras:
 		m.Regla, m.Confianza = "sin_evidencia", 0
 		return nil
 	}

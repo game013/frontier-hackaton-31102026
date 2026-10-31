@@ -257,8 +257,9 @@ func vacio(t *testing.T) *registro.Indice {
 	return indice
 }
 
-// Un nombre de pila compartido por dos personas no se toca suelto (D25).
-func TestNombreDePilaCompartidoNoSeToca(t *testing.T) {
+// Un nombre de pila compartido por dos personas no se atribuye por la cadena:
+// la mención queda sin dueño para que decida el contexto (D25).
+func TestNombreDePilaCompartidoQuedaSinDueno(t *testing.T) {
 	indice, err := registro.Construye([]modelo.Registro{
 		modelo.TableRecord{ID: "clientes:CL-1", Table: "clientes", Columns: map[string]string{
 			"cliente_id": "CL-1", "nombre_completo": "Camila Arango Ruiz", "num_doc": "1000000001",
@@ -276,7 +277,13 @@ func TestNombreDePilaCompartidoNoSeToca(t *testing.T) {
 	}
 	recs := []modelo.Registro{modelo.ChatRecord{ID: "m1", Author: "Ana", Text: "Hola Camila, ¿cómo estás?"}}
 	menciones, _ := d.Detecta(context.Background(), recs)
-	if len(menciones) != 0 {
-		t.Fatalf("toqué un nombre de pila compartido: %+v", menciones)
+	if len(menciones) != 1 {
+		t.Fatalf("menciones = %+v, quiero una sin dueño", menciones)
+	}
+	if menciones[0].Persona != "" {
+		t.Fatalf("atribuí un nombre compartido por la cadena: %+v", menciones[0])
+	}
+	if menciones[0].Regla != "forma_compartida" {
+		t.Fatalf("regla = %q", menciones[0].Regla)
 	}
 }
