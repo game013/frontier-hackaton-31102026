@@ -105,6 +105,11 @@ type Corpus struct {
 	Usuarios map[string]Usuario
 	// Canales es channels.json indexado por nombre de canal.
 	Canales map[string]Canal
+	// Autores va de id de registro (client_msg_id) a uid del autor. El registro
+	// de personas y la resolución lo usan para no confundir homónimos cuando el
+	// nombre del autor coincide con el de otra persona (D10, CE-02); el uid
+	// nunca llega a output/.
+	Autores map[string]string
 	// Incidencias son las excepciones aplicadas, en orden de fuente.
 	Incidencias []Incidencia
 }
@@ -130,6 +135,7 @@ func Cargar(raiz string) (*Corpus, error) {
 		Registros: []modelo.ChatRecord{},
 		Usuarios:  usuarios,
 		Canales:   canales,
+		Autores:   map[string]string{},
 	}
 	for _, e := range entradas {
 		if !e.IsDir() {
@@ -222,6 +228,9 @@ func (c *Corpus) agregaCanal(canal string, mensajes []mensaje) {
 		adjuntos, sinNombre := adjuntos(m.Files)
 		if sinNombre {
 			c.anota(ReglaAdjuntoSinNombre, canal, m.TS)
+		}
+		if m.User != "" {
+			c.Autores[m.ClientMsgID] = m.User
 		}
 		c.Registros = append(c.Registros, modelo.ChatRecord{
 			ID:          m.ClientMsgID,

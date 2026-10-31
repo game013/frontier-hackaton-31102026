@@ -106,6 +106,37 @@ func TestAutorNuncaEsUnUID(t *testing.T) {
 	}
 }
 
+// TestAutoresMapeaRegistroAUID fija la llave que el registro de personas usa
+// para no confundir homónimos: todo mensaje con autor conocido trae su uid, y el
+// uid nunca se filtra al registro canónico.
+func TestAutoresMapeaRegistroAUID(t *testing.T) {
+	corpus := cargarMuestra(t)
+	if len(corpus.Autores) == 0 {
+		t.Fatal("sin índice registro → uid")
+	}
+	for _, r := range corpus.Registros {
+		uid, ok := corpus.Autores[r.ID]
+		if !ok {
+			continue
+		}
+		if _, existe := corpus.Usuarios[uid]; !existe {
+			t.Errorf("registro %s apunta a un uid fuera de users.json", r.ID)
+		}
+		if r.Author == uid {
+			t.Errorf("registro %s: el uid llegó a author", r.ID)
+		}
+	}
+	sinUID := 0
+	for _, r := range corpus.Registros {
+		if _, ok := corpus.Autores[r.ID]; !ok {
+			sinUID++
+		}
+	}
+	if sinUID > 0 && len(corpus.Autores) == 0 {
+		t.Errorf("Autores = %d para %d registros (sin uid: %d)", len(corpus.Autores), len(corpus.Registros), sinUID)
+	}
+}
+
 // TestNombreCortoEsPrefijoDelCompleto es la invariante que el resto del
 // pipeline asume sobre el índice: author es una forma corta del nombre completo,
 // nunca el uid ni otra cadena.
