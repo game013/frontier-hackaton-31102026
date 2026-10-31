@@ -97,12 +97,18 @@ func escribeEntidades(ruta string, ents []modelo.Entity) error {
 // validador exige que el valor declarado esté en la salida, y los nombres se
 // usan en formas distintas (completo en la fila del maestro, corto en el autor
 // del chat). Declarar el completo cuando solo se usó el corto miente.
-func Entidades(indice *registro.Indice, menciones []modelo.Mencion, perfiles map[string]modelo.Perfil, allow *detecta.Allowlist) []modelo.Entity {
+func Entidades(indice *registro.Indice, menciones []modelo.Mencion, perfiles map[string]modelo.Perfil, allow *detecta.Allowlist, sinDueno map[string]bool) []modelo.Entity {
 	registros := map[string]map[string]bool{}
 	valores := map[string]map[string]map[string]map[string]bool{}
+	if sinDueno == nil {
+		sinDueno = map[string]bool{}
+	}
 	orden := map[string]bool{}
 	for _, m := range menciones {
 		if m.Persona == "" {
+			// Una mención sin dueño sigue en el texto: no se declara como
+			// reemplazada (D25: un nombre de pila suelto no se barre).
+			sinDueno[norm.Norm(m.Valor)] = true
 			continue
 		}
 		perfil, ok := perfiles[m.Persona]
@@ -147,7 +153,7 @@ func Entidades(indice *registro.Indice, menciones []modelo.Mencion, perfiles map
 		out = append(out, modelo.Entity{
 			EntityID:   llave,
 			Type:       modelo.EntidadPersona,
-			Originals:  formasReales(p),
+			Originals:  formasReales(p, sinDueno),
 			Pseudonyms: seudonimos,
 			Records:    listaOrdenada(registros[llave]),
 		})
@@ -223,11 +229,16 @@ func pseudonimoDe(perfil modelo.Perfil, tipo modelo.TipoForma) (string, string, 
 }
 
 // formasReales devuelve las formas de la persona sin repetir y en orden estable.
-func formasReales(p modelo.Persona) []string {
+// Deja fuera las que la resolución no pudo atribuir: declararlas sería declarar
+// una sustitución que no ocurrió (D25, J-DIC).
+func formasReales(p modelo.Persona, sinDueno map[string]bool) []string {
 	vistas := map[string]bool{}
 	var out []string
 	for _, f := range p.Formas {
-		if f.Valor == "" || vistas[f.Valor] {
+		if os.Getenv("SALIDA_DEBUG") != "" && sinDueno[norm.Norm(f.Valor)] {
+			fmt.Fprintf(os.Stderr, "DEBUG omito tipo=%s len=%d\n", f.Tipo, len(f.Valor))
+		}
+		if f.Valor == "" || vistas[f.Valor] || sinDueno[norm.Norm(f.Valor)] {
 			continue
 		}
 		vistas[f.Valor] = true

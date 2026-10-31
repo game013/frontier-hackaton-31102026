@@ -116,6 +116,11 @@ func verifica(detector *detecta.Detector, ctx context.Context, recs []modelo.Reg
 		if len(indice.Busca(m.Valor)) == 0 {
 			continue
 		}
+		// Un nombre de pila compartido sin dueño no es una fuga que la compuerta
+		// deba cerrar: barrerlo fusionaría personas (D25).
+		if m.Forma == modelo.FormaNombrePila && m.Persona == "" {
+			continue
+		}
 		out = append(out, Fuga{Registro: m.Registro, Campo: m.Campo, Forma: m.Valor, Restante: true})
 	}
 	return out

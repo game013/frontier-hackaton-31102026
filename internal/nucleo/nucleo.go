@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/game013/frontier-hackaton-31102026/internal/compuerta"
@@ -23,6 +24,7 @@ import (
 	"github.com/game013/frontier-hackaton-31102026/internal/ingesta/chats"
 	"github.com/game013/frontier-hackaton-31102026/internal/llm"
 	"github.com/game013/frontier-hackaton-31102026/internal/modelo"
+	"github.com/game013/frontier-hackaton-31102026/internal/norm"
 	"github.com/game013/frontier-hackaton-31102026/internal/perfil"
 	"github.com/game013/frontier-hackaton-31102026/internal/reemplazo"
 	"github.com/game013/frontier-hackaton-31102026/internal/registro"
@@ -118,6 +120,10 @@ func (n *Nucleo) Corrida(ctx context.Context, entrada Entrada) (modelo.Resultado
 	if err != nil {
 		return modelo.Resultado{}, fmt.Errorf("nucleo: detección: %w", err)
 	}
+	// Un número que ya es un monto de las tablas no es una cédula: el detector
+	// no conoce las tablas y la compuerta no puede deshacer esa confusión
+	// (CE-23).
+	menciones = sinMontos(menciones, montosDe(entrada.Registros))
 	candidatos := detector.Candidatos(entrada.Registros)
 	clasificador := residuo.Nuevo(residuo.Opciones{
 		Modelo:    n.modelo,
@@ -146,8 +152,6 @@ func (n *Nucleo) Corrida(ctx context.Context, entrada Entrada) (modelo.Resultado
 	if err != nil {
 		return modelo.Resultado{}, fmt.Errorf("nucleo: reemplazo: %w", err)
 	}
-	entidades := salida.Entidades(indice, menciones, perfiles, n.allowlist)
-
 	// Pasada 2: la compuerta barre lo que haya quedado y lo corrige con la
 	// bóveda ya completa (D11, D25).
 	limpios, fugas, err := compuerta.Barre(lote, reemplazados, indice, perfiles, n.allowlist)
@@ -158,6 +162,16 @@ func (n *Nucleo) Corrida(ctx context.Context, entrada Entrada) (modelo.Resultado
 		return modelo.Resultado{}, fmt.Errorf("nucleo: la compuerta no pudo cerrar %d fugas (%s)",
 			pendientes, compuerta.Resume(fugas))
 	}
+
+	// El diccionario se arma sobre la salida final: lo que siga en el texto no
+	// se declara como reemplazado (D25, J-DIC).
+	sinDueno := map[string]bool{}
+	if restantes, err := detector.Detecta(lote, limpios); err == nil {
+		for _, m := range restantes {
+			sinDueno[norm.Norm(m.Valor)] = true
+		}
+	}
+	entidades := salida.Entidades(indice, menciones, perfiles, n.allowlist, sinDueno)
 	return modelo.Resultado{Registros: limpios, Entities: entidades}, nil
 }
 
@@ -230,6 +244,56 @@ func enmascarador(formas []modelo.Forma) func(string) string {
 	return mascara.Enmascara
 }
 
+// montosDe junta los montos de las tablas, normalizados a dígitos.
+func montosDe(recs []modelo.Registro) map[string]bool {
+	montos := map[string]bool{}
+	for _, r := range recs {
+		tabla, ok := r.(modelo.TableRecord)
+		if !ok || tabla.Table != "transacciones" {
+			continue
+		}
+		for _, columna := range []string{"monto", "valor", "total"} {
+			if valor := tabla.Columns[columna]; valor != "" {
+				montos[digitosDe(valor)] = true
+			}
+		}
+	}
+	return montos
+}
+
+// sinMontos quita las menciones de cédula que en realidad son un monto.
+func sinMontos(menciones []modelo.Mencion, montos map[string]bool) []modelo.Mencion {
+	if len(montos) == 0 {
+		return menciones
+	}
+	out := menciones[:0]
+	for _, m := range menciones {
+		if esFormaDeDocumento(m.Forma) && montos[digitosDe(m.Valor)] {
+			continue
+		}
+		out = append(out, m)
+	}
+	return out
+}
+
+func esFormaDeDocumento(t modelo.TipoForma) bool {
+	switch t {
+	case modelo.FormaCedula, modelo.FormaCedulaPuntos, modelo.FormaCedulaCC:
+		return true
+	}
+	return false
+}
+
+func digitosDe(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
 // pendientesDe cuenta las fugas que la compuerta no pudo cerrar.
 func pendientesDe(fugas []compuerta.Fuga) int {
 	pendientes := 0
@@ -243,9 +307,15 @@ func pendientesDe(fugas []compuerta.Fuga) int {
 
 // ConfiguracionDelModelo arma el cliente de Jev desde el entorno (D32). Se
 // expone para el servicio y para la herramienta local; devuelve nil sin llave.
-func ConfiguracionDelModelo(getenv func(string) string) (*llm.Cliente, error) {
+// Devuelve nil (interfaz vacía, no un puntero nil) cuando no hay llave: un
+// cliente nil dentro de un modelo.Modelo panickea al primer Decide.
+func ConfiguracionDelModelo(getenv func(string) string) (modelo.Modelo, error) {
 	if getenv("OPENROUTER_API_KEY") == "" {
 		return nil, nil
 	}
-	return llm.NuevaDesdeEntorno(getenv)
+	cliente, err := llm.NuevaDesdeEntorno(getenv)
+	if err != nil || cliente == nil {
+		return nil, err
+	}
+	return cliente, nil
 }

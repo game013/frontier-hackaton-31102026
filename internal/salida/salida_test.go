@@ -121,7 +121,7 @@ func TestEntidadesDeclaraFormasYSeudonimosUsados(t *testing.T) {
 	if err != nil {
 		t.Fatalf("allowlist: %v", err)
 	}
-	ents := Entidades(indice, menciones, perfiles, al)
+	ents := Entidades(indice, menciones, perfiles, al, nil)
 	if len(ents) != 2 {
 		t.Fatalf("entidades = %d, quiero 2 (persona y conservada)", len(ents))
 	}
