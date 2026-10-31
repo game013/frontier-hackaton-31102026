@@ -180,20 +180,22 @@ el modelo nunca recibe un registro completo. El riesgo se acepta con mitigación
 ### 3.4 Cifras de la corrida
 
 Estas cifras las llena C23 con la corrida 1 ya hecha. Hasta entonces este documento no afirma ningún número de
-corrida; los huecos están marcados para que nadie los rellene con una estimación.
+corrida: cada celda dice "pendiente de la corrida 1" para que nadie la rellene con una estimación.
 
 | Qué                                        | De dónde sale                                     | Corrida 1 |
 | ------------------------------------------ | ------------------------------------------------- | --------- |
-| Tokens de entrada al modelo                | `GET /v1/run/{id}` → `cost.tokens_in`             | <!-- C23: tokens de entrada de la corrida --> |
-| Tokens de salida del modelo                | `GET /v1/run/{id}` → `cost.tokens_out`            | <!-- C23: tokens de salida de la corrida --> |
-| Decisiones pedidas y cuántas salieron de caché | log de la corrida (una línea por job) y la tabla `cache_modelo` | <!-- C23: llamadas al modelo y aciertos de caché --> |
-| Costo en dólares                           | log de la corrida, contrastado con tokens por el precio del snapshot | <!-- C23: dólares de la corrida --> |
-| Segundos de `/run`                         | `GET /v1/run/{id}` → `cost.seconds`               | <!-- C23: segundos de /run --> |
-| Segundos por lote de 50 en `/anonymize`    | `curl -w '%{time_total}'` sobre el lote (token redactado) | <!-- C23: segundos de /anonymize --> |
+| Tokens de entrada al modelo                | `GET /v1/run/{id}` → `cost.tokens_in`             | Pendiente de la corrida 1 |
+| Tokens de salida del modelo                | `GET /v1/run/{id}` → `cost.tokens_out`            | Pendiente de la corrida 1 |
+| Decisiones pedidas y cuántas salieron de caché | log de la corrida (una línea por job) y la tabla `cache_modelo` | Pendiente de la corrida 1 |
+| Costo en dólares                           | log de la corrida, contrastado con tokens por el precio del snapshot | Pendiente de la corrida 1 |
+| Segundos de `/run`                         | `GET /v1/run/{id}` → `cost.seconds`               | Pendiente de la corrida 1 |
+| Segundos por lote de 50 en `/anonymize`    | `curl -w '%{time_total}'` sobre el lote (token redactado) | Pendiente de la corrida 1 |
 
 Los tokens que se reportan son los que devolvió el proveedor en cada llamada: los acumula el cliente de Jev
-(`internal/llm`, `Uso`) y viajan con los conteos de la corrida. Una corrida **sin llave** reporta cero tokens y cero
-dólares porque no hizo ninguna llamada (D19): ese cero es la cifra, no un hueco.
+(`internal/llm`, `Uso`) y viajan con los conteos de la corrida. `/run/{id}` publica **el consumo de esa corrida** —la
+diferencia entre la contabilidad al empezar y la del final del job—, no el acumulado del proceso, que también carga
+`/anonymize`. Una corrida **sin llave** reporta cero tokens y cero dólares porque no hizo ninguna llamada (D19): ese
+cero es la cifra, no un hueco.
 
 #### Cómo se llenan las seis cifras
 
