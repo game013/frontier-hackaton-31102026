@@ -3,8 +3,10 @@ package juez
 import (
 	"fmt"
 	"sort"
+	"unicode/utf8"
 
 	"github.com/game013/frontier-hackaton-31102026/internal/modelo"
+	"github.com/game013/frontier-hackaton-31102026/internal/norm"
 )
 
 // Medicion es el resultado de un juez base: cuántas cosas de cuántas pasan y el
@@ -44,14 +46,14 @@ func JuezGLO(s *Salida) Medicion {
 			continue
 		}
 		for _, original := range e.Originals {
-			if largoRuna(original) < 3 {
+			if utf8.RuneCountInString(original) < 3 {
 				m.Detalles = append(m.Detalles, fmt.Sprintf("forma demasiado corta para barrer: %q (%s)", original, e.EntityID))
 				continue
 			}
 			m.Total++
 			encontrados := 0
 			for i, texto := range textos {
-				if Contiene(texto, original) {
+				if norm.Contiene(texto, original) {
 					encontrados++
 					if encontrados <= 3 {
 						m.Detalles = append(m.Detalles, fmt.Sprintf("%q sigue en %s (%s)", original, s.Orden[i], e.EntityID))
@@ -87,7 +89,7 @@ func JuezDIC(s *Salida, tests []Test) Medicion {
 			continue
 		}
 		for _, forma := range formas {
-			clave := t.ID + "|" + Normaliza(forma)
+			clave := t.ID + "|" + norm.Norm(forma)
 			if vistas[clave] {
 				continue
 			}

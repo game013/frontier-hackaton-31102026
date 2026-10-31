@@ -10,8 +10,10 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/game013/frontier-hackaton-31102026/internal/modelo"
+	"github.com/game013/frontier-hackaton-31102026/internal/norm"
 )
 
 // Test es un test de fuga o utilidad, con la forma de tests_sample.json y
@@ -131,13 +133,13 @@ func evaluaDirecta(s *Salida, t Test) ResultadoTest {
 	ids := s.Orden
 	for _, dato := range t.Payload {
 		for i, texto := range textos {
-			if Contiene(texto, dato) {
+			if norm.Contiene(texto, dato) {
 				return falla(res, "el dato sigue en el registro %s", ids[i])
 			}
 		}
 		for _, huella := range huellasDe(dato) {
 			for i, texto := range textos {
-				if ContieneExacto(texto, huella) {
+				if strings.Contains(texto, huella) {
 					return falla(res, "el dato sigue como hash sin sal en el registro %s", ids[i])
 				}
 			}
@@ -146,10 +148,22 @@ func evaluaDirecta(s *Salida, t Test) ResultadoTest {
 	return pasa(res, "%d dato(s) ausentes de %d registros", len(t.Payload), len(textos))
 }
 
+// digitosDe deja solo los dígitos decimales de un valor (cédula con puntos o
+// sin puntos).
+func digitosDe(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if unicode.Is(unicode.Nd, r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
 // huellasDe devuelve los hashes sin sal que el enunciado prohíbe.
 func huellasDe(dato string) []string {
 	variantes := []string{dato}
-	if digitos := Digitos(dato); digitos != "" && digitos != dato {
+	if digitos := digitosDe(dato); digitos != "" && digitos != dato {
 		variantes = append(variantes, digitos)
 	}
 	var out []string
@@ -169,7 +183,7 @@ func evaluaOculta(_ *Salida, r Registro, t Test) ResultadoTest {
 	campos := append(r.Ocultos(), r.Textos(t.Locator.Campo)...)
 	for _, dato := range t.Payload {
 		for _, campo := range campos {
-			if Contiene(campo, dato) {
+			if norm.Contiene(campo, dato) {
 				return falla(res, "el dato sigue en %s del registro %s", nombreDeCampo(t.Locator.Campo), r.ID)
 			}
 		}
@@ -208,7 +222,7 @@ func evaluaIndirecta(s *Salida, r Registro, t Test) ResultadoTest {
 
 func todosPresentes(texto string, datos []string) bool {
 	for _, dato := range datos {
-		if !Contiene(texto, dato) {
+		if !norm.Contiene(texto, dato) {
 			return false
 		}
 	}
@@ -224,7 +238,7 @@ func evaluaFalsoPositivo(r Registro, t Test) ResultadoTest {
 	}
 	junto := strings.Join(textos, "\n")
 	for _, dato := range t.Payload {
-		if !ContieneExacto(junto, dato) {
+		if !strings.Contains(junto, dato) {
 			return falla(res, "%q se perdió en %s", dato, nombreDeCampo(t.Locator.Campo))
 		}
 	}
@@ -258,7 +272,7 @@ func evaluaHomonimos(s *Salida, t Test) ResultadoTest {
 	}
 	unicos := map[string]bool{}
 	for _, n := range nombres {
-		unicos[Normaliza(n)] = true
+		unicos[norm.Norm(n)] = true
 	}
 	if len(unicos) < 2 {
 		return falla(res, "%d personas con el mismo nombre recibieron el mismo seudónimo", len(nombres))
@@ -293,7 +307,7 @@ func evaluaConsistencia(s *Salida, t Test) ResultadoTest {
 	}
 	for _, otra := range s.Entities {
 		for _, original := range otra.Originals {
-			if Normaliza(original) == Normaliza(seudonimo) {
+			if norm.Norm(original) == norm.Norm(seudonimo) {
 				return falla(res, "el seudónimo %q es una forma real declarada", seudonimo)
 			}
 		}
@@ -325,7 +339,7 @@ func evaluaConsistencia(s *Salida, t Test) ResultadoTest {
 func cuentaEn(textos []string, nombre string) int {
 	veces := 0
 	for _, texto := range textos {
-		if Contiene(texto, nombre) {
+		if norm.Contiene(texto, nombre) {
 			veces++
 		}
 	}
@@ -346,7 +360,7 @@ func tokenDominante(s *Salida, textos []string, entidad *modelo.Entity) (string,
 			continue
 		}
 		nombre := strings.TrimSpace(e.Pseudonyms["name"])
-		if nombre == "" || Normaliza(nombre) == Normaliza(propio) {
+		if nombre == "" || norm.Norm(nombre) == norm.Norm(propio) {
 			continue
 		}
 		if veces := cuentaEn(textos, nombre); veces > ajenoVeces {
@@ -389,9 +403,9 @@ func entidadDe(s *Salida, formas []string) (*modelo.Entity, int, bool) {
 
 // declaraForma dice si la entidad declara esa forma exacta en originals.
 func declaraForma(e modelo.Entity, forma string) bool {
-	objetivo := Normaliza(forma)
+	objetivo := norm.Norm(forma)
 	for _, original := range e.Originals {
-		if Normaliza(original) == objetivo {
+		if norm.Norm(original) == objetivo {
 			return true
 		}
 	}

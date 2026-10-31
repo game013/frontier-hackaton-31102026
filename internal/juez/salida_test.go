@@ -3,7 +3,10 @@ package juez
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/game013/frontier-hackaton-31102026/internal/norm"
 )
 
 // escribeSalida arma una carpeta de salida de prueba con los jsonl que se le
@@ -103,10 +106,10 @@ func TestRegistroTextoYCampo(t *testing.T) {
 		t.Fatalf("el campo vacío es el registro entero: %v", textos)
 	}
 	chat := s.Registros["c1"]
-	if !Contiene(chat.Texto(), "carla_falsa") {
+	if !norm.Contiene(chat.Texto(), "carla_falsa") {
 		t.Fatalf("el texto del registro debe incluir el adjunto: %q", chat.Texto())
 	}
-	if textos := chat.Textos("attachments"); len(textos) == 0 || !Contiene(textos[len(textos)-1], "carla_falsa.pdf") {
+	if textos := chat.Textos("attachments"); len(textos) == 0 || !norm.Contiene(textos[len(textos)-1], "carla_falsa.pdf") {
 		t.Fatalf("attachments debería exponer el nombre del adjunto: %v", textos)
 	}
 }
@@ -119,7 +122,7 @@ func TestRegistroOcultos(t *testing.T) {
 		junto += o + "\n"
 	}
 	for _, esperado := range []string{"carla.falsa@ejemplo.test", "<!-- autor: Carla Falsa -->", "memo.md"} {
-		if !ContieneExacto(junto, esperado) {
+		if !strings.Contains(junto, esperado) {
 			t.Fatalf("los rincones ocultos deberían incluir %q: %v", esperado, ocultos)
 		}
 	}

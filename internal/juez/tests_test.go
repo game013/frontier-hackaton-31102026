@@ -27,7 +27,7 @@ func TestDirecta(t *testing.T) {
 	}
 	// Como hash sin sal también cuenta como fuga.
 	for _, huella := range huellasDe("Ana Prueba") {
-		if !ContieneExacto(huella, huella) {
+		if !strings.Contains(huella, huella) {
 			t.Fatal("la huella debería contenerse a sí misma")
 		}
 	}
