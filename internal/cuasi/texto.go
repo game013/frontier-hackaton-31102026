@@ -109,7 +109,9 @@ var sustantivosDePersona = union(
 )
 
 // interlocutores es la empresa como interlocutor: «con nosotros desde 2021» ata
-// el año aunque el verbo no quepa en la ventana.
+// el año aunque el verbo no quepa en la ventana. «ustees» no es una errata: es
+// una forma del corpus tal cual («llevo con ustees desde 2023»), y por eso se
+// queda en la lista.
 var interlocutores = conjunto("nosotros", "nosotras", "ustedes", "ustees", "usted")
 
 // puentesRelacion pueden ir entre el ancla y «desde»: «llevo con ustedes desde»,

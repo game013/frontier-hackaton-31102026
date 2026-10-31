@@ -47,7 +47,7 @@ bloquea la corrida oficial.
 | CE-10 | Celular o cédula del CEO en memo y contrato        | Memo a inversionistas, contrato Veloz            | Reemplazados                                               | J-DIR        |
 | CE-11 | Dirección de clienta no nombrada                   | Minuta de ingeniería (CL-15468)                  | Dirección falsa de esa persona                             | J-DIR, J-CON |
 | CE-12 | Cuasi-identificador sin nombre                     | 80e0b943 → CL-50124                              | Sector, ciudad y "hace unos años" en el chat; sector y barrio alterno en la fila del maestro | J-IND        |
-| CE-13 | Plantilla "soy X, vivo en Y, desde Z"              | af9ccd6e, 8e61cf6b, 9cb80452                     | Generalizado en texto y fila                               | J-IND        |
+| CE-13 | Plantilla "soy X, vivo en Y, desde Z"              | af9ccd6e, 8e61cf6b, 9cb80452; variante «llevo con ustees desde» (así en el corpus) | Generalizado en texto y fila; «ustees» es interlocutor igual que «ustedes» | J-IND        |
 | CE-14 | Apellido que es lugar o marca                      | d40d8c0a (Santander), 594351d5 (Bolívar)          | Persona reemplazada; lugar o marca intactos                | J-DIR, J-FP  |
 | CE-15 | Nombre común que es palabra ("Claro")              | 39 apariciones                                   | "Claro" intacto; la empleada sí se reemplaza               | J-FP         |
 | CE-16 | Respuesta de solo dígitos                          | Tras "¿me confirmas tu cédula?"                  | Clasificada por la pregunta anterior y reemplazada         | J-DIR        |
