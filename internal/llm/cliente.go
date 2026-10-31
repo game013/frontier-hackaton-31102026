@@ -197,11 +197,13 @@ func Nueva(conf Configuracion) (*Cliente, error) {
 }
 
 // NuevaDesdeEntorno lee OPENROUTER_API_KEY, LLM_MODEL y, si está, LLM_URL_BASE.
-func NuevaDesdeEntorno(getenv func(string) string) (*Cliente, error) {
+// cache guarda las decisiones; nil deja el cliente sin caché.
+func NuevaDesdeEntorno(getenv func(string) string, cache Cache) (*Cliente, error) {
 	return Nueva(Configuracion{
 		ClaveAPI: getenv("OPENROUTER_API_KEY"),
 		Modelo:   getenv("LLM_MODEL"),
 		URLBase:  getenv("LLM_URL_BASE"),
+		Cache:    cache,
 	})
 }
 

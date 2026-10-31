@@ -332,11 +332,15 @@ func pendientesDe(fugas []compuerta.Fuga) int {
 // expone para el servicio y para la herramienta local; devuelve nil sin llave.
 // Devuelve nil (interfaz vacía, no un puntero nil) cuando no hay llave: un
 // cliente nil dentro de un modelo.Modelo panickea al primer Decide.
-func ConfiguracionDelModelo(getenv func(string) string) (modelo.Modelo, error) {
+//
+// cache es donde quedan las decisiones (D32): el servicio y la herramienta
+// local pasan la tabla cache_modelo de la bóveda (Almacen.CacheModelo), para
+// que una corrida no repita lo que ya preguntó otra.
+func ConfiguracionDelModelo(getenv func(string) string, cache llm.Cache) (modelo.Modelo, error) {
 	if getenv("OPENROUTER_API_KEY") == "" {
 		return nil, nil
 	}
-	cliente, err := llm.NuevaDesdeEntorno(getenv)
+	cliente, err := llm.NuevaDesdeEntorno(getenv, cache)
 	if err != nil || cliente == nil {
 		return nil, err
 	}

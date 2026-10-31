@@ -576,7 +576,7 @@ func TestNuevaDesdeEntorno(t *testing.T) {
 		"OPENROUTER_API_KEY": "clave-de-prueba",
 		"LLM_MODEL":          "typesafe/jev-1.14-20261015",
 	}
-	c, err := NuevaDesdeEntorno(func(k string) string { return entorno[k] })
+	c, err := NuevaDesdeEntorno(func(k string) string { return entorno[k] }, nil)
 	if err != nil {
 		t.Fatalf("NuevaDesdeEntorno: %v", err)
 	}
@@ -584,7 +584,7 @@ func TestNuevaDesdeEntorno(t *testing.T) {
 		t.Fatalf("modelo %q", c.Nombre())
 	}
 
-	c2, err := NuevaDesdeEntorno(func(k string) string { return map[string]string{"OPENROUTER_API_KEY": "k"}[k] })
+	c2, err := NuevaDesdeEntorno(func(k string) string { return map[string]string{"OPENROUTER_API_KEY": "k"}[k] }, nil)
 	if err != nil {
 		t.Fatalf("NuevaDesdeEntorno: %v", err)
 	}
@@ -592,7 +592,7 @@ func TestNuevaDesdeEntorno(t *testing.T) {
 		t.Fatalf("sin LLM_MODEL el modelo es %q, se esperaba %s", c2.Nombre(), SnapshotJev)
 	}
 
-	if _, err := NuevaDesdeEntorno(func(string) string { return "" }); !errors.Is(err, ErrSinClave) {
+	if _, err := NuevaDesdeEntorno(func(string) string { return "" }, nil); !errors.Is(err, ErrSinClave) {
 		t.Fatalf("error %v, se esperaba ErrSinClave", err)
 	}
 }

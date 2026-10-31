@@ -67,7 +67,11 @@ func corre(fuentes, salidaDir, datos, allowlistRuta, previas string, sinLLM, viv
 
 	var clienteModelo modelo.Modelo
 	if !sinLLM {
-		cliente, err := nucleo.ConfiguracionDelModelo(os.Getenv)
+		cache, err := base.CacheModelo()
+		if err != nil {
+			return fmt.Errorf("caché del modelo: %w", err)
+		}
+		cliente, err := nucleo.ConfiguracionDelModelo(os.Getenv, cache)
 		if err != nil {
 			return fmt.Errorf("modelo: %w", err)
 		}

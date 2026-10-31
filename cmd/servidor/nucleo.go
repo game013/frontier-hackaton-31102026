@@ -81,7 +81,13 @@ func abreNucleo(datosDir string, getenv func(string) string) (*permiteNucleo, er
 		base.Cerrar()
 		return nil, err
 	}
-	modeloLLM, err := nucleo.ConfiguracionDelModelo(getenv)
+	cache, err := base.CacheModelo()
+	if err != nil {
+		base.Cerrar()
+		return nil, fmt.Errorf("núcleo: caché del modelo: %w", err)
+	}
+	// /run y /anonymize comparten el cliente y su caché en la bóveda (D32).
+	modeloLLM, err := nucleo.ConfiguracionDelModelo(getenv, cache)
 	if err != nil {
 		base.Cerrar()
 		return nil, fmt.Errorf("núcleo: modelo: %w", err)
