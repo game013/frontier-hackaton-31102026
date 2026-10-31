@@ -287,3 +287,36 @@ func TestNombreDePilaCompartidoQuedaSinDueno(t *testing.T) {
 		t.Fatalf("regla = %q", menciones[0].Regla)
 	}
 }
+
+// Dos generadores no proponen fragmentos solapados del mismo campo: si el modelo
+// dice persona a los dos, el reemplazo recibe ediciones solapadas y la corrida
+// entera falla (CE-38). Gana el generador más preciso: "Soy Ana" por mayúsculas
+// se descarta frente a "Ana" por disparador, y "Doris Lozano" sale una sola vez.
+func TestCandidatosSinSolapes(t *testing.T) {
+	d, err := Nuevo(Opciones{Indice: vacio(t)})
+	if err != nil {
+		t.Fatalf("Nuevo: %v", err)
+	}
+	recs := []modelo.Registro{
+		modelo.ChatRecord{ID: "m1", Author: "Bea", Text: "Hola! Soy Ana, gracias."},
+		modelo.ChatRecord{ID: "m2", Author: "Bea", Text: "Prepared by Doris Lozano, Contadora"},
+	}
+	cands := d.Candidatos(recs)
+	porCampo := map[string][]Candidato{}
+	for _, c := range cands {
+		clave := c.Registro + "/" + string(c.Campo)
+		for _, otro := range porCampo[clave] {
+			if c.Inicio < otro.Fin && otro.Inicio < c.Fin {
+				t.Errorf("solapados en %s: %q (%s) y %q (%s)", clave, c.Valor, c.Generador, otro.Valor, otro.Generador)
+			}
+		}
+		porCampo[clave] = append(porCampo[clave], c)
+	}
+	var m1 []string
+	for _, c := range porCampo["m1/text"] {
+		m1 = append(m1, c.Valor+"("+c.Generador+")")
+	}
+	if len(m1) != 1 || m1[0] != "Ana(disparador)" {
+		t.Errorf("m1 = %v, quiero [Ana(disparador)]", m1)
+	}
+}
