@@ -169,3 +169,45 @@ func (a *Almacen) formas(ctx context.Context, llave string) ([]modelo.Forma, err
 func ahora() string {
 	return time.Now().UTC().Format(time.RFC3339Nano)
 }
+
+// GuardarPersonaVivo persiste una persona nacida en /anonymize (D24): reserva
+// seudónimo en la bóveda y queda fuera del registro de /run y de entities.json.
+func (a *Almacen) GuardarPersonaVivo(ctx context.Context, p modelo.Persona) error {
+	if p.Llave == "" {
+		return errors.New("almacen: persona viva sin llave")
+	}
+	tx, err := a.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("almacen: guardar persona viva %q: %w", p.Llave, err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx,
+		`INSERT INTO personas_vivo (llave, rol, genero, creada) VALUES (?, ?, ?, ?)
+ON CONFLICT (llave) DO NOTHING`, p.Llave, p.Rol, p.Genero, ahora()); err != nil {
+		return fmt.Errorf("almacen: guardar persona viva %q: %w", p.Llave, err)
+	}
+	for _, forma := range p.Formas {
+		if forma.Tipo == "" || forma.Valor == "" {
+			return fmt.Errorf("almacen: persona viva %q con forma vacía: %+v", p.Llave, forma)
+		}
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO formas (llave, vivo, tipo, valor, registro) VALUES (?, 1, ?, ?, ?)
+ON CONFLICT (llave, vivo, tipo, valor) DO NOTHING`,
+			p.Llave, forma.Tipo, forma.Valor, forma.Registro); err != nil {
+			return fmt.Errorf("almacen: guardar forma viva de %q: %w", p.Llave, err)
+		}
+	}
+	return tx.Commit()
+}
+
+// AnotaDudoso deja en la cola una mención de baja confianza (D20). La cola vive
+// en /data: es material real y nunca viaja al repo.
+func (a *Almacen) AnotaDudoso(ctx context.Context, m modelo.Mencion) error {
+	if _, err := a.db.ExecContext(ctx,
+		`INSERT INTO dudosos (registro, fuente, campo, inicio, fin, valor, tipo, persona, regla, confianza, creado)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		m.Registro, m.Fuente, m.Campo, m.Inicio, m.Fin, m.Valor, m.Tipo, m.Persona, m.Regla, m.Confianza, ahora()); err != nil {
+		return fmt.Errorf("almacen: anotar dudoso: %w", err)
+	}
+	return nil
+}
