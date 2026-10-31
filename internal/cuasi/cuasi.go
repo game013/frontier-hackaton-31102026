@@ -104,19 +104,32 @@ func ciudadDeLaPersona(r modelo.Registro, indice *registro.Indice) string {
 	return ficha.Ciudad
 }
 
+// Datos de la fila del maestro: el nombre de la tabla, el de las columnas que
+// llevan cuasi-identificadores y la ruta con la que campos.Aplica edita la celda.
+const (
+	tablaClientes = "clientes"
+	colClienteID  = "cliente_id"
+	colCiudad     = "ciudad"
+	colBarrio     = "barrio"
+	colOcupacion  = "ocupacion"
+
+	rutaOcupacion modelo.CampoTexto = "columns.ocupacion"
+	rutaBarrio    modelo.CampoTexto = "columns.barrio"
+)
+
 // filaMaestro generaliza la fila de un cliente: la ocupación a su sector y el
 // barrio a otro de la misma ciudad (D9). Una ocupación o un barrio que el
 // catálogo no conoce se quedan como están: aquí no se inventan sectores.
 func filaMaestro(r modelo.TableRecord, indice *registro.Indice) []campos.Edicion {
-	if r.Table != "clientes" {
+	if r.Table != tablaClientes {
 		return nil
 	}
 	var ediciones []campos.Edicion
-	if sector, ok := catalogo.Sector(r.Columns["ocupacion"]); ok {
-		ediciones = append(ediciones, entero("columns.ocupacion", r.Columns["ocupacion"], sector))
+	if sector, ok := catalogo.Sector(r.Columns[colOcupacion]); ok {
+		ediciones = append(ediciones, entero(rutaOcupacion, r.Columns[colOcupacion], sector))
 	}
 	if barrio, ok := barrioAlterno(r, indice); ok {
-		ediciones = append(ediciones, entero("columns.barrio", r.Columns["barrio"], barrio))
+		ediciones = append(ediciones, entero(rutaBarrio, r.Columns[colBarrio], barrio))
 	}
 	return ediciones
 }
@@ -125,17 +138,17 @@ func filaMaestro(r modelo.TableRecord, indice *registro.Indice) []campos.Edicion
 // de la persona (no del orden de las filas), así el barrio de una persona no
 // cambia entre corridas (D4).
 func barrioAlterno(r modelo.TableRecord, indice *registro.Indice) (string, bool) {
-	actual := r.Columns["barrio"]
+	actual := r.Columns[colBarrio]
 	if actual == "" {
 		return "", false
 	}
 	llave := r.ID
 	if indice != nil {
-		if persona, ok := indice.PorReferencia(r.Columns["cliente_id"]); ok {
+		if persona, ok := indice.PorReferencia(r.Columns[colClienteID]); ok {
 			llave = persona.Llave
 		}
 	}
-	return catalogo.BarrioAlterno(r.Columns["ciudad"], actual, indiceDeLlave(llave))
+	return catalogo.BarrioAlterno(r.Columns[colCiudad], actual, indiceDeLlave(llave))
 }
 
 // entero reemplaza el valor completo de un campo del registro.

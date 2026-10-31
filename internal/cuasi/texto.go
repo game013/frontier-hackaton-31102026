@@ -113,10 +113,9 @@ var sustantivosDePersona = union(
 var interlocutores = conjunto("nosotros", "nosotras", "ustedes", "ustees", "usted")
 
 // puentesRelacion pueden ir entre el ancla y «desde»: «llevo con ustedes desde»,
-// «cliente nuestro desde».
-var puentesRelacion = conjunto(
-	"con", "nuestro", "nuestra", "nosotros", "nosotras", "ustedes", "ustees", "usted",
-)
+// «cliente nuestro desde». Los interlocutores entran por referencia y no
+// copiados: es el mismo concepto y se cambia en un solo sitio.
+var puentesRelacion = union(interlocutores, conjunto("con", "nuestro", "nuestra"))
 
 // topeAncla acota cuántas palabras atrás se busca el ancla.
 const topeAncla = 4
