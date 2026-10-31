@@ -18,3 +18,13 @@ __pycache__/
 *.sqlite-wal
 *.sqlite-shm
 *.sqlite-journal
+
+# Fuentes crudas del API (PII sintética, no se versiona)
+/fuentes/
+
+# Dataset de muestra del API (PII sintética); se baja con GET /sample.zip
+/sample/
+
+# Archivos swap de editores (pueden contener copias de .env)
+*.swp
+*.swo
