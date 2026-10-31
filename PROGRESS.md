@@ -128,6 +128,12 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 14:40 · — · claude · Segunda revisión atendida: `/anonymize` responde 422 y tolera campos de más, la metadata del PDF
+  conserva sus claves aunque falle la extracción, `/v1/health` reporta `LLM_MODEL` cuando no hay `MODELOS` (D32), el
+  nombre corto de chats y formas coincide, J-GLO barre también las formas de menos de 3 caracteres y la prueba real de
+  Jev compara contra `person`. Rechazados con motivo: reescribir el historial (rama sin publicar; los datos de
+  `sample/` son sintéticos; el árbol actual está limpio), triggers en la bóveda, bucle de reintentos del cliente y
+  los olores de estilo.
 - 14:28 · — · claude · Revisión de la ola atendida: fuera del repo las identidades reales que quedaban en tests y
   fixtures (inventadas en su lugar), detalle del juez enmascarado, `Close` del lector con error, y la caché de
   `internal/llm` alineada con la tabla `cache_modelo` de C2. Queda anotado: la tabla `captura` de C2 admite cuerpos
