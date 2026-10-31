@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -173,6 +174,61 @@ func TestBovedaConservaLosPerfiles(t *testing.T) {
 func TestSinSecretoFalla(t *testing.T) {
 	if _, err := Nuevo(Opciones{}); err == nil {
 		t.Fatal("quería error sin secreto")
+	}
+}
+
+// El paso de cuasi-identificadores corre dentro de la corrida, no solo en su
+// paquete: un lote sintético con la ocupación de una persona y el año de su
+// relación sale generalizado, y una fecha de negocio del mismo texto se
+// conserva (C19, D9, CE-12). Sin esta prueba el cableado solo se ejercita a
+// mano.
+func TestCuasiGeneralizaEnLaCorrida(t *testing.T) {
+	fila := modelo.TableRecord{
+		ID: "clientes:CL-10001", Table: "clientes",
+		Columns: map[string]string{
+			"cliente_id": "CL-10001", "nombre_completo": "Elena Perez Rojas",
+			"ciudad": "Cali", "barrio": "Granada", "ocupacion": "fotógrafa",
+			"fecha_vinculacion": "2024-03-11",
+		},
+	}
+	chat := modelo.ChatRecord{
+		ID: "m-0001", ThreadID: "hilo-1", Author: "Elena Perez Rojas", TS: "1.0",
+		Text: "Soy fotógrafa, vivo en Granada y llevo con ustedes desde 2024. La entrega es el 15 de agosto de 2026.",
+	}
+	n, err := Nuevo(Opciones{Secreto: []byte(secretoPrueba), Plazo: 2 * time.Minute})
+	if err != nil {
+		t.Fatalf("Nuevo: %v", err)
+	}
+	res, err := n.Corrida(context.Background(), Entrada{Registros: []modelo.Registro{chat, fila}})
+	if err != nil {
+		t.Fatalf("Corrida: %v", err)
+	}
+	if len(res.Registros) != 2 {
+		t.Fatalf("registros = %d, quiero 2", len(res.Registros))
+	}
+
+	texto := res.Registros[0].(modelo.ChatRecord).Text
+	for _, quiero := range []string{"profesional de las industrias creativas", "hace unos años", "15 de agosto de 2026"} {
+		if !strings.Contains(texto, quiero) {
+			t.Errorf("el texto del chat no trae %q: %q", quiero, texto)
+		}
+	}
+	for _, prohibido := range []string{"fotógrafa", "Granada", "desde 2024"} {
+		if strings.Contains(texto, prohibido) {
+			t.Errorf("el texto del chat conserva el cuasi-identificador %q: %q", prohibido, texto)
+		}
+	}
+
+	maestro := res.Registros[1].(modelo.TableRecord)
+	if maestro.Columns["ocupacion"] != "profesional de las industrias creativas" {
+		t.Errorf("ocupacion = %q, quiero el sector", maestro.Columns["ocupacion"])
+	}
+	if maestro.Columns["barrio"] == "Granada" {
+		t.Error("el barrio real sobrevive en la fila del maestro")
+	}
+	if maestro.Columns["fecha_vinculacion"] != "2024-03-11" {
+		t.Errorf("fecha_vinculacion = %q: la fecha de vinculación del maestro se conserva",
+			maestro.Columns["fecha_vinculacion"])
 	}
 }
 
