@@ -24,11 +24,14 @@ const SnapshotJev = "typesafe/jev-1.14-20261014"
 // TopeConcurrencia es el máximo de llamadas simultáneas al modelo (D28).
 const TopeConcurrencia = 16
 
-// Umbrales de D31: cada decisión tiene un costo de error distinto.
+// Umbrales de D31: cada decisión tiene un costo de error distinto. Son
+// exclusivos, se acepta con probabilidad estrictamente mayor, así el caso límite
+// cae del lado seguro: la cola de dudosos (D19).
 const (
 	// UmbralPersona acepta que un fragmento es persona (P > 0,5).
 	UmbralPersona = 0.5
-	// UmbralDesempate acepta un desempate entre candidatos (≥ 0,7).
+	// UmbralDesempate acepta un desempate entre candidatos (0,7; el empate
+	// exacto va a dudoso).
 	UmbralDesempate = 0.7
 	// UmbralGenero acepta un género; por debajo la persona queda unisex (0,6).
 	UmbralGenero = 0.6
@@ -191,8 +194,8 @@ func (c *Cliente) Decide(ctx context.Context, state string, pregunta modelo.Preg
 	return c.DecideUmbral(ctx, state, pregunta, UmbralPersona)
 }
 
-// DecideUmbral hace una llamada al modelo con el state de esta pregunta y su
-// propio state (D28): el cliente no agrega contexto. El state debería venir ya
+// DecideUmbral hace una llamada por pregunta, con el state de esa pregunta y
+// sin agregar contexto de otros registros (D28). El state debería venir ya
 // enmascarado; si hay Mascara configurada, se enmascara aquí antes de enviarlo
 // (D15). La respuesta vuelve aunque no supere el umbral, junto con
 // ErrBajaConfianza, para que la mención quede en la cola de dudosos (D19).
@@ -243,9 +246,9 @@ func (c *Cliente) evalua(respuesta modelo.Respuesta, umbral float64) (modelo.Res
 }
 
 func (c *Cliente) evaluaConConfianza(respuesta modelo.Respuesta, confianza, umbral float64) (modelo.Respuesta, error) {
-	if umbral > 0 && probabilidadDeLaOpcion(respuesta, confianza) <= umbral {
-		return respuesta, fmt.Errorf("%w: P(%s)=%.3f ≤ %.2f", ErrBajaConfianza, respuesta.Opcion,
-			probabilidadDeLaOpcion(respuesta, confianza), umbral)
+	prob := probabilidadDeLaOpcion(respuesta, confianza)
+	if umbral > 0 && prob <= umbral {
+		return respuesta, fmt.Errorf("%w: P(%s)=%.3f ≤ %.2f", ErrBajaConfianza, respuesta.Opcion, prob, umbral)
 	}
 	return respuesta, nil
 }
