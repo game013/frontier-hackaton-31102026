@@ -95,12 +95,12 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C19 | Cuasi-identificadores en texto y maestro: ocupación → sector, barrio → ciudad, año de la relación → "hace unos años", en el texto y en la fila del maestro. Incluye `sample_08` (movido aquí desde C17 por decisión del usuario: la corrida 1 no lleva cuasi en texto, D21). | `internal/cuasi/` | C17 | CE-12, CE-13 con J-IND en verde; `sample_08` en verde | orquestador | hecha | 8cd99e5 |
+| C19 | Cuasi-identificadores en texto y maestro: en la fila del maestro (`clientes`) la ocupación → sector y el barrio → otro barrio de la misma ciudad; en el texto, la ocupación de la persona → sector, su barrio → ciudad y el año de la relación → "hace unos años". Incluye `sample_08` (movido aquí desde C17 por decisión del usuario: la corrida 1 no lleva cuasi en texto, D21). | `internal/cuasi/` | C17 | CE-12, CE-13 con J-IND en verde; `sample_08` en verde | orquestador | hecha | 8cd99e5 |
 | C20 | Jueces especializados restantes (J-DIR, J-OCU, J-IND, J-FP, J-CAT, J-EST, J-PAR, J-CON, J-HOM, J-REP, J-CRE, J-VIV) que corren los fixtures de C27. | `internal/juez/` | C11, C18, C27 | Todos los casos corren; reporte por juez | — | espera | — |
 | C21 | Monitor de crecimiento: `record_index` con `If-None-Match`; avisa cuando cambia. | `cmd/monitor/` | C4 | Detecta un cambio simulado | orquestador | hecha | 8019a54 |
 | C22 | Hold-out 80/20 y prueba de crecimiento (J-CRE). | `internal/juez/`, `scripts/` | C18, C20 | 0 seudónimos viejos cambian | — | espera | — |
 | C23 | `DECISIONS.md`: llenar las cifras de costo en tokens y tiempo sobre el esqueleto de C29; guion de demo. | `DECISIONS.md`, `docs/demo/` | C18, C29 | Responde las 3 preguntas del enunciado con cifras de la corrida | orquestador | en curso | — |
-| C24 | Respaldo de la bóveda a disco local fuera de git tras cada corrida. | `scripts/` | C2, C18 | Restaurar el respaldo reproduce `entities.json` | orquestador | hecha | 2de54bd |
+| C24 | Respaldo de la bóveda a un disco local fuera de git: el operador lo jala con `scripts/boveda.sh` después de la corrida; no es automático ni lo dispara el servicio. | `scripts/` | C2, C18 | Restaurar el respaldo reproduce `entities.json` | orquestador | hecha | 2de54bd |
 
 C23 sigue `en curso` y le falta una sola cosa: las seis cifras de `DECISIONS.md` §3.4 con la corrida 1 (tokens de
 entrada y de salida, llamadas y aciertos de caché, dólares, segundos de `/run` y segundos del lote de 50 en
@@ -136,6 +136,20 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 17:35 · C19 · worker · `CASO:` CE-44: el año de la persona se escapaba cuando el habla metía un artículo («soy cliente desde
+  el 2021», «desde el año 2021») o invertía el orden («Desde 2021 soy cliente»). Ahora el artículo se salta y la relación se busca
+  hasta cuatro palabras detrás del año; «desde 2021 el banco no responde» sigue conservado.
+- 17:30 · C19 · worker · `CASO:` CE-43: «Kipu Pay trabaja desde 2019» y «la función está desde 2024» se generalizaban por tener
+  «trabaja» y «está» entre las anclas. Ahora un ancla en tercera persona solo vale con un sustantivo de persona en la ventana («la
+  clienta está desde») o el puente «con nosotros/ustedes»; las de primera persona siguen valiendo solas. «esta» y «está» se igualan
+  al normalizar, así que el caso queda en la tabla de pruebas.
+- 17:25 · C19 · worker · `CASO:` CE-42: «la resolución entró en vigencia en 2024» se generalizaba porque se buscaba «entró» seis
+  palabras atrás cruzando un «en». Si entre el verbo de entrada y el año hay otro «en» o un «de» que une otra frase, el año es de
+  negocio y se conserva; «entró en la empresa en 2021» también se conserva, y el precio está escrito en CE-42.
+- 17:20 · C19 · worker · `CASO:` CE-41: el barrio solo se generaliza cuando es de la persona. Antes bastaba que el texto tuviera la
+  ocupación de alguien para generalizar cualquier «en <barrio>», y en el corpus eso volvía «Medellín» el consultorio que «queda en
+  Castilla» y la «oficina en Buenos Aires». Ahora manda el verbo más cercano: vivienda o trabajo en primera persona generalizan;
+  locativo de cosa, o sujeto sede/oficina/empresa, conservan. La salida del corpus cambia en dos registros y solo en esos dos.
 - 17:05 · C19 · pi · `CASO:` CE-40 cerrado con juez J-IND: el acta de un comité presenta a la persona sin verbo
   («Antecedentes de la afectada: ingeniera de sistemas, vinculada en 2023») y antes se quedaba entera. Ahora «la
   afectada» ata el oficio y «vinculada en» ancla el año; las dos actas de `fuentes/docs` salen generalizadas. Muestra
