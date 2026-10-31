@@ -46,6 +46,7 @@ tabla, actualízala ahí en el mismo commit.
 | Ruta          | Qué hay                                                                                  |
 | ------------- | ---------------------------------------------------------------------------------------- |
 | `docs/`       | Material del reto: enunciado, contratos OpenAPI, `validar.mjs`. Solo lectura.            |
+| `docs/agents/` | Configuración de los skills de agente (tracker, triage, dominio). Excepción a la regla de solo lectura de `docs/`. |
 | `analisis/`   | Meta-análisis: `00_resumen.md` primero; chats, docs, tablas e identidad, reuso de 10102026. |
 | `DISEÑO.md`   | Diseño, supuestos, decisiones, plan para medir. Entregable de Systems design.            |
 | `CASOS_ESQUINA.md` | Catálogo vivo de casos esquina, cada uno con su juez. Todo caso descubierto se agrega aquí. |
@@ -89,3 +90,17 @@ Cada paso completado termina en un commit **atómico, transaccional y convencion
   se quedan en disco local; nunca uses `git add -f` sobre ellos. Si `git ls-files` muestra alguno, quítalo con
   `git rm --cached`, conservando el archivo.
 - Los logs y capturas muestran ids de registro y conteos; tokens y datos personales van redactados.
+
+## Agent skills
+
+### Issue tracker
+
+Las tareas viven como filas de `PROGRESS.md` (sin GitHub Issues: el repo es público). Ver `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Los roles de triage se traducen a la columna Estado de `PROGRESS.md`. Ver `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: vocabulario en `AGENTS.md` §Vocabulario, decisiones en `DISEÑO.md` §7. Ver `docs/agents/domain.md`.

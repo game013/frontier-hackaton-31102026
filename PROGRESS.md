@@ -48,7 +48,7 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
     bitácora con `DECISIÓN:` y sigue con lo vigente.
 11. **Tiempo.** Cada paso de red lleva timeout. Ningún agente lanza corridas oficiales.
 
-Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada` · `hecha`.
+Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada` · `hecha` · `descartada` (no se hará; motivo en la bitácora).
 
 ## Tablero C · Implementación (Go)
 
