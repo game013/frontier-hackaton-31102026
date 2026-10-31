@@ -1,0 +1,10 @@
+[
+  {
+    "type": "message",
+    "user": "UTEST0001",
+    "text": "Hola desde un canal que no está en channels.json.",
+    "ts": "1000000301.000100",
+    "client_msg_id": "id-canal-tres",
+    "team": "TTEST0001"
+  }
+]
