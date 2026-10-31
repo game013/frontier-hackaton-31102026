@@ -39,11 +39,12 @@ Grupos del dataset:
 | --- | --- |
 | apellido_lugar | 6 |
 | apodo | 20 |
-| banco | 4 |
+| banco | 3 |
 | barrio | 1 |
 | billetera | 2 |
 | ciudad | 2 |
 | claro | 2 |
+| kept | 2 |
 | lugar | 4 |
 | marca | 7 |
 | ninguna | 3 |
@@ -55,7 +56,7 @@ Grupos del dataset:
 | palabra | 1 |
 | par_apellido | 4 |
 | par_nombre | 8 |
-| regulador | 4 |
+| regulador | 3 |
 | slug | 40 |
 | unisex | 3 |
 | universidad | 1 |
@@ -181,24 +182,24 @@ Casos de desempate mal resueltos (ganadora distinta de la verdad): ninguno.
 
 ## 4. Género (M / F / indeterminado)
 
-Regla medida: si `max(P(M), P(F)) ≥ t` se decide ese género; si no, unisex (D31). La cobertura es la fracción de nombres con género conocido que quedan decididos; los nombres unisex de verdad (`indeterminado`) no cuentan en la exactitud y se informan aparte como «unisex sin decidir», que es el acierto de la rama unisex.
+Regla medida: si `max(P(M), P(F)) ≥ t` se decide ese género; si no, unisex (D31). La cobertura tiene en el denominador todas las menciones con pregunta de género, unisex incluidos, y en el numerador todas las que la regla decide (también unisex decididos); por eso se informa el conteo de decididos. La exactitud se mide solo sobre los M/F decididos: la verdad unisex no elige lado y se informa aparte como «unisex sin decidir», que es el acierto de la rama unisex.
 
-| t | Decididos | Aciertos | Exactitud | Cobertura | Unisex sin decidir | D31 |
-| --- | --- | --- | --- | --- | --- | --- |
-| 0,30 | 160 | 160 | 1,000 | 1,000 | 0/3 |  |
-| 0,35 | 160 | 160 | 1,000 | 1,000 | 0/3 |  |
-| 0,40 | 160 | 160 | 1,000 | 1,000 | 1/3 |  |
-| 0,45 | 159 | 159 | 1,000 | 0,994 | 1/3 |  |
-| 0,50 | 159 | 159 | 1,000 | 0,994 | 1/3 |  |
-| 0,55 | 159 | 159 | 1,000 | 0,994 | 1/3 |  |
-| 0,60 | 159 | 159 | 1,000 | 0,994 | 1/3 | vigente |
-| 0,65 | 158 | 158 | 1,000 | 0,988 | 1/3 |  |
-| 0,70 | 158 | 158 | 1,000 | 0,988 | 1/3 |  |
-| 0,75 | 158 | 158 | 1,000 | 0,988 | 1/3 |  |
-| 0,80 | 157 | 157 | 1,000 | 0,981 | 1/3 |  |
-| 0,85 | 156 | 156 | 1,000 | 0,975 | 1/3 |  |
-| 0,90 | 155 | 155 | 1,000 | 0,969 | 2/3 |  |
-| 0,95 | 152 | 152 | 1,000 | 0,950 | 2/3 |  |
+| t | Decididos | M/F decididos | Aciertos | Exactitud | Cobertura | Unisex sin decidir | D31 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0,30 | 163 | 160 | 160 | 1,000 | 1,000 | 0/3 |  |
+| 0,35 | 163 | 160 | 160 | 1,000 | 1,000 | 0/3 |  |
+| 0,40 | 162 | 160 | 160 | 1,000 | 0,994 | 1/3 |  |
+| 0,45 | 161 | 159 | 159 | 1,000 | 0,988 | 1/3 |  |
+| 0,50 | 161 | 159 | 159 | 1,000 | 0,988 | 1/3 |  |
+| 0,55 | 161 | 159 | 159 | 1,000 | 0,988 | 1/3 |  |
+| 0,60 | 161 | 159 | 159 | 1,000 | 0,988 | 1/3 | vigente |
+| 0,65 | 160 | 158 | 158 | 1,000 | 0,982 | 1/3 |  |
+| 0,70 | 160 | 158 | 158 | 1,000 | 0,982 | 1/3 |  |
+| 0,75 | 160 | 158 | 158 | 1,000 | 0,982 | 1/3 |  |
+| 0,80 | 159 | 157 | 157 | 1,000 | 0,975 | 1/3 |  |
+| 0,85 | 158 | 156 | 156 | 1,000 | 0,969 | 1/3 |  |
+| 0,90 | 156 | 155 | 155 | 1,000 | 0,957 | 2/3 |  |
+| 0,95 | 153 | 152 | 152 | 1,000 | 0,939 | 2/3 |  |
 
 Criterio de elección: máxima exactitud con cobertura ≥ 0,80. Recomendado: **t = 0,30** (exactitud 1,000, cobertura 1,000).
 
@@ -228,6 +229,8 @@ Ids mal decididos en ese umbral: `cand_0288` (indeterminado → M), `cand_0289` 
 | Género | 0,60 | 0,30 | 0,60 | coincide | `max(P(M), P(F)) ≥ t` |
 
 Regla de la recomendación operativa: es la que deja el criterio de cada decisión, salvo que la curva no separe clases (ningún umbral de la rejilla con error); en ese caso se conserva el valor vigente de D31, porque el borde inferior de la rejilla no es un óptimo medido.
+
+Qué mide esta tabla: D31 redacta el desempate con `confidence ≥ 0,70` y la rama unisex del género con `confianza < 0,60`, mientras que la calibración mide `probabilities` (la probabilidad de la opción ganadora y `max(P(M), P(F))`). «Coincide» significa que el umbral recomendado es numéricamente el vigente, no que la regla medida sea una traducción literal del texto de D31; el §6 mide la misma regla con `confidence` para que la diferencia se vea.
 
 
 **Propuesta (no aplicada: D31 se cambia solo con el usuario).**
@@ -286,9 +289,17 @@ En `choice` la `confidence` no es la probabilidad de la opción ganadora (la API
 ## 9. Reproducir
 
 ```sh
+# 1. dataset y etiquetas, sin red
 python3 scripts/calibrar_jev.py --dry-run
+
+# 2. corrida real: solo llama a la API por las claves que falten en la caché
 python3 scripts/calibrar_jev.py --workers 6
+
+# 3. regenerar el informe desde la caché: no necesita OPENROUTER_API_KEY
+python3 scripts/calibrar_jev.py --sin-red --env /ruta/inexistente
+
+# 4. comprobar que el informe no filtró ninguna forma real
 python3 scripts/calibrar_jev.py --dry-run --verificar-informe
 ```
 
-La corrida real cachea cada respuesta por hash en `tmp/calibracion_jev/cache.json`: el informe se regenera sin volver a llamar a la API y `--verificar-informe` comprueba que no quedó ninguna forma de `entities.json`, `users.json` ni `clientes.csv` bajo la normalización del jurado.
+La corrida real cachea cada respuesta por su clave en `tmp/calibracion_jev/cache.json` y solo pide la clave de la API si hay llamadas sin caché; con la caché completa, `--sin-red` regenera el informe igual y falla si falta alguna respuesta. `--verificar-informe` busca las formas de `entities.json`, `users.json` y `clientes.csv` con el mismo `contiene()` de `docs/validar.mjs` (`CONFUSABLES`, NFKC, invisibles, ß/ς/ſ, dígitos con separadores y prefijo 57).
