@@ -15,7 +15,7 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Hitos de hoy (Bogotá, UTC−5)
 
-- [ ] 12:45 · C0 hecha: `go.mod`, paquetes y tipos compartidos en `integracion/c0-c11`.
+- [x] 12:45 · C0 hecha: `go.mod`, paquetes y tipos compartidos en `integracion/c0-c11`.
 - [ ] 13:30 · Servicio en Railway con `/v1/health` y `/v1/anonymize` de eco (C1).
 - [ ] 14:15 · Pipeline completo sobre `sample/`: validador OK, 13/13 tests y J-REC 100 % (C17).
 - [ ] 14:45 · Pipeline sobre `fuentes/`: validador OK, barrido 0, dos corridas idénticas (C18).
@@ -128,9 +128,12 @@ tarea (reglas 0–2). Orden sugerido: C25 primero (bloquea el hito de las 14:15)
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
-- 12:47 · — · claude · Pista paralela C25–C29 agregada en `lista` (sin dependencias). C20 y C23 ahora dependen de C27 y C29.
+- 14:05 · C0 · claude · Revisión de C0 atendida: fixture versionada para la prueba de ida y vuelta, tags JSON de
+  `Resultado` y `Respuesta`, `internal/` en la tabla de `AGENTS.md`. Contratos de `Almacen` y `Modelo` se amplían
+  cuando C2 y C10 reporten su `CONTRATO:`.
 - 13:40 · — · claude · Alcance fijado: solo C0–C11. Trabajo sobre `integracion/c0-c11` (regla 0); las filas las
   cierra quien integra. C0 en curso.
 - 12:50 · — · claude · Ronda 4 del ataque cerrada: D28 corregida, D30–D34; Jev 1.14 con snapshot fijo.
+- 12:47 · — · claude · Pista paralela C25–C29 agregada en `lista` (sin dependencias). C20 y C23 ahora dependen de C27 y C29.
 - 12:35 · — · claude · P1 cerrada (Jev 1.14, D13) y P2 cerrada (D29).
 - 12:20 · — · claude · Tablero creado; diseño cerrado en D1–D28; C0 lista.
