@@ -1,0 +1,17 @@
+# Secretos y corpus real: nunca dentro de la imagen.
+.env
+.env.*
+sample
+fuentes
+output
+tmp
+var
+.git
+.gitignore
+.sample
+# Pruebas y documentación de trabajo no hacen falta en el runtime.
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+**/__pycache__
