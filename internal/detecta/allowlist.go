@@ -83,12 +83,21 @@ func Nueva(entradas []Entrada, sufijos, prefijos, apellidoLugar, palabras []stri
 	return a, nil
 }
 
-// PorDefecto es la allowlist sin datos de C26: solo reglas genéricas, para que
-// el pipeline funcione cuando el archivo todavía no está. C26 la reemplaza.
+// PorDefecto es la allowlist que se usa cuando nadie pasa una: los datos de
+// C26 (allowlist.json), compilados en el binario. Si ese archivo no cargara,
+// queda la lista fija de reglas genéricas para que la corrida no se caiga.
 func PorDefecto() *Allowlist {
+	if a, err := Embebida(); err == nil {
+		return a
+	}
+	return porDefectoFijo()
+}
+
+// porDefectoFijo es la red de seguridad de PorDefecto: las reglas genéricas y
+// las marcas que nunca son personas (supuesto 4), sin depender del archivo.
+func porDefectoFijo() *Allowlist {
 	a, err := Nueva([]Entrada{
-		// El asistente virtual y la marca no son personas (supuesto 4). C26
-		// reemplaza esta lista mínima por el archivo de datos.
+		// El asistente virtual y la marca no son personas (supuesto 4).
 		{Nombre: "Kipi", Tipo: "marca", Motivo: "asistente virtual de Kipu Pay, no es persona"},
 		{Nombre: "Kipu Pay", Tipo: "marca", Motivo: "marca de la empresa, no es persona"},
 	},

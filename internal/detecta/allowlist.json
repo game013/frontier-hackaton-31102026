@@ -1,0 +1,182 @@
+{
+  "entidades": [
+    {
+      "nombre": "Avianca",
+      "tipo": "marca",
+      "motivo": "aerolínea; es una empresa, no una persona natural"
+    },
+    {
+      "nombre": "Bancolombia",
+      "tipo": "banco",
+      "motivo": "banco por donde entran y salen los pagos; es una empresa, no una persona natural"
+    },
+    {
+      "nombre": "Colpatria",
+      "tipo": "banco",
+      "motivo": "banco; es una empresa, no una persona natural"
+    },
+    {
+      "nombre": "DataCrédito",
+      "tipo": "organizacion",
+      "motivo": "central de riesgo crediticio a la que se consulta el historial; es una empresa"
+    },
+    {
+      "nombre": "Daviplata",
+      "tipo": "medio_pago",
+      "motivo": "billetera de pagos por donde entran las recargas; es un servicio, no una persona natural"
+    },
+    {
+      "nombre": "Davivienda",
+      "tipo": "banco",
+      "motivo": "banco; es una empresa, no una persona natural"
+    },
+    {
+      "nombre": "DIAN",
+      "tipo": "organizacion",
+      "motivo": "autoridad tributaria que recibe las declaraciones; es una entidad pública"
+    },
+    {
+      "nombre": "EAFIT",
+      "tipo": "organizacion",
+      "motivo": "universidad de la que egresan empleados; es una institución, no una persona natural"
+    },
+    {
+      "nombre": "Egan Bernal",
+      "tipo": "figura",
+      "motivo": "figura pública del ciclismo; no es cliente ni empleado del corpus"
+    },
+    {
+      "nombre": "El Poblado",
+      "tipo": "lugar",
+      "motivo": "sector de Medellín; es un lugar, no una persona"
+    },
+    {
+      "nombre": "Estación Restrepo",
+      "tipo": "lugar",
+      "motivo": "estación del metro; el nombre completo es un lugar aunque el apellido Restrepo nombre personas (CE-14)"
+    },
+    {
+      "nombre": "García Márquez",
+      "tipo": "figura",
+      "motivo": "figura pública de la literatura; no es una persona del corpus"
+    },
+    {
+      "nombre": "Jorge Isaacs",
+      "tipo": "figura",
+      "motivo": "figura pública de la literatura; no es una persona del corpus"
+    },
+    {
+      "nombre": "Juan Valdez",
+      "tipo": "marca",
+      "motivo": "marca de café; el personaje es imagen publicitaria, no una persona del corpus"
+    },
+    {
+      "nombre": "Kipi",
+      "tipo": "marca",
+      "motivo": "bot asistente virtual de Kipu Pay; no es una persona natural (supuesto 4)"
+    },
+    {
+      "nombre": "Kipu Pay",
+      "tipo": "marca",
+      "motivo": "marca de la empresa dueña del corpus; no es una persona natural (supuesto 4)"
+    },
+    {
+      "nombre": "Nairo Quintana",
+      "tipo": "figura",
+      "motivo": "figura pública del ciclismo; no es cliente ni empleado del corpus"
+    },
+    {
+      "nombre": "Nequi",
+      "tipo": "medio_pago",
+      "motivo": "billetera de pagos; es un servicio, no una persona natural"
+    },
+    {
+      "nombre": "Nutresa",
+      "tipo": "marca",
+      "motivo": "grupo alimenticio; es una empresa, no una persona natural"
+    },
+    {
+      "nombre": "Parque Lleras",
+      "tipo": "lugar",
+      "motivo": "parque de Medellín; es un lugar, no una persona"
+    },
+    {
+      "nombre": "Plaza Botero",
+      "tipo": "lugar",
+      "motivo": "plaza de Medellín; el nombre completo es un lugar aunque el apellido Botero nombre personas (CE-14)"
+    },
+    {
+      "nombre": "PSE",
+      "tipo": "medio_pago",
+      "motivo": "botón de pagos interbancario con el que se consigna; es un servicio, no una persona natural"
+    },
+    {
+      "nombre": "Rappi",
+      "tipo": "marca",
+      "motivo": "plataforma de domicilios; es una empresa, no una persona natural"
+    },
+    {
+      "nombre": "SFC",
+      "tipo": "organizacion",
+      "motivo": "sigla con la que los reportes nombran a la Superintendencia Financiera; es una entidad pública"
+    },
+    {
+      "nombre": "Shakira",
+      "tipo": "figura",
+      "motivo": "figura pública; no es clienta ni empleada del corpus"
+    },
+    {
+      "nombre": "SIC",
+      "tipo": "organizacion",
+      "motivo": "autoridad de industria y comercio que recibe las quejas; es una entidad pública"
+    },
+    {
+      "nombre": "Superfinanciera",
+      "tipo": "organizacion",
+      "motivo": "autoridad financiera que recibe los reportes; es una entidad pública"
+    },
+    {
+      "nombre": "SURA",
+      "tipo": "marca",
+      "motivo": "aseguradora y administradora de fondos; es una empresa, no una persona natural"
+    },
+    {
+      "nombre": "Veloz",
+      "tipo": "organizacion",
+      "motivo": "aliado de recaudo con contrato en el corpus; es una empresa, no una persona natural"
+    },
+    {
+      "nombre": "Éxito",
+      "tipo": "marca",
+      "motivo": "cadena de almacenes donde se paga; es una empresa, no una persona natural"
+    }
+  ],
+  "sufijos": [
+    "S.A.S.",
+    "S.A.",
+    "LTDA",
+    "E.U."
+  ],
+  "prefijos": [
+    "Banco",
+    "Banco de",
+    "Fondo",
+    "Caja"
+  ],
+  "apellido_lugar": [
+    "Santander",
+    "Bolívar",
+    "Botero",
+    "Carulla",
+    "Castilla",
+    "Robledo",
+    "Restrepo",
+    "Galán",
+    "Córdoba"
+  ],
+  "palabras": [
+    "Claro",
+    "clara",
+    "celeste"
+  ]
+}
