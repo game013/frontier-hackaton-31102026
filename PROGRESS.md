@@ -128,6 +128,11 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 14:52 · — · claude · Tercera revisión atendida: los 422 ya no citan valores, `/v1/health` cae al snapshot fijo de Jev
+  si no hay `MODELOS` ni `LLM_MODEL` (con prueba), la metadata del PDF tiene prueba propia, y fuera de `scripts/` los
+  comentarios con cédulas de la muestra. Cruzadas 921 formas de la muestra y del corpus contra lo versionado: solo
+  quedan coincidencias en `analisis/*.md` (notas de diseño que citan registros y son anteriores a esta tanda) y en
+  nombres de pila genéricos del catálogo.
 - 14:40 · — · claude · Segunda revisión atendida: `/anonymize` responde 422 y tolera campos de más, la metadata del PDF
   conserva sus claves aunque falle la extracción, `/v1/health` reporta `LLM_MODEL` cuando no hay `MODELOS` (D32), el
   nombre corto de chats y formas coincide, J-GLO barre también las formas de menos de 3 caracteres y la prueba real de
