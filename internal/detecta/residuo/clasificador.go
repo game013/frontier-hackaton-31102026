@@ -13,12 +13,17 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/game013/frontier-hackaton-31102026/internal/detecta"
 	"github.com/game013/frontier-hackaton-31102026/internal/modelo"
 	"github.com/game013/frontier-hackaton-31102026/internal/norm"
 )
+
+// TopeConcurrencia es el máximo de preguntas simultáneas al modelo (D28). Es
+// el mismo tope del cliente de Jev, que además lo hace cumplir con su semáforo.
+const TopeConcurrencia = 16
 
 // Opciones del clasificador. Modelo nil deja todo a las reglas, que es el
 // respaldo determinista de /anonymize (D19).
@@ -57,9 +62,10 @@ func (c *Clasificador) Clasifica(ctx context.Context, cands []detecta.Candidato)
 	if len(cands) == 0 {
 		return nil
 	}
+	decisiones := c.decideTodos(ctx, cands)
 	var out []modelo.Mencion
-	for _, cand := range cands {
-		tipo, confianza := c.decide(ctx, cand)
+	for i, cand := range cands {
+		tipo, confianza := decisiones[i].tipo, decisiones[i].confianza
 		if tipo != modelo.MencionPersona {
 			continue
 		}
@@ -82,6 +88,41 @@ func (c *Clasificador) Clasifica(ctx context.Context, cands []detecta.Candidato)
 		})
 	}
 	return out
+}
+
+type decision struct {
+	tipo      modelo.TipoMencion
+	confianza float64
+}
+
+// decideTodos hace las preguntas en paralelo con TopeConcurrencia (D28): cada
+// una lleva solo su propio state, así que no dependen entre sí. Cada respuesta
+// queda en el índice de su candidato y el orden de la salida no depende de cuál
+// termina primero.
+func (c *Clasificador) decideTodos(ctx context.Context, cands []detecta.Candidato) []decision {
+	decisiones := make([]decision, len(cands))
+	trabajadores := min(TopeConcurrencia, len(cands))
+	if c.modelo == nil {
+		trabajadores = 1
+	}
+	siguiente := make(chan int)
+	var wg sync.WaitGroup
+	for range trabajadores {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range siguiente {
+				tipo, confianza := c.decide(ctx, cands[i])
+				decisiones[i] = decision{tipo: tipo, confianza: confianza}
+			}
+		}()
+	}
+	for i := range cands {
+		siguiente <- i
+	}
+	close(siguiente)
+	wg.Wait()
+	return decisiones
 }
 
 // decide pregunta al modelo y, si no hay modelo o falla, aplica la regla del

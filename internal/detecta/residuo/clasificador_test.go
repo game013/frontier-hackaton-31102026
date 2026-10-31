@@ -3,7 +3,10 @@ package residuo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -18,12 +21,15 @@ type falso struct {
 	err       error
 	estados   []string
 	demora    time.Duration
+	mu        sync.Mutex
 }
 
 func (f *falso) Nombre() string { return "falso" }
 
 func (f *falso) Decide(ctx context.Context, estado string, _ modelo.Pregunta) (modelo.Respuesta, error) {
+	f.mu.Lock()
 	f.estados = append(f.estados, estado)
+	f.mu.Unlock()
 	if f.demora > 0 {
 		select {
 		case <-time.After(f.demora):
@@ -131,5 +137,72 @@ func TestErrorDelModeloNoRompeElLote(t *testing.T) {
 	menciones := c.Clasifica(context.Background(), []detecta.Candidato{candidato("Gloria", "disparador")})
 	if len(menciones) != 1 {
 		t.Fatalf("respaldo = %+v", menciones)
+	}
+}
+
+// paralelo responde "persona" solo a los valores que empiezan con P y mide
+// cuántas llamadas estuvieron en vuelo a la vez.
+type paralelo struct {
+	demora        time.Duration
+	enVuelo, pico atomic.Int64
+}
+
+func (p *paralelo) Nombre() string { return "paralelo" }
+
+func (p *paralelo) Decide(ctx context.Context, estado string, _ modelo.Pregunta) (modelo.Respuesta, error) {
+	v := p.enVuelo.Add(1)
+	defer p.enVuelo.Add(-1)
+	for {
+		pico := p.pico.Load()
+		if v <= pico || p.pico.CompareAndSwap(pico, v) {
+			break
+		}
+	}
+	select {
+	case <-time.After(p.demora):
+	case <-ctx.Done():
+		return modelo.Respuesta{}, ctx.Err()
+	}
+	if strings.HasPrefix(estado, "Fragmento: «P") {
+		return modelo.Respuesta{Pregunta: "origen", Opcion: "persona",
+			Probabilidades: map[string]float64{"persona": 0.9}}, nil
+	}
+	return modelo.Respuesta{Pregunta: "origen", Opcion: "otro",
+		Probabilidades: map[string]float64{"otro": 0.9}}, nil
+}
+
+// Las preguntas al modelo van en paralelo con tope (D28): en serie, los ~4.700
+// candidatos del corpus crecido tardan 7 minutos en /run. Las menciones salen en
+// el orden de los candidatos, para que la corrida siga siendo determinista.
+func TestClasificaEnParaleloConservaElOrden(t *testing.T) {
+	const n = 64
+	cands := make([]detecta.Candidato, n)
+	var quiero []string
+	for i := range cands {
+		valor := fmt.Sprintf("Otro%02d", i)
+		if i%3 == 0 {
+			valor = fmt.Sprintf("P%02d", i)
+			quiero = append(quiero, valor)
+		}
+		cands[i] = candidato(valor, "mayusculas")
+	}
+	m := &paralelo{demora: 20 * time.Millisecond}
+	inicio := time.Now()
+	menciones := Nuevo(Opciones{Modelo: m}).Clasifica(context.Background(), cands)
+	transcurrido := time.Since(inicio)
+
+	if got := m.pico.Load(); got < 2 || got > TopeConcurrencia {
+		t.Errorf("pico de llamadas simultáneas = %d, quiero entre 2 y %d", got, TopeConcurrencia)
+	}
+	if transcurrido > n*20*time.Millisecond/4 {
+		t.Errorf("tardó %v: las llamadas siguen en serie", transcurrido)
+	}
+	if len(menciones) != len(quiero) {
+		t.Fatalf("menciones = %d, quiero %d", len(menciones), len(quiero))
+	}
+	for i, m := range menciones {
+		if m.Valor != quiero[i] {
+			t.Fatalf("mención %d = %q, quiero %q: el orden cambió", i, m.Valor, quiero[i])
+		}
 	}
 }
