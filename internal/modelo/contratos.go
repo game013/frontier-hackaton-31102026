@@ -15,6 +15,9 @@ type Almacen interface {
 	// GuardarPerfil asigna el perfil de una persona que aún no lo tiene. Nunca
 	// sobrescribe.
 	GuardarPerfil(ctx context.Context, llave string, p Perfil) error
+	// Perfiles devuelve toda la bóveda por llave: la fábrica la necesita para
+	// que dos personas no compartan seudónimo ni datos falsos (D4).
+	Perfiles(ctx context.Context) (map[string]Perfil, error)
 	// Cerrar libera la base.
 	Cerrar() error
 }

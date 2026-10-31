@@ -113,6 +113,34 @@ ON CONFLICT (llave) DO NOTHING`,
 	return nil
 }
 
+// Perfiles devuelve la bóveda completa indexada por llave. La fábrica la lee
+// para que dos personas nunca compartan seudónimo ni datos falsos (D4); con
+// pocos cientos de filas traerla entera es más barato que consultar por fila.
+func (a *Almacen) Perfiles(ctx context.Context) (map[string]modelo.Perfil, error) {
+	filas, err := a.db.QueryContext(ctx,
+		`SELECT llave, nombre, correo, celular, cedula, handle, direccion, nacimiento, placa, cuenta, pasaporte
+FROM perfiles ORDER BY llave`)
+	if err != nil {
+		return nil, fmt.Errorf("almacen: leer la bóveda: %w", err)
+	}
+	defer filas.Close()
+
+	perfiles := make(map[string]modelo.Perfil)
+	for filas.Next() {
+		var llave string
+		var p modelo.Perfil
+		if err := filas.Scan(&llave, &p.Nombre, &p.Correo, &p.Celular, &p.Cedula, &p.Handle,
+			&p.Direccion, &p.Nacimiento, &p.Placa, &p.Cuenta, &p.Pasaporte); err != nil {
+			return nil, fmt.Errorf("almacen: leer la bóveda: %w", err)
+		}
+		perfiles[llave] = p
+	}
+	if err := filas.Err(); err != nil {
+		return nil, fmt.Errorf("almacen: leer la bóveda: %w", err)
+	}
+	return perfiles, nil
+}
+
 // formas devuelve las formas del corpus de una persona, en orden de
 // descubrimiento. Las de personas_vivo (vivo = 1) no se mezclan (D24).
 func (a *Almacen) formas(ctx context.Context, llave string) ([]modelo.Forma, error) {
