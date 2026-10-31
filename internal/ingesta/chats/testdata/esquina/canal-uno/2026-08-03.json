@@ -1,0 +1,131 @@
+[
+  {
+    "type": "message",
+    "user": "UTESTBOT01",
+    "text": "¡Hola! Soy Kipi. ¿En qué te ayudo?",
+    "ts": "1000000001.000100",
+    "client_msg_id": "id-raiz",
+    "team": "TTEST0001",
+    "bot_id": "BTEST0001",
+    "subtype": "bot_message",
+    "username": "Kipi"
+  },
+  {
+    "type": "message",
+    "user": "UTEST0001",
+    "text": "Hola, necesito ayuda con un cobro.",
+    "ts": "1000000002.001100",
+    "client_msg_id": "id-respuesta",
+    "team": "TTEST0001",
+    "thread_ts": "1000000001.000100",
+    "parent_user_id": null
+  },
+  {
+    "type": "message",
+    "user": "UTEST0001",
+    "text": "Te adjunto el comprobante.",
+    "ts": "1000000003.002100",
+    "client_msg_id": "id-editado",
+    "team": "TTEST0001",
+    "thread_ts": "1000000001.000100",
+    "parent_user_id": null,
+    "files": [
+      {
+        "id": "FTEST001",
+        "name": "comprobante_ejemplo.pdf",
+        "title": "comprobante_ejemplo",
+        "filetype": "pdf",
+        "size": 1024,
+        "url_private": "https://files.ejemplo.test/FTEST001/comprobante_ejemplo.pdf"
+      }
+    ],
+    "upload": true,
+    "edited": { "user": "UTEST0001", "ts": "1000000009.000000" }
+  },
+  {
+    "type": "message",
+    "user": "UTEST0002",
+    "text": "Recibido.",
+    "ts": "1000000004.003100",
+    "client_msg_id": "id-adjuntos",
+    "team": "TTEST0001",
+    "thread_ts": "1000000001.000100",
+    "parent_user_id": null,
+    "files": [
+      {
+        "id": "FTEST002",
+        "name": "",
+        "title": "foto_cedula",
+        "filetype": "jpg",
+        "size": 2048,
+        "url_private": "https://files.ejemplo.test/FTEST002"
+      },
+      {
+        "id": "FTEST003",
+        "name": "",
+        "title": "",
+        "filetype": "jpg",
+        "size": 4096,
+        "url_private": "https://files.ejemplo.test/FTEST003"
+      }
+    ],
+    "upload": true
+  },
+  {
+    "type": "message",
+    "user": "UTEST0001",
+    "text": "Mensaje que la fuente no identifica.",
+    "ts": "1000000005.004100",
+    "team": "TTEST0001",
+    "thread_ts": "1000000001.000100",
+    "parent_user_id": null
+  },
+  {
+    "type": "message",
+    "user": "UTEST9999",
+    "text": "Escribo desde un usuario que no está en users.json.",
+    "ts": "1000000006.005100",
+    "client_msg_id": "id-ausente",
+    "team": "TTEST0001",
+    "thread_ts": "1000000001.000100",
+    "parent_user_id": null
+  },
+  {
+    "type": "message",
+    "user": "UTEST0003",
+    "text": "Soy yo otra vez.",
+    "ts": "1000000007.006100",
+    "client_msg_id": "id-usuario-borrado",
+    "team": "TTEST0001",
+    "thread_ts": "1000000001.000100",
+    "parent_user_id": null
+  },
+  {
+    "type": "message",
+    "subtype": "message_deleted",
+    "hidden": true,
+    "ts": "1000000008.007100",
+    "client_msg_id": "id-borrado-herramienta",
+    "team": "TTEST0001",
+    "deleted_ts": "1000000008.007100"
+  },
+  {
+    "type": "message",
+    "subtype": "channel_join",
+    "user": "UTEST0002",
+    "text": "<@UTEST0002> se unió al canal.",
+    "ts": "1000000009.008100",
+    "client_msg_id": "id-sistema-alta",
+    "team": "TTEST0001"
+  },
+  {
+    "type": "message",
+    "user": "UTEST0001",
+    "text": "Respondo a un hilo que no está en la fuente.",
+    "ts": "1000000010.009100",
+    "client_msg_id": "id-huerfano",
+    "team": "TTEST0001",
+    "thread_ts": "1000000000.000100",
+    "parent_user_id": null
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "message",
+    "user": "UTEST0002",
+    "text": "Te respondo al día siguiente, en el mismo hilo.",
+    "ts": "1000000202.001100",
+    "client_msg_id": "id-respuesta-cruzada",
+    "team": "TTEST0001",
+    "thread_ts": "1000000101.000100",
+    "parent_user_id": null
+  }
+]

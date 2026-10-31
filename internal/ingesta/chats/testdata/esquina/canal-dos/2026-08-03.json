@@ -1,0 +1,10 @@
+[
+  {
+    "type": "message",
+    "user": "UTEST0001",
+    "text": "Hola, una consulta.",
+    "ts": "1000000101.000100",
+    "client_msg_id": "id-raiz-dos",
+    "team": "TTEST0001"
+  }
+]
