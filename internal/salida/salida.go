@@ -14,6 +14,8 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/game013/frontier-hackaton-31102026/internal/detecta"
 	"github.com/game013/frontier-hackaton-31102026/internal/formas"
@@ -98,6 +100,17 @@ func escribeEntidades(ruta string, ents []modelo.Entity) error {
 // usan en formas distintas (completo en la fila del maestro, corto en el autor
 // del chat). Declarar el completo cuando solo se usó el corto miente.
 func Entidades(indice *registro.Indice, menciones []modelo.Mencion, perfiles map[string]modelo.Perfil, allow *detecta.Allowlist, sinDueno map[string]bool) []modelo.Entity {
+	return EntidadesConPrevias(indice, menciones, perfiles, allow, sinDueno, nil)
+}
+
+// Previas son los seudónimos que declaró la corrida anterior: llave de persona
+// → campo de pseudonyms → valor.
+type Previas map[string]map[string]string
+
+// EntidadesConPrevias es Entidades anclada a la corrida anterior: si un valor
+// declarado antes sigue en los registros de la persona, se vuelve a declarar
+// aunque ahora otra variante sea más frecuente (CE-46).
+func EntidadesConPrevias(indice *registro.Indice, menciones []modelo.Mencion, perfiles map[string]modelo.Perfil, allow *detecta.Allowlist, sinDueno map[string]bool, previas Previas) []modelo.Entity {
 	registros := map[string]map[string]bool{}
 	valores := map[string]map[string]map[string]map[string]bool{}
 	if sinDueno == nil {
@@ -146,7 +159,7 @@ func Entidades(indice *registro.Indice, menciones []modelo.Mencion, perfiles map
 		if !ok {
 			continue
 		}
-		seudonimos := eligeValores(valores[llave])
+		seudonimos := eligeValores(valores[llave], previas[llave])
 		if len(seudonimos) == 0 {
 			continue
 		}
@@ -164,7 +177,7 @@ func Entidades(indice *registro.Indice, menciones []modelo.Mencion, perfiles map
 
 // eligeValores se queda con el valor de cada tipo que aparece en más registros;
 // en caso de empate gana la forma más larga, que suele ser el nombre completo.
-func eligeValores(porClave map[string]map[string]map[string]bool) map[string]string {
+func eligeValores(porClave map[string]map[string]map[string]bool, previo map[string]string) map[string]string {
 	out := map[string]string{}
 	claves := make([]string, 0, len(porClave))
 	for clave := range porClave {
@@ -172,6 +185,10 @@ func eligeValores(porClave map[string]map[string]map[string]bool) map[string]str
 	}
 	sort.Strings(claves)
 	for _, clave := range claves {
+		if antes, ok := previo[clave]; ok && len(porClave[clave][antes]) > 0 {
+			out[clave] = antes
+			continue
+		}
 		mejor, mejorCuenta := "", -1
 		valores := make([]string, 0, len(porClave[clave]))
 		for valor := range porClave[clave] {
@@ -291,4 +308,166 @@ func RenderDe(perfil modelo.Perfil, tipo modelo.TipoForma) (string, error) {
 		return "", err
 	}
 	return forma.Valor, nil
+}
+
+// LeePrevias carga los seudónimos declarados en un entities.json anterior. Solo
+// las personas: las conservadas no tienen seudónimo que anclar.
+func LeePrevias(ruta string) (Previas, error) {
+	crudo, err := os.ReadFile(ruta)
+	if err != nil {
+		return nil, fmt.Errorf("salida: previas: %w", err)
+	}
+	var doc struct {
+		Entities []modelo.Entity `json:"entities"`
+	}
+	if err := json.Unmarshal(crudo, &doc); err != nil {
+		return nil, fmt.Errorf("salida: previas %s: %w", ruta, err)
+	}
+	out := Previas{}
+	for _, e := range doc.Entities {
+		if e.Type != modelo.EntidadPersona || len(e.Pseudonyms) == 0 {
+			continue
+		}
+		out[e.EntityID] = e.Pseudonyms
+	}
+	return out, nil
+}
+
+// PreviasMasRecientes busca el entities.json más reciente en las carpetas de
+// corrida bajo raiz, sin contar la carpeta excluida (la corrida en curso). Sin
+// corrida anterior devuelve nil sin error.
+func PreviasMasRecientes(raiz, excluida string) (Previas, string, error) {
+	entradas, err := os.ReadDir(raiz)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, "", nil
+		}
+		return nil, "", fmt.Errorf("salida: previas: %w", err)
+	}
+	mejor, mejorHora := "", time.Time{}
+	for _, e := range entradas {
+		if !e.IsDir() {
+			continue
+		}
+		dir := filepath.Join(raiz, e.Name())
+		if filepath.Clean(dir) == filepath.Clean(excluida) {
+			continue
+		}
+		info, err := os.Stat(filepath.Join(dir, "entities.json"))
+		if err != nil {
+			continue
+		}
+		if info.ModTime().After(mejorHora) {
+			mejor, mejorHora = filepath.Join(dir, "entities.json"), info.ModTime()
+		}
+	}
+	if mejor == "" {
+		return nil, "", nil
+	}
+	previas, err := LeePrevias(mejor)
+	return previas, mejor, err
+}
+
+// AnclaPrevias vuelve a declarar el valor de la corrida anterior cuando sigue
+// escrito en alguno de los registros de la persona, aunque ya no salga de una
+// mención contada (CE-46). Solo cambia valores que el validador acepta: el
+// seudónimo tiene que estar en un registro de la propia entidad.
+func AnclaPrevias(ents []modelo.Entity, recs []modelo.Registro, previas Previas) {
+	if len(previas) == 0 {
+		return
+	}
+	textos := make(map[string]string, len(recs))
+	for _, r := range recs {
+		crudo, err := json.Marshal(r)
+		if err != nil {
+			continue
+		}
+		// Se compara contra el texto sin escapar: un acento en JSON puede salir
+		// como á si el registro lo trae así.
+		textos[r.IDRegistro()] = desescapa(crudo)
+	}
+	for i := range ents {
+		e := &ents[i]
+		previo, ok := previas[e.EntityID]
+		if !ok || e.Type != modelo.EntidadPersona {
+			continue
+		}
+		for clave, valor := range previo {
+			if valor == "" || e.Pseudonyms[clave] == valor {
+				continue
+			}
+			for _, id := range e.Records {
+				if strings.Contains(textos[id], valor) {
+					e.Pseudonyms[clave] = valor
+					break
+				}
+			}
+		}
+	}
+}
+
+// desescapa devuelve los strings de un JSON concatenados, sin escapes.
+func desescapa(crudo []byte) string {
+	var v any
+	if err := json.Unmarshal(crudo, &v); err != nil {
+		return string(crudo)
+	}
+	var b strings.Builder
+	var recorre func(any)
+	recorre = func(x any) {
+		switch t := x.(type) {
+		case string:
+			b.WriteString(t)
+			b.WriteByte('\n')
+		case map[string]any:
+			for _, y := range t {
+				recorre(y)
+			}
+		case []any:
+			for _, y := range t {
+				recorre(y)
+			}
+		}
+	}
+	recorre(v)
+	return b.String()
+}
+
+// textosPorID arma el texto plano de cada registro, sin escapes de JSON.
+func textosPorID(recs []modelo.Registro) map[string]string {
+	textos := make(map[string]string, len(recs))
+	for _, r := range recs {
+		crudo, err := json.Marshal(r)
+		if err != nil {
+			continue
+		}
+		textos[r.IDRegistro()] = desescapa(crudo)
+	}
+	return textos
+}
+
+// PodaAusentes quita los seudónimos declarados que no aparecen en ningún
+// registro de la persona: el validador exige que estén, y uno ausente es un
+// seudónimo viejo que la compuerta tuvo que cambiar porque coincidía con un
+// dato real llegado con el crecimiento (CE-47).
+func PodaAusentes(ents []modelo.Entity, recs []modelo.Registro) {
+	textos := textosPorID(recs)
+	for i := range ents {
+		e := &ents[i]
+		if e.Type != modelo.EntidadPersona {
+			continue
+		}
+		for clave, valor := range e.Pseudonyms {
+			presente := false
+			for _, id := range e.Records {
+				if strings.Contains(textos[id], valor) || strings.Contains(norm.Norm(textos[id]), norm.Norm(valor)) {
+					presente = true
+					break
+				}
+			}
+			if !presente && len(e.Pseudonyms) > 1 {
+				delete(e.Pseudonyms, clave)
+			}
+		}
+	}
 }

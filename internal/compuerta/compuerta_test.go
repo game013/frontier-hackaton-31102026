@@ -123,3 +123,33 @@ func TestFormaCompartidaUsaLaLlaveMenor(t *testing.T) {
 		t.Fatalf("la forma compartida sigue: %q", texto)
 	}
 }
+
+// Una persona que viene de la bóveda y no tuvo mención en la primera pasada no
+// tiene perfil en el mapa; si la compuerta le atribuye una forma, pide el perfil
+// a la fábrica en vez de tumbar la corrida (CE-48: corrida tras el crecimiento).
+func TestPersonaSinPerfilPideALaFabrica(t *testing.T) {
+	indice := indiceDePrueba(t)
+	recs := []modelo.Registro{modelo.ChatRecord{
+		ID: "m1", Author: "Ana", Text: "El extracto es de Manuela Castaño, gracias",
+	}}
+	pedidas := 0
+	perfilDe := func(_ context.Context, llave string) (modelo.Perfil, error) {
+		pedidas++
+		return perfilesDePrueba()[llave], nil
+	}
+	perfiles := map[string]modelo.Perfil{}
+	out, _, err := BarreConFabrica(context.Background(), recs, indice, perfiles, perfilDe, nil)
+	if err != nil {
+		t.Fatalf("BarreConFabrica: %v", err)
+	}
+	texto := out[0].(modelo.ChatRecord).Text
+	if strings.Contains(texto, "Manuela") || !strings.Contains(texto, "Sofía Elena") {
+		t.Fatalf("no reemplazó con el perfil de la fábrica: %q", texto)
+	}
+	if pedidas != 1 {
+		t.Errorf("pedidas a la fábrica = %d, quiero 1", pedidas)
+	}
+	if _, ok := perfiles["p_cl_1"]; !ok {
+		t.Errorf("el perfil pedido no quedó en el mapa para el diccionario")
+	}
+}

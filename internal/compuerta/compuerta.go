@@ -38,10 +38,22 @@ type Fuga struct {
 	Restante bool
 }
 
+// PerfilDe entrega el perfil de una persona: la fábrica, con la bóveda primero.
+type PerfilDe func(ctx context.Context, llave string) (modelo.Perfil, error)
+
 // Barre devuelve la salida sin formas reales conocidas y la lista de fugas que
 // corrigió. Si tras corregir sigue habiendo una forma con dueño, la devuelve en
 // la lista y el llamador decide fallar: nunca se escribe una fuga en silencio.
 func Barre(ctx context.Context, recs []modelo.Registro, indice *registro.Indice, perfiles map[string]modelo.Perfil, allow *detecta.Allowlist) ([]modelo.Registro, []Fuga, error) {
+	return BarreConFabrica(ctx, recs, indice, perfiles, nil, allow)
+}
+
+// BarreConFabrica es Barre con una fábrica de respaldo: una persona del registro
+// que no tuvo mención en la primera pasada (p. ej. una que viene de la bóveda
+// tras el crecimiento) no está en perfiles; si la compuerta le atribuye una
+// forma, el perfil se pide a perfilDe y se agrega al mapa, así el diccionario
+// también lo ve (CE-48). Con perfilDe nil se comporta como antes.
+func BarreConFabrica(ctx context.Context, recs []modelo.Registro, indice *registro.Indice, perfiles map[string]modelo.Perfil, perfilDe PerfilDe, allow *detecta.Allowlist) ([]modelo.Registro, []Fuga, error) {
 	if indice == nil {
 		return nil, nil, fmt.Errorf("compuerta: falta el registro de personas")
 	}
@@ -68,12 +80,17 @@ func Barre(ctx context.Context, recs []modelo.Registro, indice *registro.Indice,
 	}
 	salida := recs
 	if len(fugas) > 0 {
+		for _, m := range menciones {
+			if err := completa(ctx, perfiles, perfilDe, m.Persona); err != nil {
+				return nil, fugas, err
+			}
+		}
 		salida, err = reemplazo.Nuevo(reemplazo.Opciones{Indice: indice, Perfiles: perfiles}).Aplica(recs, menciones)
 		if err != nil {
 			return nil, fugas, fmt.Errorf("compuerta: %w", err)
 		}
 	}
-	salida, fugasHash, err := barreHashes(salida, indice, perfiles)
+	salida, fugasHash, err := barreHashes(ctx, salida, indice, perfiles, perfilDe)
 	if err != nil {
 		return nil, fugas, err
 	}
@@ -132,7 +149,7 @@ var patronHash = regexp.MustCompile(`\b[0-9a-f]{32}\b|\b[0-9a-f]{40}\b|\b[0-9a-f
 // barreHashes reemplaza los hashes sin sal de las formas reales por el hash de
 // la forma falsa correspondiente (D25). Un hash sin sal de una cédula se revierte
 // en segundos, así que también es PII.
-func barreHashes(recs []modelo.Registro, indice *registro.Indice, perfiles map[string]modelo.Perfil) ([]modelo.Registro, []Fuga, error) {
+func barreHashes(ctx context.Context, recs []modelo.Registro, indice *registro.Indice, perfiles map[string]modelo.Perfil, perfilDe PerfilDe) ([]modelo.Registro, []Fuga, error) {
 	porHash := map[string]modelo.Mencion{}
 	for _, p := range indice.Personas() {
 		for _, f := range p.Formas {
@@ -157,6 +174,9 @@ func barreHashes(recs []modelo.Registro, indice *registro.Indice, perfiles map[s
 				m, ok := porHash[digesto]
 				if !ok {
 					continue
+				}
+				if err := completa(ctx, perfiles, perfilDe, m.Persona); err != nil {
+					return nil, fugas, err
 				}
 				perfil, ok := perfiles[m.Persona]
 				if !ok {
@@ -234,4 +254,21 @@ func Resume(fugas []Fuga) string {
 		partes = append(partes, fmt.Sprintf("%s=%d", campo, porCampo[campo]))
 	}
 	return fmt.Sprintf("%d fugas (%d hashes) en %s", len(fugas), hashes, strings.Join(partes, ", "))
+}
+
+// completa pide a la fábrica el perfil de una persona que no está en el mapa.
+// Sin fábrica no hace nada: el llamador decide qué hacer con el hueco.
+func completa(ctx context.Context, perfiles map[string]modelo.Perfil, perfilDe PerfilDe, llave string) error {
+	if llave == "" || perfilDe == nil {
+		return nil
+	}
+	if _, ok := perfiles[llave]; ok {
+		return nil
+	}
+	p, err := perfilDe(ctx, llave)
+	if err != nil {
+		return fmt.Errorf("compuerta: perfil de %s: %w", llave, err)
+	}
+	perfiles[llave] = p
+	return nil
 }

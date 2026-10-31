@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -95,6 +96,15 @@ func (e *EjecutorFuentes) Ejecuta(ctx context.Context, sourcesURL, token, dirSal
 	if err != nil {
 		return Conteos{}, fmt.Errorf("ejecutor: ingesta: %w", err)
 	}
+	// La corrida anterior ancla los seudónimos declarados: el jurado compara su
+	// entities.json con el de después del crecimiento (CE-46).
+	previas, desde, err := salida.PreviasMasRecientes(filepath.Dir(dirSalida), dirSalida)
+	if err != nil {
+		log.Printf("ejecutor: sin previas (%v); se declara sin ancla", err)
+	} else if desde != "" {
+		log.Printf("ejecutor: previas de %s: %d personas", filepath.Base(filepath.Dir(desde)), len(previas))
+	}
+	entrada.Previas = previas
 	resultado, err := e.corredor.Corrida(ctx, entrada)
 	if err != nil {
 		return Conteos{}, err

@@ -37,15 +37,16 @@ func main() {
 	sinLLM := flag.Bool("sin-llm", false, "no consultar el modelo (corrida determinista)")
 	vivo := flag.Bool("vivo", false, "tratar el lote como /anonymize (personas en tabla aparte)")
 	plazo := flag.Duration("plazo", 30*time.Minute, "plazo máximo de la corrida")
+	previas := flag.String("previas", "", "entities.json de la corrida anterior para anclar los seudónimos declarados (CE-46)")
 	flag.Parse()
 
-	if err := corre(*fuentes, *salidaDir, *datos, *allowlistRuta, *sinLLM, *vivo, *plazo); err != nil {
+	if err := corre(*fuentes, *salidaDir, *datos, *allowlistRuta, *previas, *sinLLM, *vivo, *plazo); err != nil {
 		fmt.Fprintf(os.Stderr, "pipeline: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func corre(fuentes, salidaDir, datos, allowlistRuta string, sinLLM, vivo bool, plazo time.Duration) error {
+func corre(fuentes, salidaDir, datos, allowlistRuta, previas string, sinLLM, vivo bool, plazo time.Duration) error {
 	cargaEntorno(".env")
 	ctx, cancelar := context.WithTimeout(context.Background(), plazo)
 	defer cancelar()
@@ -84,6 +85,13 @@ func corre(fuentes, salidaDir, datos, allowlistRuta string, sinLLM, vivo bool, p
 		return err
 	}
 	inicio := time.Now()
+	if previas != "" {
+		p, err := salida.LeePrevias(previas)
+		if err != nil {
+			return err
+		}
+		entrada.Previas = p
+	}
 	resultado, err := n.Corrida(ctx, entrada)
 	if err != nil {
 		return err

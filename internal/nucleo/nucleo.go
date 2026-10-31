@@ -55,6 +55,9 @@ type Entrada struct {
 	Usuarios map[string]chats.Usuario
 	Autores  map[string]string
 	Canales  map[string]chats.Canal
+	// Previas son los seudónimos declarados por la corrida anterior; anclan
+	// entities.json cuando el corpus crece (CE-46). nil en /anonymize.
+	Previas salida.Previas
 }
 
 // Nucleo ejecuta el pipeline completo.
@@ -144,7 +147,7 @@ func (n *Nucleo) Corrida(ctx context.Context, entrada Entrada) (modelo.Resultado
 		return modelo.Resultado{}, fmt.Errorf("nucleo: resolución: %w", err)
 	}
 
-	perfiles, err := n.perfilesDe(lote, indice, menciones)
+	perfiles, perfilDe, err := n.perfilesDe(lote, indice, menciones)
 	if err != nil {
 		return modelo.Resultado{}, err
 	}
@@ -163,7 +166,7 @@ func (n *Nucleo) Corrida(ctx context.Context, entrada Entrada) (modelo.Resultado
 	}
 	// Pasada 2: la compuerta barre lo que haya quedado y lo corrige con la
 	// bóveda ya completa (D11, D25).
-	limpios, fugas, err := compuerta.Barre(lote, generalizados, indice, perfiles, n.allowlist)
+	limpios, fugas, err := compuerta.BarreConFabrica(lote, generalizados, indice, perfiles, perfilDe, n.allowlist)
 	if err != nil {
 		return modelo.Resultado{}, fmt.Errorf("nucleo: compuerta: %w", err)
 	}
@@ -180,7 +183,9 @@ func (n *Nucleo) Corrida(ctx context.Context, entrada Entrada) (modelo.Resultado
 			sinDueno[norm.Norm(m.Valor)] = true
 		}
 	}
-	entidades := salida.Entidades(indice, menciones, perfiles, n.allowlist, sinDueno)
+	entidades := salida.EntidadesConPrevias(indice, menciones, perfiles, n.allowlist, sinDueno, entrada.Previas)
+	salida.AnclaPrevias(entidades, limpios, entrada.Previas)
+	salida.PodaAusentes(entidades, limpios)
 	return modelo.Resultado{Registros: limpios, Entities: entidades}, nil
 }
 
@@ -211,15 +216,28 @@ func (n *Nucleo) mezclaBoveda(ctx context.Context, indice *registro.Indice) (*re
 }
 
 // perfilesDe pide a la fábrica el perfil de cada persona que intervino. La
-// bóveda primero: un perfil asignado es para siempre (D4).
-func (n *Nucleo) perfilesDe(ctx context.Context, indice *registro.Indice, menciones []modelo.Mencion) (map[string]modelo.Perfil, error) {
+// bóveda primero: un perfil asignado es para siempre (D4). Devuelve también la
+// misma fábrica como respaldo para la compuerta, que puede atribuir una forma a
+// una persona de la bóveda sin mención en la primera pasada (CE-48).
+func (n *Nucleo) perfilesDe(ctx context.Context, indice *registro.Indice, menciones []modelo.Mencion) (map[string]modelo.Perfil, compuerta.PerfilDe, error) {
 	fabrica, err := perfil.Nuevo(perfil.Opciones{
 		Secreto: n.secreto,
 		Almacen: n.almacen,
 		Reales:  indice.Formas(),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("nucleo: fábrica: %w", err)
+		return nil, nil, fmt.Errorf("nucleo: fábrica: %w", err)
+	}
+	perfilDe := func(ctx context.Context, llave string) (modelo.Perfil, error) {
+		persona, ok := indice.Persona(llave)
+		if !ok {
+			return modelo.Perfil{}, fmt.Errorf("nucleo: la mención apunta a una persona fuera del registro (%s)", llave)
+		}
+		p, err := fabrica.PerfilDe(ctx, persona)
+		if err != nil {
+			return modelo.Perfil{}, fmt.Errorf("nucleo: perfil de %s: %w", llave, err)
+		}
+		return p, nil
 	}
 	llaves := map[string]bool{}
 	for _, m := range menciones {
@@ -229,17 +247,13 @@ func (n *Nucleo) perfilesDe(ctx context.Context, indice *registro.Indice, mencio
 	}
 	perfiles := make(map[string]modelo.Perfil, len(llaves))
 	for llave := range llaves {
-		persona, ok := indice.Persona(llave)
-		if !ok {
-			return nil, fmt.Errorf("nucleo: la mención apunta a una persona fuera del registro (%s)", llave)
-		}
-		p, err := fabrica.PerfilDe(ctx, persona)
+		p, err := perfilDe(ctx, llave)
 		if err != nil {
-			return nil, fmt.Errorf("nucleo: perfil de %s: %w", llave, err)
+			return nil, nil, err
 		}
 		perfiles[llave] = p
 	}
-	return perfiles, nil
+	return perfiles, perfilDe, nil
 }
 
 // enmascarador deja las formas conocidas fuera del texto que viaja al modelo

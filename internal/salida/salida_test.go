@@ -150,3 +150,72 @@ func TestEntidadesDeclaraFormasYSeudonimosUsados(t *testing.T) {
 		t.Fatalf("conservada = %+v", conservada)
 	}
 }
+
+// Con el crecimiento cambian los conteos y la variante más frecuente puede ser
+// otra; si la corrida anterior declaró un valor que sigue en los registros, se
+// conserva, porque el jurado compara entities.json antes y después (CE-46).
+func TestEligeValoresPrefiereLoDeclaradoAntes(t *testing.T) {
+	usados := map[string]map[string]map[string]bool{
+		"name": {
+			"isandoval":       {"r1": true},
+			"Ingrid Sandoval": {"r2": true, "r3": true},
+		},
+	}
+	if got := eligeValores(usados, nil)["name"]; got != "Ingrid Sandoval" {
+		t.Fatalf("sin previo = %q, quiero el más frecuente", got)
+	}
+	previo := map[string]string{"name": "isandoval"}
+	if got := eligeValores(usados, previo)["name"]; got != "isandoval" {
+		t.Fatalf("con previo = %q, quiero el declarado antes", got)
+	}
+	// Un previo que ya no aparece en los registros no se puede declarar: el
+	// validador exige que el seudónimo esté en algún registro de la persona.
+	previo = map[string]string{"name": "Otro Nombre"}
+	if got := eligeValores(usados, previo)["name"]; got != "Ingrid Sandoval" {
+		t.Fatalf("previo ausente = %q, quiero el más frecuente", got)
+	}
+}
+
+// El ancla también vale cuando el valor previo ya no sale de una mención
+// contada pero sigue escrito en un registro de la persona (CE-46).
+func TestAnclaPreviasMiraElTextoDeSusRegistros(t *testing.T) {
+	ents := []modelo.Entity{{
+		EntityID: "p_cl_1", Type: modelo.EntidadPersona,
+		Pseudonyms: map[string]string{"name": "Sofía Elena"},
+		Records:    []string{"m1", "m2"},
+	}}
+	recs := []modelo.Registro{
+		modelo.ChatRecord{ID: "m1", Author: "Bea", Text: "Hola Sofía Elena"},
+		modelo.ChatRecord{ID: "m2", Author: "Bea", Text: "Firmado: Sofía Elena Zambrano"},
+		modelo.ChatRecord{ID: "m3", Author: "Bea", Text: "Otro Nombre Cualquiera"},
+	}
+	AnclaPrevias(ents, recs, Previas{"p_cl_1": {"name": "Sofía Elena Zambrano"}})
+	if got := ents[0].Pseudonyms["name"]; got != "Sofía Elena Zambrano" {
+		t.Fatalf("name = %q, quiero el previo que sigue en m2", got)
+	}
+	// Un previo que solo está en un registro ajeno no se declara.
+	AnclaPrevias(ents, recs, Previas{"p_cl_1": {"name": "Otro Nombre Cualquiera"}})
+	if got := ents[0].Pseudonyms["name"]; got != "Sofía Elena Zambrano" {
+		t.Fatalf("name = %q, no debía tomar un valor de un registro ajeno", got)
+	}
+}
+
+// Un seudónimo viejo puede coincidir con un dato real que llegó con el
+// crecimiento; la compuerta lo cambia en el texto y el valor declarado ya no
+// está en ningún registro de la persona. El validador lo rechaza, así que no se
+// declara (CE-47).
+func TestPodaSeudonimosAusentes(t *testing.T) {
+	ents := []modelo.Entity{{
+		EntityID: "p_cl_1", Type: modelo.EntidadPersona,
+		Pseudonyms: map[string]string{"name": "Sofía Elena", "birth_iso": "1978-12-28"},
+		Records:    []string{"m1"},
+	}}
+	recs := []modelo.Registro{modelo.ChatRecord{ID: "m1", Author: "Bea", Text: "Sofía Elena nació el 1976-11-26"}}
+	PodaAusentes(ents, recs)
+	if _, ok := ents[0].Pseudonyms["birth_iso"]; ok {
+		t.Fatalf("declaré un birth_iso que no está en sus registros")
+	}
+	if ents[0].Pseudonyms["name"] != "Sofía Elena" {
+		t.Fatalf("podé un nombre que sí está: %+v", ents[0].Pseudonyms)
+	}
+}
