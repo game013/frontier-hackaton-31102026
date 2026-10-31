@@ -166,7 +166,6 @@ func TestAnonimizaRechazaRegistroFueraDeEsquema(t *testing.T) {
 	}{
 		{"sin records", `{"source":"chats"}`},
 		{"fuente desconocida", `{"source":"pdfs","records":[]}`},
-		{"campo de más", `{"source":"chats","records":[{"id":"a","thread_id":"t","author":"x","ts":"1","text":"y","attachments":[],"extra":1}]}`},
 		{"falta text", `{"source":"chats","records":[{"id":"a","thread_id":"t","author":"x","ts":"1","attachments":[]}]}`},
 		{"id vacío", `{"source":"tables","records":[{"id":"","table":"clientes","columns":{}}]}`},
 		{"tabla desconocida", `{"source":"tables","records":[{"id":"t:1","table":"otros","columns":{}}]}`},
@@ -186,6 +185,16 @@ func TestAnonimizaRechazaRegistroFueraDeEsquema(t *testing.T) {
 	}
 }
 
+// Los campos que el contrato no declara se ignoran: el OpenAPI no los prohíbe.
+func TestAnonimizaToleraCamposDeMas(t *testing.T) {
+	h := nuevo(t, servidor.Deps{})
+	cuerpo := `{"source":"chats","records":[{"id":"a","thread_id":"t","author":"x","ts":"1","text":"y","attachments":[],"extra":1}]}`
+	codigo, datos := pide(t, http.MethodPost, h.URL+"/v1/anonymize", cuerpo)
+	if codigo != http.StatusOK {
+		t.Fatalf("codigo = %d, se esperaba 200: %s", codigo, datos)
+	}
+}
+
 func TestAnonimizaRechazaLoteMayorA50(t *testing.T) {
 	registros := make([]string, 51)
 	for i := range registros {
@@ -200,8 +209,8 @@ func TestAnonimizaRechazaLoteMayorA50(t *testing.T) {
 
 func TestAnonimizaRechazaCuerpoIlegible(t *testing.T) {
 	h := nuevo(t, servidor.Deps{})
-	if codigo, datos := pide(t, http.MethodPost, h.URL+"/v1/anonymize", `{`); codigo != http.StatusBadRequest {
-		t.Fatalf("codigo = %d, se esperaba 400: %s", codigo, datos)
+	if codigo, datos := pide(t, http.MethodPost, h.URL+"/v1/anonymize", `{`); codigo != http.StatusUnprocessableEntity {
+		t.Fatalf("codigo = %d, se esperaba 422: %s", codigo, datos)
 	}
 }
 

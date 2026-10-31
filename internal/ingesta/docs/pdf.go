@@ -23,13 +23,19 @@ func (l *Lector) extraePDF(ctx context.Context, ruta string) (string, map[string
 		return cuerpo, metadata
 	}
 	if ctx.Err() != nil {
-		return "", map[string]string{}
+		return "", clavesVacias()
 	}
 	cuerpo, metadata, err = l.llamaAyudante(ctx, ruta, "--texto")
 	if err != nil {
-		return "", map[string]string{}
+		return "", clavesVacias()
 	}
 	return cuerpo, metadata
+}
+
+// clavesVacias conserva las claves de metadata del contrato aunque no se haya
+// podido leer el PDF: un registro sin `author` no vale (ENUNCIADO, "Qué entregas").
+func clavesVacias() map[string]string {
+	return map[string]string{"title": "", "author": "", "subject": "", "keywords": ""}
 }
 
 // llamaAyudante corre <Python> <Ayudante> [banderas] <ruta> con su propio

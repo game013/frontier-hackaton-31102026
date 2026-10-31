@@ -31,10 +31,9 @@ func (s *Servidor) anonimiza(w http.ResponseWriter, r *http.Request) {
 	metrica := captura.Anota(r)
 	var peticion peticionAnonimiza
 	decodificador := json.NewDecoder(http.MaxBytesReader(w, r.Body, limiteCuerpoAnon))
-	decodificador.DisallowUnknownFields()
 	if err := decodificador.Decode(&peticion); err != nil {
 		metrica.Error = "cuerpo"
-		respondeError(w, http.StatusBadRequest, "cuerpo inválido: se espera {source, records}")
+		respondeError(w, http.StatusUnprocessableEntity, "cuerpo inválido: se espera {source, records}")
 		return
 	}
 	fuente, err := fuenteDe(peticion.Source)
@@ -159,10 +158,11 @@ func decodificaRegistros(fuente modelo.Fuente, crudos []json.RawMessage) ([]mode
 	return salida, nil
 }
 
-// estricto rechaza campos que el contrato no declara.
+// estricto decodifica un registro con los tipos del contrato. Los campos que el
+// esquema no declara se ignoran: el OpenAPI no los prohíbe y el jurado puede
+// mandar campos de más.
 func estricto(crudo json.RawMessage, destino any) error {
 	decodificador := json.NewDecoder(bytes.NewReader(crudo))
-	decodificador.DisallowUnknownFields()
 	if err := decodificador.Decode(destino); err != nil {
 		return errors.New("campos o tipos fuera del esquema del registro")
 	}
