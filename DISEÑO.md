@@ -165,9 +165,11 @@ perfil, respetando mayúsculas, tildes, puntos, separadores, "arroba/punto" y sl
 registro: texto, nombres de archivo, metadata, front matter, comentarios.
 
 **7. Cuasi-identificadores.**
-- Tablas: ocupación → sector (13 sectores) en todas las filas; barrio → otro barrio de la misma ciudad.
+- Tablas: en `clientes`, ocupación → sector (13 sectores) y barrio → otro barrio de la misma ciudad.
+  `empleados.cargo` se conserva: es el rol del empleado dentro de la organización, no un cuasi-identificador suelto.
 - Texto: cuando ocupación, barrio y año aparecen ligados a una persona → ocupación a sector, barrio a ciudad,
-  año a "hace unos años". Cubre la plantilla "soy X, vivo en Y, desde Z" y las descripciones de los agentes.
+  año de la relación a "hace unos años", este último solo con ancla de relación ("llevo con ustedes desde",
+  "cliente desde"). Cubre la plantilla "soy X, vivo en Y, desde Z" y las descripciones de los agentes.
 
 **8. Compuerta de fuga.** Port de `contiene()` de `validar.mjs`. Barre todas las formas originales del registro sobre
 toda la salida (incluidas claves de objetos) y busca también hashes sin sal (MD5/SHA-1/SHA-256) de las formas. Si
@@ -221,7 +223,7 @@ Detalle en `analisis/05_reuso_10102026.md`.
 | D6 | Reemplazo literal de fragmentos                           | Redactar con `[REDACTED]` o reescribir con LLM  | Redactar da 56 puntos; reescribir pierde parecido y puede borrar datos de negocio             |
 | D7 | Go para el servicio + pdfplumber como subproceso          | Todo en Go (ledongthuc/pdf, pdfcpu) / todo en Python | Go es el stack fuerte del equipo; pdfplumber fue la única librería que extrajo bien tablas y celdas partidas en el análisis |
 | D8 | Un solo núcleo para `/run` y `/anonymize`                 | Dos caminos separados                           | Garantiza el mismo seudónimo en `output/` y en vivo                                           |
-| D9 | Ocupación y barrio se generalizan en todas las filas      | Solo donde k < umbral                           | k=1 en las 149 filas; la salida ideal generaliza todo; el test evalúa la unión de fuentes     |
+| D9 | Cuasi-identificadores generalizados: en `clientes`, ocupación → sector y barrio → otro barrio de la misma ciudad; en el texto ligado a una persona, barrio → ciudad y año de la relación → "hace unos años", este último solo con ancla de relación («llevo con ustedes desde»). `empleados.cargo` se conserva: es el rol del empleado en la organización | Solo donde k < umbral | k=1 en las 149 filas de `clientes`; la salida ideal generaliza todo; el test evalúa la unión de fuentes |
 | D10| Homónimos se desempatan con evidencia de otra fuente      | Por ciudad o cargo junto al nombre              | El enunciado dice que no aparecen; los 8 pares tienen desempate en PQR, transacciones o adjuntos |
 | D11| Compuerta de fuga obligatoria al final                    | Confiar en la detección                         | Un falso negativo es fuga en cada registro de la persona; el barrido es barato               |
 | D12| SQLite en volumen                                          | Postgres gestionado / archivos JSON             | Un solo proceso, sin red extra; JSON no da transacciones si `/anonymize` y `/run` coinciden |

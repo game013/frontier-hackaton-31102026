@@ -53,10 +53,13 @@ Ciudad, barrio, ocupación y año **no son PII por sí solos**. Lo son cuando co
 `clientes.csv` cada combinación de las 149 filas es única, y el jurado evalúa la unión de fuentes, no cada fuente por
 separado. No se borran, se generalizan:
 
-- **Tablas:** ocupación → sector, en todas las filas; barrio → otro barrio de la misma ciudad.
+- **Tablas:** en la fila del maestro (`clientes`), `ocupacion` → sector y `barrio` → otro barrio de la misma ciudad.
+  `empleados.cargo` no se toca: es el rol del empleado dentro de la organización, que el enunciado manda conservar,
+  no un cuasi-identificador suelto que lo señale fuera de ella.
 - **Texto:** cuando ocupación, barrio y año aparecen ligados a una persona, la ocupación va a sector, el barrio a
-  ciudad y el año a "hace unos años". Se aplica también a la fila del maestro, porque romperlo solo en el chat deja
-  la combinación viva en la tabla.
+  ciudad y el año de la relación a "hace unos años". Se aplica también a la fila del maestro, porque romperlo solo en
+  el chat deja la combinación viva en la tabla. El año exige el ancla de la relación («llevo con ustedes desde»,
+  «cliente desde»): un "desde" suelto es una fecha de negocio y se conserva (§1.4).
 
 ### 1.4 Lo que no es PII, y por eso no se toca
 
