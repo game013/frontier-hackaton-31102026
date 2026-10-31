@@ -1,6 +1,7 @@
 package juez
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"sort"
 	"unicode/utf8"
@@ -47,7 +48,7 @@ func JuezGLO(s *Salida) Medicion {
 		}
 		for _, original := range e.Originals {
 			if utf8.RuneCountInString(original) < 3 {
-				m.Detalles = append(m.Detalles, fmt.Sprintf("forma demasiado corta para barrer: %q (%s)", original, e.EntityID))
+				m.Detalles = append(m.Detalles, fmt.Sprintf("forma demasiado corta para barrer: %s (%s)", enmascara(original), e.EntityID))
 				continue
 			}
 			m.Total++
@@ -56,14 +57,14 @@ func JuezGLO(s *Salida) Medicion {
 				if norm.Contiene(texto, original) {
 					encontrados++
 					if encontrados <= 3 {
-						m.Detalles = append(m.Detalles, fmt.Sprintf("%q sigue en %s (%s)", original, s.Orden[i], e.EntityID))
+						m.Detalles = append(m.Detalles, fmt.Sprintf("%s sigue en %s (%s)", enmascara(original), s.Orden[i], e.EntityID))
 					}
 				}
 			}
 			if encontrados == 0 {
 				m.Pasan++
 			} else if encontrados > 3 {
-				m.Detalles = append(m.Detalles, fmt.Sprintf("%q sigue en %d registros más (%s)", original, encontrados-3, e.EntityID))
+				m.Detalles = append(m.Detalles, fmt.Sprintf("%s sigue en %d registros más (%s)", enmascara(original), encontrados-3, e.EntityID))
 			}
 		}
 	}
@@ -185,4 +186,11 @@ func ResumeDetalles(d []string, n int) []string {
 // Linea es el renglón de un juez en el reporte.
 func (m Medicion) Linea() string {
 	return fmt.Sprintf("%-6s %-16s %d/%d (%.1f %%)", m.ID, m.Nombre, m.Pasan, m.Total, 100*m.Ratio())
+}
+
+// enmascara deja la forma irreconocible en los detalles del reporte: la regla 8
+// de PROGRESS.md pide ids y conteos en los logs, nunca valores reales.
+func enmascara(forma string) string {
+	h := sha256.Sum256([]byte(forma))
+	return fmt.Sprintf("forma#%x (%d caracteres)", h[:3], utf8.RuneCountInString(forma))
 }

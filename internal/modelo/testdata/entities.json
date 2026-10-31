@@ -1,47 +1,41 @@
 {
   "entities": [
     {
-      "entity_id": "p_008",
+      "entity_id": "p_001",
       "type": "person",
       "originals": [
-        "Yesenia",
-        "Yesenia Ramírez"
+        "Rosa Ensayo Piloto",
+        "900000111"
       ],
       "pseudonyms": {
-        "name": "Marcela Pardo"
+        "name": "Elena Ficticia",
+        "email": "elena.ficticia@ejemplo.test"
       },
       "records": [
-        "09f5ec34-bd6b-5b30-96c4-67aecdbdae34",
-        "2d493256-cf41-55e8-9e5f-c4367f0d23f1",
-        "9e0e0572-3746-5a1a-ba83-560a64bdddbe",
-        "bdde8eb9-65e1-5e72-a62a-de5618195dcc"
+        "prueba-chat-1"
       ]
     },
     {
-      "entity_id": "p_016",
+      "entity_id": "p_002",
       "type": "person",
       "originals": [
-        "Kelly Castaño",
-        "kelly.castano@kipupay.co"
+        "Rosa"
       ],
       "pseudonyms": {
-        "name": "Doris Lozano",
-        "email": "doris.lozano@kipupay.co"
+        "name": "Elena"
       },
-      "records": [
-        "sdoc_01"
-      ]
+      "records": []
     },
     {
-      "entity_id": "kept_007",
+      "entity_id": "kept_001",
       "type": "organization_or_place",
       "originals": [
-        "Bancolombia"
+        "Banco Ejemplo"
       ],
       "pseudonyms": {},
+      "records": [],
       "kept": true,
-      "reason": "organización, lugar, marca o figura pública; no es persona natural",
-      "records": []
+      "reason": "organización, lugar, marca o figura pública; no es persona natural"
     }
   ]
 }

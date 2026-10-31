@@ -12,15 +12,15 @@ import (
 // construye un perfil así y pide sus formas.
 func perfilRealMuestra() modelo.Perfil {
 	return modelo.Perfil{
-		Nombre:     "Manuela Castaño Ruiz",
-		Correo:     "mcastano@gmail.com",
-		Celular:    "3148729552",
-		Cedula:     "1107360039",
-		Handle:     "mcastano",
-		Direccion:  "Diagonal 3A # 78-6 apto 1501",
-		Nacimiento: "1997-07-23",
-		Placa:      "LTE758",
-		Pasaporte:  "AP395977",
+		Nombre:     "Nicolás Bermúdez Cárdenas",
+		Correo:     "nbermudez@ejemplo.test",
+		Celular:    "3001234567",
+		Cedula:     "98765432",
+		Handle:     "nbermudez",
+		Direccion:  "Calle 99 # 1-2 apto 3",
+		Nacimiento: "1990-02-03",
+		Placa:      "ABC123",
+		Pasaporte:  "XZ000000",
 	}
 }
 
@@ -29,26 +29,26 @@ func TestRenderPorTipo(t *testing.T) {
 		tipo   modelo.TipoForma
 		quiero string
 	}{
-		{modelo.FormaNombreCompleto, "Manuela Castaño Ruiz"},
-		{modelo.FormaNombreCorto, "Manuela Castaño"},
-		{modelo.FormaNombrePila, "Manuela"},
-		{modelo.FormaMayusculas, "MANUELA CASTANO RUIZ"},
-		{modelo.FormaSlug, "manuela_castano"},
-		{modelo.FormaUsuario, "mcastano"},
-		{modelo.FormaCorreo, "mcastano@gmail.com"},
-		{modelo.FormaCorreoDeletreado, "mcastano arroba gmail punto com"},
-		{modelo.FormaCedula, "1107360039"},
-		{modelo.FormaCedulaPuntos, "1.107.360.039"},
-		{modelo.FormaCedulaCC, "CC1107360039"},
-		{modelo.FormaCelular, "3148729552"},
-		{modelo.FormaCelularE164, "+57 314 872 9552"},
-		{modelo.FormaCelularLocal, "314-872-9552"},
-		{modelo.FormaDireccion, "Diagonal 3A # 78-6 apto 1501"},
-		{modelo.FormaFechaISO, "1997-07-23"},
-		{modelo.FormaFechaPalabras, "23 de julio de 1997"},
-		{modelo.FormaFechaUS, "07/23/1997"},
-		{modelo.FormaPlaca, "LTE758"},
-		{modelo.FormaPasaporte, "AP395977"},
+		{modelo.FormaNombreCompleto, "Nicolás Bermúdez Cárdenas"},
+		{modelo.FormaNombreCorto, "Nicolás Bermúdez"},
+		{modelo.FormaNombrePila, "Nicolás"},
+		{modelo.FormaMayusculas, "NICOLAS BERMUDEZ CARDENAS"},
+		{modelo.FormaSlug, "nicolas_bermudez"},
+		{modelo.FormaUsuario, "nbermudez"},
+		{modelo.FormaCorreo, "nbermudez@ejemplo.test"},
+		{modelo.FormaCorreoDeletreado, "nbermudez arroba ejemplo punto test"},
+		{modelo.FormaCedula, "98765432"},
+		{modelo.FormaCedulaPuntos, "98.765.432"},
+		{modelo.FormaCedulaCC, "CC98765432"},
+		{modelo.FormaCelular, "3001234567"},
+		{modelo.FormaCelularE164, "+57 300 123 4567"},
+		{modelo.FormaCelularLocal, "300-123-4567"},
+		{modelo.FormaDireccion, "Calle 99 # 1-2 apto 3"},
+		{modelo.FormaFechaISO, "1990-02-03"},
+		{modelo.FormaFechaPalabras, "3 de febrero de 1990"},
+		{modelo.FormaFechaUS, "02/03/1990"},
+		{modelo.FormaPlaca, "ABC123"},
+		{modelo.FormaPasaporte, "XZ000000"},
 	}
 	for _, c := range casos {
 		t.Run(string(c.tipo), func(t *testing.T) {
@@ -135,23 +135,23 @@ func TestRenderNombreDeDosPalabras(t *testing.T) {
 // celular con +57 y espacios, espacios de más en el nombre).
 func TestRenderNormalizaEntrada(t *testing.T) {
 	sucio := modelo.Perfil{
-		Nombre:  "  Manuela   Castaño Ruiz ",
-		Cedula:  "1.107.360.039",
-		Celular: "+57 314 872 9552",
-		Correo:  " juliana.mejia@gmail.com ",
+		Nombre:  "  Nicolás   Bermúdez Cárdenas ",
+		Cedula:  "98.765.432",
+		Celular: "+57 300 123 4567",
+		Correo:  " ana.pruebas@ejemplo.test ",
 	}
 	casos := []struct {
 		tipo   modelo.TipoForma
 		quiero string
 	}{
-		{modelo.FormaNombreCompleto, "Manuela Castaño Ruiz"},
-		{modelo.FormaNombreCorto, "Manuela Castaño"},
-		{modelo.FormaCedula, "1107360039"},
-		{modelo.FormaCedulaCC, "CC1107360039"},
-		{modelo.FormaCelular, "3148729552"},
-		{modelo.FormaCelularLocal, "314-872-9552"},
-		{modelo.FormaCorreo, "juliana.mejia@gmail.com"},
-		{modelo.FormaCorreoDeletreado, "juliana punto mejia arroba gmail punto com"},
+		{modelo.FormaNombreCompleto, "Nicolás Bermúdez Cárdenas"},
+		{modelo.FormaNombreCorto, "Nicolás Bermúdez"},
+		{modelo.FormaCedula, "98765432"},
+		{modelo.FormaCedulaCC, "CC98765432"},
+		{modelo.FormaCelular, "3001234567"},
+		{modelo.FormaCelularLocal, "300-123-4567"},
+		{modelo.FormaCorreo, "ana.pruebas@ejemplo.test"},
+		{modelo.FormaCorreoDeletreado, "ana punto pruebas arroba ejemplo punto test"},
 	}
 	for _, c := range casos {
 		f, err := Render(sucio, c.tipo)
@@ -229,12 +229,12 @@ func TestTodas(t *testing.T) {
 }
 
 func TestUsuarioSaleDelCorreo(t *testing.T) {
-	p := modelo.Perfil{Correo: "camila.arango@gmail.com"}
+	p := modelo.Perfil{Correo: "ana.pruebas@ejemplo.test"}
 	f, err := Render(p, modelo.FormaUsuario)
 	if err != nil {
 		t.Fatalf("Render(usuario): %v", err)
 	}
-	if f.Valor != "camila.arango" {
-		t.Fatalf("usuario = %q, quiero %q", f.Valor, "camila.arango")
+	if f.Valor != "ana.pruebas" {
+		t.Fatalf("usuario = %q, quiero %q", f.Valor, "ana.pruebas")
 	}
 }

@@ -42,7 +42,7 @@ func NuevaMascara(formas []string) *Mascara {
 		m.formas = append(m.formas, []rune(plegada))
 		m.marcadores = append(m.marcadores, "[PERSONA_"+strconv.Itoa(len(m.formas))+"]")
 	}
-	// Las formas más largas primero: "Camila Restrepo" antes que "Camila".
+	// Las formas más largas primero: "Ramona Salas" antes que "Ramona".
 	orden := make([]int, len(m.formas))
 	for i := range orden {
 		orden[i] = i

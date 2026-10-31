@@ -24,12 +24,22 @@ type CacheSQLite struct {
 	db *sql.DB
 }
 
+// modeloCache separa las filas de esta caché de las que escriba C18 desde el
+// almacén, sin inventar un snapshot que aquí no se conoce. La llave ya incluye
+// el snapshot (D32).
+const modeloCache = ""
+
 // NuevaCacheSQLite prepara la tabla cache_modelo en la base dada.
 func NuevaCacheSQLite(db *sql.DB) (*CacheSQLite, error) {
+	// Mismo esquema que la migración de internal/almacen (C2): ambas capas
+	// comparten la tabla en /data, así que las columnas deben coincidir.
 	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS cache_modelo (
-		llave TEXT PRIMARY KEY,
-		respuesta TEXT NOT NULL,
-		creada_en TEXT NOT NULL
+		clave      TEXT PRIMARY KEY,
+		modelo     TEXT NOT NULL,
+		respuesta  TEXT NOT NULL,
+		tokens_in  INTEGER NOT NULL DEFAULT 0,
+		tokens_out INTEGER NOT NULL DEFAULT 0,
+		creado     TEXT NOT NULL
 	)`); err != nil {
 		return nil, err
 	}
@@ -39,7 +49,7 @@ func NuevaCacheSQLite(db *sql.DB) (*CacheSQLite, error) {
 // Lee una respuesta guardada.
 func (c *CacheSQLite) Lee(ctx context.Context, llave string) (string, bool, error) {
 	var valor string
-	err := c.db.QueryRowContext(ctx, `SELECT respuesta FROM cache_modelo WHERE llave = ?`, llave).Scan(&valor)
+	err := c.db.QueryRowContext(ctx, `SELECT respuesta FROM cache_modelo WHERE clave = ?`, llave).Scan(&valor)
 	if err == sql.ErrNoRows {
 		return "", false, nil
 	}
@@ -53,9 +63,9 @@ func (c *CacheSQLite) Lee(ctx context.Context, llave string) (string, bool, erro
 // misma entrada y la misma decisión.
 func (c *CacheSQLite) Guarda(ctx context.Context, llave string, valor string) error {
 	_, err := c.db.ExecContext(ctx,
-		`INSERT INTO cache_modelo (llave, respuesta, creada_en) VALUES (?, ?, ?)
-		 ON CONFLICT(llave) DO NOTHING`,
-		llave, valor, time.Now().UTC().Format(time.RFC3339))
+		`INSERT INTO cache_modelo (clave, modelo, respuesta, creado) VALUES (?, ?, ?, ?)
+		 ON CONFLICT(clave) DO NOTHING`,
+		llave, modeloCache, valor, time.Now().UTC().Format(time.RFC3339))
 	return err
 }
 
