@@ -124,7 +124,7 @@ sin tildes, minúsculas, dígitos sin separadores) con un mapa de offsets para v
 - b. **Patrones**: cédula (con contexto, para no atrapar montos ni el NIT), celular, correo, correo deletreado,
   placa, pasaporte, cuenta, dirección, fechas, URLs con usuario, tokens en nombres de archivo.
 - c. **Nombres desconocidos**: diccionario de nombres y apellidos colombianos más mayúscula inicial. Lo que queda
-  dudoso lo **proponen las reglas como candidato** y **Jev 1.14** lo clasifica con una pregunta cerrada (persona,
+  dudoso lo **proponen las reglas como candidato** (cuatro generadores, D30) y **Jev 1.14** lo clasifica con una pregunta cerrada (persona,
   organización, lugar, marca, otro) y su confianza; nunca genera ni reescribe texto (D13).
 - d. **Allowlist** de entidades a conservar (≈30 vistas), con la regla de apellido-lugar, más reglas genéricas
   (sufijos `S.A.S.`, "Banco …", mayúscula sin nombre de pila delante) para lo que llegue con el crecimiento.
@@ -240,8 +240,13 @@ Detalle en `analisis/05_reuso_10102026.md`.
 | D25| Compuerta: forma con un dueño → su perfil y se agrega a `records`; ambigua → llave menor y dudosa; no barre nombres de pila sueltos | Reemplazo genérico | Una fuga cuesta más que un seudónimo equivocado; el validador también exime nombres sueltos |
 | D26| El LLM desempata con la mención enmascarada y fichas abstractas de candidatos (ids, ciudad, PQR, tx), respuesta cerrada `A`/`B`/`ninguna` | Mandar nombres reales / sin LLM en resolución | Los homónimos comparten nombre: lo que desempata es la evidencia, y así no viaja el nombre |
 | D27| Preguntas semánticas al modelo: solo `genero` (M/F/indeterminado → unisex) y `origen_del_nombre` | Etnia y edad | Ningún test las pide; inferir etnia es sensible y poco confiable; la edad sale de la fecha real |
-| D28| `/anonymize`: una llamada al modelo por lote (JSON con todas las preguntas), timeout 40 s, respaldo determinista, decisiones guardadas en caché y bóveda | Una llamada por mención | Cabe en 60 s y una decisión tomada no cambia en la corrida siguiente |
+| D28| `/anonymize`: una llamada al modelo **por mención**, con solo su propio `state` (varias preguntas juntas solo si comparten `state`), en paralelo con tope de 16; timeout 40 s, respaldo determinista, decisiones guardadas en caché y bóveda | Una sola llamada por lote con `state` compartido | Medido: el `state` de un registro sesga las respuestas sobre otro (mismo nombre, M 0,38 frente a indeterminado 0,66). A 0,4 s por llamada, 50 registros caben en 40 s |
 | D29| Homónimos en vivo (`author` llega como nombre): evidencia dura del lote → participantes del `thread_id` conocido → candidato único sin evidencia en contra → dos registros con evidencia distinta son dos personas → Jev con fichas (D26) → D19 | Resolver por nombre del autor | Sin uid, el nombre solo no distingue; el jurado prueba ambos casos |
+| D30| Cuatro generadores de candidatos, insensibles a mayúsculas: (a) diccionario de nombres y apellidos, (b) secuencias de 2–4 palabras con mayúscula fuera de la allowlist, (c) 1–4 palabras tras disparadores ("soy", "me llamo", "habla con", "mi hermana", "señor(a)", "don/doña", "Prepared by", "Atentamente"), (d) parte local de correos y `@handles`. Jev clasifica cada candidato | Solo mayúscula inicial / solo diccionario | Jev no extrae fragmentos: un nombre que nadie propone se fuga sin que nadie lo vea ("juan perez" en minúsculas, "la señora Gloria") |
+| D31| Umbrales sobre `probabilities`: persona si P(persona) > 0,5; desempate aceptado con confianza ≥ 0,7, si no D19; género con confianza < 0,6 → unisex. Se calibran con la muestra y el catálogo | Un solo umbral sobre la opción ganadora | Cada decisión tiene un costo de error distinto; por debajo de 0,5 la respuesta no es confiable |
+| D32| Snapshot fijo: `LLM_MODEL=typesafe/jev-1.14-20261014`; la llave de caché incluye el snapshot; `/v1/health` lo reporta | Alias `typesafe/jev-1.14` | Si el alias se mueve entre corridas, cambian decisiones nuevas; OpenRouter acepta el id exacto (comprobado) |
+| D33| Imagen multi-etapa Go + Python con `pdfplumber` y `pypdf` de versión fija; comprobación del ayudante al arrancar (al log, fuera del healthcheck); por documento: timeout → pypdf texto plano → `body` vacío, nunca se pierde el registro; desplegada antes de las 13:30 | Instalar Python al final / sin respaldo | Un fallo de PDF no puede tumbar `/run` y gastar la corrida |
+| D34| J-REC: cobertura de personas detectadas contra `sample/expected_output/entities.json`, exigida en 100 % en el hito de las 14:15 | Medir solo formas conocidas (J-GLO) | J-GLO no ve a quien nadie detectó; detectar el 70 % cuesta ~24 puntos |
 
 ## 8. Plan para medir
 

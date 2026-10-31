@@ -28,6 +28,7 @@ bloquea la corrida oficial.
 | J-REP | Reporta a         | `reporta_a` resuelve al seudónimo del jefe correcto                                                | 4           |
 | J-DIC | Diccionario       | `entities.json` declara todas las formas reales de cada persona                                    | 3           |
 | J-CRE | Crecimiento       | Con 80 % y luego 100 % de las fechas, ningún seudónimo viejo cambia                                | multiplica  |
+| J-REC | Cobertura         | Toda persona de la verdad (muestra) es detectada y seudonimizada; meta 100 % (D34)                 | evita ~24   |
 | J-VIV | En vivo           | `/anonymize` da el mismo perfil que `output/`, persona nueva única, homónimo nuevo separado, < 60 s | contrato   |
 
 ## Casos
@@ -62,3 +63,7 @@ bloquea la corrida oficial.
 | CE-26 | Persona vieja con un identificador nuevo           | Tras el crecimiento                              | Mismo seudónimo                                            | J-CRE, J-VIV |
 | CE-27 | Persona nueva con el nombre de una vieja           | Tras el crecimiento y en `/anonymize`            | Seudónimo nuevo                                            | J-HOM, J-VIV |
 | CE-28 | Empate sin LLM disponible                          | `/anonymize` con timeout                         | Persona nueva marcada dudosa, sin fusión                   | J-HOM, J-VIV |
+| CE-29 | Nombre en minúsculas en un chat                    | "juan perez" sin mayúsculas                      | Candidato por diccionario (D30a); reemplazado en minúsculas | J-REC, J-DIR |
+| CE-30 | Nombre tras disparador sin estar en el catálogo    | "la señora …", "Prepared by …"                   | Candidato por disparador (D30c); Jev lo clasifica persona  | J-REC, J-DIR |
+| CE-31 | Nombre extranjero en documento en inglés           | Security report                                  | Candidato por mayúsculas (D30b); seudónimo de origen extranjero (D27) | J-REC, J-CAT |
+| CE-32 | Nombre unisex con confianza baja de género         | "Alexis" (M 0,35–0,38)                           | Seudónimo unisex (D31)                                     | J-CAT        |
