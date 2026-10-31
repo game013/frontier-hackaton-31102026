@@ -161,7 +161,7 @@ encuentra algo, lo reemplaza y lo registra. La corrida termina con 0 fugas conoc
 
 ### 6.3 Stack
 
-- **Go** (net/http con chi), **SQLite** con `modernc.org/sqlite` (sin cgo, imagen simple).
+- **Go** (`net/http` con el `ServeMux` de Go ≥1.22: método y comodines en la ruta, sin router externo), **SQLite** con `modernc.org/sqlite` (sin cgo, imagen simple).
 - **LLM:** Claude Haiku 5.5 vía **OpenRouter** (`OPENROUTER_API_KEY`), API compatible con OpenAI llamada con un
   cliente HTTP propio. Modelo configurable por `LLM_MODEL`; caché por hash de entrada en SQLite.
 - **PDF:** las librerías de Go pierden espacios en celdas partidas. Decisión: un ayudante en Python con pdfplumber
