@@ -25,8 +25,9 @@ import (
 )
 
 // Generaliza devuelve los registros con sus cuasi-identificadores generalizados,
-// en el mismo orden. indice es el registro de personas: solo aporta la llave
-// estable con que se elige el barrio falso de una fila del maestro.
+// en el mismo orden. indice es el registro de personas: aporta la llave estable
+// con que se elige el barrio falso de una fila del maestro y la ciudad de la
+// persona, que desempata los barrios que existen en varias ciudades.
 func Generaliza(recs []modelo.Registro, indice *registro.Indice) ([]modelo.Registro, error) {
 	out := make([]modelo.Registro, 0, len(recs))
 	for _, r := range recs {
