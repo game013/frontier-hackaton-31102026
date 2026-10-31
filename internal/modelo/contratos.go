@@ -50,9 +50,9 @@ type Pregunta struct {
 // Respuesta es la respuesta del modelo a una Pregunta, con probabilidades por
 // opción para aplicar los umbrales de D31.
 type Respuesta struct {
-	Pregunta       string             `json:"pregunta"`
-	Opcion         string             `json:"opcion"`
-	Probabilidades map[string]float64 `json:"probabilidades,omitempty"`
+	Pregunta       string             `json:"question_id"`
+	Opcion         string             `json:"option"`
+	Probabilidades map[string]float64 `json:"probabilities,omitempty"`
 }
 
 // Modelo es el LLM de decisiones cerradas (Jev 1.14, D13). Solo clasifica o

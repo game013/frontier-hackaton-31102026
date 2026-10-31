@@ -105,8 +105,8 @@ func (r TableRecord) FuenteRegistro() Fuente {
 // Resultado es lo que devuelve el núcleo: los registros ya reemplazados, en el
 // mismo orden en que entraron, y las entidades que intervinieron.
 type Resultado struct {
-	Registros []Registro
-	Entities  []Entity
+	Registros []Registro `json:"records"`
+	Entities  []Entity   `json:"entities"`
 }
 
 // Nucleo es el único camino de anonimización: lo usan /run y /anonymize (D8).
