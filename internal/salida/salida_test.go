@@ -237,3 +237,43 @@ func TestPodaCorreoDeletreado(t *testing.T) {
 		t.Fatalf("podé el nombre: %+v", ents[0].Pseudonyms)
 	}
 }
+
+// Cuando la compuerta reescribe el nombre de una persona (CE-47), el valor
+// declarado ya no está en sus registros: en vez de quedar sin name, la entidad
+// declara el nombre que de verdad quedó en su fila de la tabla (CE-50).
+func TestPodaRecuperaNombreDeLaFila(t *testing.T) {
+	ents := []modelo.Entity{{
+		EntityID: "p_cl_1", Type: modelo.EntidadPersona,
+		Pseudonyms: map[string]string{"name": "Hugo Mora", "email": "hmora@x.co"},
+		Records:    []string{"clientes:CL-1", "m1", "m2"},
+	}}
+	recs := []modelo.Registro{
+		modelo.TableRecord{ID: "clientes:CL-1", Table: "clientes", Columns: map[string]string{"nombre_completo": "Ubaldo Mora Velasco", "correo": "hmora@x.co"}},
+		modelo.ChatRecord{ID: "m1", Author: "Ubaldo Mora", Text: "hola"},
+		modelo.ChatRecord{ID: "m2", Author: "Bea", Text: "Hola Ubaldo Mora, ¿cómo vas?"},
+	}
+	PodaAusentes(ents, recs)
+	if got := ents[0].Pseudonyms["name"]; got != "Ubaldo Mora" {
+		t.Fatalf("name = %q, quería %q", got, "Ubaldo Mora")
+	}
+}
+
+// El nombre recuperado nunca puede ser el seudónimo de otra entidad.
+func TestPodaNoRecuperaNombreAjeno(t *testing.T) {
+	ents := []modelo.Entity{
+		{EntityID: "p_cl_1", Type: modelo.EntidadPersona,
+			Pseudonyms: map[string]string{"name": "Hugo Mora", "email": "hmora@x.co"},
+			Records:    []string{"clientes:CL-1"}},
+		{EntityID: "p_cl_2", Type: modelo.EntidadPersona,
+			Pseudonyms: map[string]string{"name": "Ubaldo Mora Velasco"},
+			Records:    []string{"m9"}},
+	}
+	recs := []modelo.Registro{
+		modelo.TableRecord{ID: "clientes:CL-1", Table: "clientes", Columns: map[string]string{"nombre_completo": "Ubaldo Mora Velasco", "correo": "hmora@x.co"}},
+		modelo.ChatRecord{ID: "m9", Author: "Ubaldo Mora Velasco", Text: "x"},
+	}
+	PodaAusentes(ents, recs)
+	if got := ents[0].Pseudonyms["name"]; got == "Ubaldo Mora Velasco" {
+		t.Fatalf("declaré el seudónimo de otra entidad")
+	}
+}

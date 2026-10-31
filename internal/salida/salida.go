@@ -471,6 +471,83 @@ func PodaAusentes(ents []modelo.Entity, recs []modelo.Registro) {
 			}
 		}
 	}
+	recuperaNombres(ents, recs, textos)
+}
+
+// recuperaNombres devuelve el name a las personas que se quedaron sin él: la
+// compuerta puede reescribir el nombre en el texto (CE-47) y el valor viejo se
+// poda. Sin name el jurado no reconoce a la persona en la prueba de
+// consistencia, así que se declara el nombre que de verdad quedó en la fila de
+// tabla de la persona, en la variante que aparece en más de sus registros
+// (CE-50). Nunca se toma un seudónimo que ya declara otra entidad.
+func recuperaNombres(ents []modelo.Entity, recs []modelo.Registro, textos map[string]string) {
+	filas := map[string]string{}
+	for _, r := range recs {
+		t, ok := r.(modelo.TableRecord)
+		if !ok {
+			continue
+		}
+		for _, col := range []string{"nombre_completo", "nombre"} {
+			if v := strings.TrimSpace(t.Columns[col]); v != "" {
+				filas[t.ID] = v
+				break
+			}
+		}
+	}
+	ocupados := map[string]bool{}
+	for _, e := range ents {
+		if v := e.Pseudonyms["name"]; v != "" {
+			ocupados[norm.Norm(v)] = true
+		}
+	}
+	for i := range ents {
+		e := &ents[i]
+		if e.Type != modelo.EntidadPersona || e.Pseudonyms["name"] != "" {
+			continue
+		}
+		mejor, mejorCuenta := "", 0
+		for _, id := range e.Records {
+			completo, ok := filas[id]
+			if !ok {
+				continue
+			}
+			for _, candidato := range variantesNombre(completo) {
+				if ocupados[norm.Norm(candidato)] {
+					continue
+				}
+				cuenta := 0
+				for _, otro := range e.Records {
+					if estaEn(textos[otro], candidato) {
+						cuenta++
+					}
+				}
+				if cuenta > mejorCuenta || (cuenta == mejorCuenta && cuenta > 0 && len(candidato) > len(mejor)) {
+					mejor, mejorCuenta = candidato, cuenta
+				}
+			}
+		}
+		if mejor != "" {
+			if e.Pseudonyms == nil {
+				e.Pseudonyms = map[string]string{}
+			}
+			e.Pseudonyms["name"] = mejor
+			ocupados[norm.Norm(mejor)] = true
+		}
+	}
+}
+
+// variantesNombre son el nombre completo y sus prefijos de dos o más palabras:
+// el chat usa la forma corta y la tabla la completa.
+func variantesNombre(completo string) []string {
+	palabras := strings.Fields(completo)
+	var out []string
+	for n := len(palabras); n >= 2; n-- {
+		out = append(out, strings.Join(palabras[:n], " "))
+	}
+	if len(palabras) == 1 {
+		out = append(out, palabras[0])
+	}
+	return out
 }
 
 // estaEn decide si un seudónimo está en el texto como lo vería el validador:
