@@ -21,14 +21,19 @@ type CampoTexto string
 // sobre el string original del campo (no sobre el texto normalizado). Fin es
 // exclusivo.
 type Mencion struct {
-	Registro  string      `json:"registro"`
-	Fuente    Fuente      `json:"fuente"`
-	Campo     CampoTexto  `json:"campo"`
-	Inicio    int         `json:"inicio"`
-	Fin       int         `json:"fin"`
-	Valor     string      `json:"valor"`
-	Tipo      TipoMencion `json:"tipo"`
-	Persona   string      `json:"persona,omitempty"`
-	Regla     string      `json:"regla"`
-	Confianza float64     `json:"confianza"`
+	Registro string      `json:"registro"`
+	Fuente   Fuente      `json:"fuente"`
+	Campo    CampoTexto  `json:"campo"`
+	Inicio   int         `json:"inicio"`
+	Fin      int         `json:"fin"`
+	Valor    string      `json:"valor"`
+	Tipo     TipoMencion `json:"tipo"`
+	// Forma es el tipo de forma que se reconoció (nombre_completo, cedula,
+	// correo_deletreado…). El reemplazo la usa para pedirle a la fábrica el
+	// mismo estilo del perfil; vacía cuando el fragmento no casa con una forma
+	// del registro y el reemplazo tiene que inferir el estilo.
+	Forma     TipoForma `json:"forma,omitempty"`
+	Persona   string    `json:"persona,omitempty"`
+	Regla     string    `json:"regla"`
+	Confianza float64   `json:"confianza"`
 }
