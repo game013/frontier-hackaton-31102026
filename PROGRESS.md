@@ -136,6 +136,10 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 17:05 · C19 · pi · `CASO:` CE-39 cerrado con juez J-IND: el acta de un comité presenta a la persona sin verbo
+  («Antecedentes de la afectada: ingeniera de sistemas, vinculada en 2023») y antes se quedaba entera. Ahora «la
+  afectada» ata el oficio y «vinculada en» ancla el año; las dos actas de `fuentes/docs` salen generalizadas. Muestra
+  13/13, validador OK en muestra y corpus, J-GLO 3883/3891 (99,8 %, CE-33).
 - 16:40 · C24 · worker · El respaldo queda encadenado tras cada corrida y escrito como lo que es: un jalado desde la
   máquina del operador, porque el volumen de Railway no puede empujar nada. `scripts/boveda.sh` y la nota de C24 en
   este tablero dicen la secuencia (job en `done`, copia local del volumen, respaldo al disco) y qué no hace el script:
