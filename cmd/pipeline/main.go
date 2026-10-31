@@ -19,9 +19,7 @@ import (
 
 	"github.com/game013/frontier-hackaton-31102026/internal/almacen"
 	"github.com/game013/frontier-hackaton-31102026/internal/detecta"
-	"github.com/game013/frontier-hackaton-31102026/internal/ingesta/chats"
 	"github.com/game013/frontier-hackaton-31102026/internal/ingesta/docs"
-	"github.com/game013/frontier-hackaton-31102026/internal/ingesta/tablas"
 	"github.com/game013/frontier-hackaton-31102026/internal/modelo"
 	"github.com/game013/frontier-hackaton-31102026/internal/nucleo"
 	"github.com/game013/frontier-hackaton-31102026/internal/salida"
@@ -52,7 +50,7 @@ func corre(fuentes, salidaDir, datos, allowlistRuta string, sinLLM, vivo bool, p
 	ctx, cancelar := context.WithTimeout(context.Background(), plazo)
 	defer cancelar()
 
-	entrada, err := leeCorpus(ctx, fuentes)
+	entrada, err := nucleo.CargaCorpus(ctx, fuentes, docs.NuevoLector())
 	if err != nil {
 		return err
 	}
@@ -99,47 +97,6 @@ func corre(fuentes, salidaDir, datos, allowlistRuta string, sinLLM, vivo bool, p
 	return nil
 }
 
-// leeCorpus ingesta las tres fuentes en el orden de la fuente: chats, docs y
-// tablas.
-func leeCorpus(ctx context.Context, raiz string) (nucleo.Entrada, error) {
-	entrada := nucleo.Entrada{}
-	chatsDir := filepath.Join(raiz, "chats")
-	if existe(chatsDir) {
-		corpus, err := chats.Cargar(chatsDir)
-		if err != nil {
-			return entrada, fmt.Errorf("chats: %w", err)
-		}
-		entrada.Usuarios, entrada.Autores, entrada.Canales = corpus.Usuarios, corpus.Autores, corpus.Canales
-		for _, r := range corpus.Registros {
-			entrada.Registros = append(entrada.Registros, r)
-		}
-	}
-	docsDir := filepath.Join(raiz, "docs")
-	if existe(docsDir) {
-		registros, err := docs.NuevoLector().Directorio(ctx, docsDir)
-		if err != nil {
-			return entrada, fmt.Errorf("docs: %w", err)
-		}
-		for _, r := range registros {
-			entrada.Registros = append(entrada.Registros, r)
-		}
-	}
-	tablasDir := filepath.Join(raiz, "tables")
-	if existe(tablasDir) {
-		registros, err := tablas.Leer(tablasDir)
-		if err != nil {
-			return entrada, fmt.Errorf("tablas: %w", err)
-		}
-		for _, r := range registros {
-			entrada.Registros = append(entrada.Registros, r)
-		}
-	}
-	if len(entrada.Registros) == 0 {
-		return entrada, fmt.Errorf("no encontré registros en %s", raiz)
-	}
-	return entrada, nil
-}
-
 func cargaAllowlist(ruta string) (*detecta.Allowlist, error) {
 	if ruta == "" {
 		return detecta.PorDefecto(), nil
@@ -149,11 +106,6 @@ func cargaAllowlist(ruta string) (*detecta.Allowlist, error) {
 		return nil, fmt.Errorf("allowlist: %w", err)
 	}
 	return detecta.CargaJSON(datos)
-}
-
-func existe(ruta string) bool {
-	_, err := os.Stat(ruta)
-	return err == nil
 }
 
 func cuentaPersonas(ents []modelo.Entity) int {
