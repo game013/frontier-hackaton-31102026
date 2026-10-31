@@ -220,7 +220,7 @@ func slug(nombre string) (string, error) {
 	return strings.TrimSuffix(b.String(), "_"), nil
 }
 
-// usuario es el name de users.json: el local del correo ("mcastano",
+// usuario es el name de users.json: el local del correo ("nbermudez",
 // "camila.arango"). Handle lo trae el perfil cuando la fuente ya lo declara.
 func usuario(p modelo.Perfil) (string, error) {
 	if h := strings.TrimSpace(p.Handle); h != "" {

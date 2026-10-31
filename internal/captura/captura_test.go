@@ -23,7 +23,7 @@ func TestMiddlewareRegistraIdsCodigosYConteos(t *testing.T) {
 		m.Registros = 2
 		m.Entidades = 3
 		w.WriteHeader(http.StatusAccepted)
-		_, _ = w.Write([]byte(`{"text":"Manuela Castaño Gaviria"}`))
+		_, _ = w.Write([]byte(`{"text":"Rosa Ensayo Piloto"}`))
 	})
 	manejador := captura.Middleware(interior, captura.Opciones{Destinos: []io.Writer{&destino}})
 
@@ -47,7 +47,7 @@ func TestMiddlewareRegistraIdsCodigosYConteos(t *testing.T) {
 	if linea.Job != "job_7f3a" || linea.Fuente != "chats" || linea.Registros != 2 || linea.Entidades != 3 {
 		t.Fatalf("métrica perdida: %+v", linea)
 	}
-	for _, prohibido := range []string{"Manuela", "Castaño", "secreto", "token="} {
+	for _, prohibido := range []string{"Rosa", "Ensayo", "secreto", "token="} {
 		if strings.Contains(lineas[0], prohibido) {
 			t.Fatalf("la captura filtró %q: %s", prohibido, lineas[0])
 		}

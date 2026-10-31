@@ -189,7 +189,9 @@ func CargaSalida(dir string) (*Salida, error) {
 		if err := sc.Err(); err != nil {
 			return nil, fmt.Errorf("leyendo %s.jsonl: %w", f, err)
 		}
-		archivo.Close()
+		if err := archivo.Close(); err != nil {
+			return nil, fmt.Errorf("cerrando %s.jsonl: %w", f, err)
+		}
 	}
 	crudo, err := os.ReadFile(filepath.Join(dir, "entities.json"))
 	if err != nil {

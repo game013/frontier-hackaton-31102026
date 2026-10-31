@@ -350,10 +350,10 @@ func TestCuerpoSinFormasReales(t *testing.T) {
 		respondeChoice(w, cuerpo)
 	})
 	c := clienteDePrueba(t, f, func(conf *Configuracion) {
-		conf.Mascara = NuevaMascara([]string{"Camila Restrepo Ochoa", "camila.restrepo@correo.test", "1032456789"})
+		conf.Mascara = NuevaMascara([]string{"Ramona Salas Quintero", "ramona.salas@ejemplo.test", "900000123"})
 	})
 
-	state := "Camila Restrepo Ochoa (camila.restrepo@correo.test, cédula 1032456789) dice que no le llegó el pago."
+	state := "Ramona Salas Quintero (ramona.salas@ejemplo.test, cédula 900000123) dice que no le llegó el pago."
 	if _, err := c.Decide(context.Background(), state, preguntaChoice()); err != nil {
 		t.Fatalf("Decide: %v", err)
 	}
@@ -362,7 +362,7 @@ func TestCuerpoSinFormasReales(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	for _, forma := range []string{"Camila", "Restrepo", "Ochoa", "1032456789", "camila.restrepo"} {
+	for _, forma := range []string{"Ramona", "Salas", "Quintero", "900000123", "ramona.salas"} {
 		if strings.Contains(strings.ToLower(string(enviado)), strings.ToLower(forma)) {
 			t.Fatalf("el cuerpo enviado lleva la forma %q: %s", forma, enviado)
 		}
