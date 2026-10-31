@@ -126,7 +126,8 @@ func TestEntidadesDeclaraFormasYSeudonimosUsados(t *testing.T) {
 		t.Fatalf("entidades = %d, quiero 2 (persona y conservada)", len(ents))
 	}
 	persona := ents[0]
-	if persona.Pseudonyms["name"] != "Sofía Elena Zambrano" || persona.Pseudonyms["email"] != "szambrano@gmail.com" {
+	// La mención fue el nombre corto: se declara la forma que de verdad quedó.
+	if persona.Pseudonyms["name"] != "Sofía Elena" || persona.Pseudonyms["email"] != "szambrano@gmail.com" {
 		t.Fatalf("seudónimos = %v", persona.Pseudonyms)
 	}
 	if _, tieneCedula := persona.Pseudonyms["cedula"]; tieneCedula {

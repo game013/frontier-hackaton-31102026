@@ -86,7 +86,12 @@ func Nueva(entradas []Entrada, sufijos, prefijos, apellidoLugar, palabras []stri
 // PorDefecto es la allowlist sin datos de C26: solo reglas genéricas, para que
 // el pipeline funcione cuando el archivo todavía no está. C26 la reemplaza.
 func PorDefecto() *Allowlist {
-	a, err := Nueva(nil,
+	a, err := Nueva([]Entrada{
+		// El asistente virtual y la marca no son personas (supuesto 4). C26
+		// reemplaza esta lista mínima por el archivo de datos.
+		{Nombre: "Kipi", Tipo: "marca", Motivo: "asistente virtual de Kipu Pay, no es persona"},
+		{Nombre: "Kipu Pay", Tipo: "marca", Motivo: "marca de la empresa, no es persona"},
+	},
 		[]string{"S.A.S.", "S.A.", "LTDA", "E.U."},
 		[]string{"Banco", "Banco de", "Fondo", "Caja"},
 		[]string{"Santander", "Bolívar", "Botero", "Carulla", "Castilla", "Robledo", "Restrepo", "Galán", "Córdoba"},

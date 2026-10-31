@@ -63,6 +63,10 @@ func (c *Clasificador) Clasifica(ctx context.Context, cands []detecta.Candidato)
 		if tipo != modelo.MencionPersona {
 			continue
 		}
+		forma := modelo.FormaNombreCompleto
+		if cuentaPalabras(cand.Valor) == 1 {
+			forma = modelo.FormaNombrePila
+		}
 		out = append(out, modelo.Mencion{
 			Registro:  cand.Registro,
 			Fuente:    cand.Fuente,
@@ -71,6 +75,7 @@ func (c *Clasificador) Clasifica(ctx context.Context, cands []detecta.Candidato)
 			Fin:       cand.Fin,
 			Valor:     cand.Valor,
 			Tipo:      tipo,
+			Forma:     forma,
 			Persona:   "", // lo decide la resolución, nunca el modelo
 			Regla:     "residuo:" + cand.Generador,
 			Confianza: confianza,

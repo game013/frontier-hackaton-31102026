@@ -90,11 +90,16 @@ func escribeEntidades(ruta string, ents []modelo.Entity) error {
 }
 
 // Entidades arma el diccionario: una entrada por persona con todas sus formas
-// reales, los seudónimos que efectivamente se usaron y los registros donde
-// aparece; más una entrada conservada por cada entidad de la allowlist.
+// reales, los seudónimos que efectivamente quedaron escritos y los registros
+// donde aparece; más una entrada conservada por cada entidad de la allowlist.
+//
+// De cada tipo de seudónimo se declara el valor que aparece en más registros: el
+// validador exige que el valor declarado esté en la salida, y los nombres se
+// usan en formas distintas (completo en la fila del maestro, corto en el autor
+// del chat). Declarar el completo cuando solo se usó el corto miente.
 func Entidades(indice *registro.Indice, menciones []modelo.Mencion, perfiles map[string]modelo.Perfil, allow *detecta.Allowlist) []modelo.Entity {
 	registros := map[string]map[string]bool{}
-	seudonimos := map[string]map[string]string{}
+	valores := map[string]map[string]map[string]map[string]bool{}
 	orden := map[string]bool{}
 	for _, m := range menciones {
 		if m.Persona == "" {
@@ -109,19 +114,20 @@ func Entidades(indice *registro.Indice, menciones []modelo.Mencion, perfiles map
 			registros[m.Persona] = map[string]bool{}
 		}
 		registros[m.Persona][m.Registro] = true
-		if seudonimos[m.Persona] == nil {
-			seudonimos[m.Persona] = map[string]string{}
-		}
 		clave, valor, ok := pseudonimoDe(perfil, m.Forma)
-		if !ok {
+		if !ok || valor == "" {
 			continue
 		}
-		// El nombre completo gana al corto: entities.json declara la identidad
-		// completa cuando se usó alguna de sus formas.
-		if clave == "name" && seudonimos[m.Persona][clave] != "" && m.Forma != modelo.FormaNombreCompleto {
-			continue
+		if valores[m.Persona] == nil {
+			valores[m.Persona] = map[string]map[string]map[string]bool{}
 		}
-		seudonimos[m.Persona][clave] = valor
+		if valores[m.Persona][clave] == nil {
+			valores[m.Persona][clave] = map[string]map[string]bool{}
+		}
+		if valores[m.Persona][clave][valor] == nil {
+			valores[m.Persona][clave][valor] = map[string]bool{}
+		}
+		valores[m.Persona][clave][valor][m.Registro] = true
 	}
 	llaves := make([]string, 0, len(orden))
 	for llave := range orden {
@@ -134,11 +140,15 @@ func Entidades(indice *registro.Indice, menciones []modelo.Mencion, perfiles map
 		if !ok {
 			continue
 		}
+		seudonimos := eligeValores(valores[llave])
+		if len(seudonimos) == 0 {
+			continue
+		}
 		out = append(out, modelo.Entity{
 			EntityID:   llave,
 			Type:       modelo.EntidadPersona,
 			Originals:  formasReales(p),
-			Pseudonyms: seudonimos[llave],
+			Pseudonyms: seudonimos,
 			Records:    listaOrdenada(registros[llave]),
 		})
 	}
@@ -146,15 +156,54 @@ func Entidades(indice *registro.Indice, menciones []modelo.Mencion, perfiles map
 	return out
 }
 
+// eligeValores se queda con el valor de cada tipo que aparece en más registros;
+// en caso de empate gana la forma más larga, que suele ser el nombre completo.
+func eligeValores(porClave map[string]map[string]map[string]bool) map[string]string {
+	out := map[string]string{}
+	claves := make([]string, 0, len(porClave))
+	for clave := range porClave {
+		claves = append(claves, clave)
+	}
+	sort.Strings(claves)
+	for _, clave := range claves {
+		mejor, mejorCuenta := "", -1
+		valores := make([]string, 0, len(porClave[clave]))
+		for valor := range porClave[clave] {
+			valores = append(valores, valor)
+		}
+		sort.Strings(valores)
+		for _, valor := range valores {
+			cuenta := len(porClave[clave][valor])
+			if cuenta > mejorCuenta || (cuenta == mejorCuenta && len(valor) > len(mejor)) {
+				mejor, mejorCuenta = valor, cuenta
+			}
+		}
+		if mejor != "" {
+			out[clave] = mejor
+		}
+	}
+	return out
+}
+
 // pseudonimoDe traduce el tipo de forma al campo de pseudonyms del contrato.
 func pseudonimoDe(perfil modelo.Perfil, tipo modelo.TipoForma) (string, string, bool) {
 	if tipo == "" {
+		// Candidato sin estilo reconocido: la detección no supo qué forma era,
+		// así que se declara el nombre completo solo si el reemplazo lo usó.
 		return "name", perfil.Nombre, perfil.Nombre != ""
 	}
 	switch tipo {
-	case modelo.FormaNombreCompleto, modelo.FormaNombreCorto, modelo.FormaNombrePila,
-		modelo.FormaMayusculas, modelo.FormaSlug, modelo.FormaUsuario:
+	case modelo.FormaNombreCompleto:
 		return "name", perfil.Nombre, perfil.Nombre != ""
+	case modelo.FormaNombreCorto, modelo.FormaNombrePila,
+		modelo.FormaMayusculas, modelo.FormaSlug, modelo.FormaUsuario:
+		// El valor declarado tiene que ser el que quedó en el registro: un
+		// slug o un nombre corto no pueden sustituirse por el nombre completo.
+		forma, err := formas.Render(perfil, tipo)
+		if err != nil {
+			return "name", perfil.Nombre, perfil.Nombre != ""
+		}
+		return "name", forma.Valor, forma.Valor != ""
 	case modelo.FormaCorreo, modelo.FormaCorreoDeletreado:
 		return "email", perfil.Correo, perfil.Correo != ""
 	case modelo.FormaCedula, modelo.FormaCedulaPuntos, modelo.FormaCedulaCC:

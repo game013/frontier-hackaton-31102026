@@ -113,6 +113,36 @@ ON CONFLICT (llave) DO NOTHING`,
 	return nil
 }
 
+// Personas devuelve el registro del corpus completo, en orden de llave. La
+// resolución lo carga al empezar para que un seudónimo viejo no cambie cuando
+// crece el corpus (D4, D22).
+func (a *Almacen) Personas(ctx context.Context) ([]modelo.Persona, error) {
+	filas, err := a.db.QueryContext(ctx, "SELECT llave, rol, genero FROM personas ORDER BY llave")
+	if err != nil {
+		return nil, fmt.Errorf("almacen: leer el registro: %w", err)
+	}
+	defer filas.Close()
+	var personas []modelo.Persona
+	for filas.Next() {
+		var p modelo.Persona
+		if err := filas.Scan(&p.Llave, &p.Rol, &p.Genero); err != nil {
+			return nil, fmt.Errorf("almacen: leer el registro: %w", err)
+		}
+		personas = append(personas, p)
+	}
+	if err := filas.Err(); err != nil {
+		return nil, fmt.Errorf("almacen: leer el registro: %w", err)
+	}
+	for i := range personas {
+		formas, err := a.formas(ctx, personas[i].Llave)
+		if err != nil {
+			return nil, err
+		}
+		personas[i].Formas = formas
+	}
+	return personas, nil
+}
+
 // Perfiles devuelve la bóveda completa indexada por llave. La fábrica la lee
 // para que dos personas nunca compartan seudónimo ni datos falsos (D4); con
 // pocos cientos de filas traerla entera es más barato que consultar por fila.

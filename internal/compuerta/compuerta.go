@@ -33,6 +33,9 @@ type Fuga struct {
 	Campo    modelo.CampoTexto
 	Forma    string
 	Hash     bool
+	// Restante marca una forma que la compuerta no pudo cerrar: si queda una,
+	// la corrida falla en vez de escribir una fuga (D11).
+	Restante bool
 }
 
 // Barre devuelve la salida sin formas reales conocidas y la lista de fugas que
@@ -75,7 +78,7 @@ func Barre(ctx context.Context, recs []modelo.Registro, indice *registro.Indice,
 		return nil, fugas, err
 	}
 	fugas = append(fugas, fugasHash...)
-	if quedan := verifica(detector, ctx, salida); len(quedan) > 0 {
+	if quedan := verifica(detector, ctx, salida, indice); len(quedan) > 0 {
 		fugas = append(fugas, quedan...)
 	}
 	return salida, fugas, nil
@@ -100,14 +103,20 @@ func duenoMenor(indice *registro.Indice, m modelo.Mencion) (string, bool) {
 
 // verifica vuelve a barrer la salida ya corregida: lo que quede es una fuga que
 // la compuerta no pudo cerrar y tiene que ver el llamador.
-func verifica(detector *detecta.Detector, ctx context.Context, recs []modelo.Registro) []Fuga {
+// verifica vuelve a barrer la salida ya corregida. Solo cuentan las formas
+// conocidas del registro —las que tienen dueño—: los patrones ven correos y
+// cédulas cualesquiera, incluidos los falsos, y no son una fuga (D25).
+func verifica(detector *detecta.Detector, ctx context.Context, recs []modelo.Registro, indice *registro.Indice) []Fuga {
 	menciones, err := detector.Detecta(ctx, recs)
 	if err != nil {
 		return nil
 	}
 	var out []Fuga
 	for _, m := range menciones {
-		out = append(out, Fuga{Registro: m.Registro, Campo: m.Campo, Forma: m.Valor})
+		if len(indice.Busca(m.Valor)) == 0 {
+			continue
+		}
+		out = append(out, Fuga{Registro: m.Registro, Campo: m.Campo, Forma: m.Valor, Restante: true})
 	}
 	return out
 }

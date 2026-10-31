@@ -188,7 +188,13 @@ func (a *almacenGanador) Persona(context.Context, string) (modelo.Persona, bool,
 	return modelo.Persona{}, false, nil
 }
 
+func (a *almacenGanador) Personas(context.Context) ([]modelo.Persona, error) { return nil, nil }
+
 func (a *almacenGanador) GuardarPersona(context.Context, modelo.Persona) error { return nil }
+
+func (a *almacenGanador) GuardarPersonaVivo(context.Context, modelo.Persona) error { return nil }
+
+func (a *almacenGanador) AnotaDudoso(context.Context, modelo.Mencion) error { return nil }
 
 func (a *almacenGanador) Cerrar() error { return nil }
 

@@ -7,9 +7,17 @@ import "context"
 type Almacen interface {
 	// Persona devuelve una persona del registro por su llave.
 	Persona(ctx context.Context, llave string) (Persona, bool, error)
+	// Personas devuelve el registro completo: la bóveda y el registro son la
+	// memoria del pipeline entre corridas (D4, D22).
+	Personas(ctx context.Context) ([]Persona, error)
 	// GuardarPersona agrega una persona; si la llave existe, solo agrega formas
 	// nuevas.
 	GuardarPersona(ctx context.Context, p Persona) error
+	// GuardarPersonaVivo agrega una persona nacida en /anonymize: reserva
+	// seudónimo y no entra al registro del corpus (D24).
+	GuardarPersonaVivo(ctx context.Context, p Persona) error
+	// AnotaDudoso deja una mención de baja confianza en la cola (D20).
+	AnotaDudoso(ctx context.Context, m Mencion) error
 	// Perfil devuelve el perfil de la bóveda. false si no existe.
 	Perfil(ctx context.Context, llave string) (Perfil, bool, error)
 	// GuardarPerfil asigna el perfil de una persona que aún no lo tiene. Nunca
