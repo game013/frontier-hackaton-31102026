@@ -21,11 +21,19 @@ import (
 // respaldo sin LLM tiene que alcanzar dentro de 50 (D28).
 const plazoAnonimiza = 50 * time.Second
 
-// permiteNucleo es la pieza que el servicio necesita: el núcleo compartido y la
-// bóveda que lo respalda.
+// plazoCorrida es el presupuesto del lote completo de /run. El job se corta a
+// los 110 min (plazoCorrida del servidor), así que la descarga y la escritura
+// caben antes de que el núcleo se quede sin tiempo con el modelo.
+const plazoCorrida = 90 * time.Minute
+
+// permiteNucleo es la pieza que el servicio necesita: los dos núcleos que
+// comparten la bóveda y la base que los respalda. Nucleo es el de /anonymize
+// (las personas nuevas van a personas_vivo, D24) y Corrida el de /run (van al
+// registro).
 type permiteNucleo struct {
-	Nucleo modelo.Nucleo
-	cerrar func() error
+	Nucleo  modelo.Nucleo
+	Corrida *nucleo.Nucleo
+	cerrar  func() error
 }
 
 // Cerrar libera la base al apagar.
@@ -68,7 +76,7 @@ func abreNucleo(datosDir string, getenv func(string) string) (*permiteNucleo, er
 		base.Cerrar()
 		return nil, fmt.Errorf("núcleo: modelo: %w", err)
 	}
-	n, err := nucleo.Nuevo(nucleo.Opciones{
+	vivo, err := nucleo.Nuevo(nucleo.Opciones{
 		Almacen:   base,
 		Modelo:    modeloLLM,
 		Secreto:   secreto,
@@ -81,7 +89,20 @@ func abreNucleo(datosDir string, getenv func(string) string) (*permiteNucleo, er
 		base.Cerrar()
 		return nil, err
 	}
-	return &permiteNucleo{Nucleo: n, cerrar: base.Cerrar}, nil
+	corrida, err := nucleo.Nuevo(nucleo.Opciones{
+		Almacen:   base,
+		Modelo:    modeloLLM,
+		Secreto:   secreto,
+		Allowlist: allow,
+		// /run suma a las personas nuevas al registro, no a personas_vivo.
+		Vivo:  false,
+		Plazo: plazoCorrida,
+	})
+	if err != nil {
+		base.Cerrar()
+		return nil, err
+	}
+	return &permiteNucleo{Nucleo: vivo, Corrida: corrida, cerrar: base.Cerrar}, nil
 }
 
 // secretoDe devuelve el secreto del HMAC: el del entorno, el del volumen o uno

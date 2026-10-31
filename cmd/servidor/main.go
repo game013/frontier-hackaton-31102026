@@ -71,7 +71,14 @@ func corre() (errFinal error) {
 	}
 	defer func() { errFinal = errors.Join(errFinal, nucleoReal.Cerrar()) }()
 
-	svc, err := servidor.Nuevo(cfg, servidor.Deps{Nucleo: nucleoReal.Nucleo})
+	// /run corre el pipeline completo sobre el API de fuentes; /anonymize atiende
+	// el lote en vivo. Los dos núcleos comparten la bóveda (D8).
+	ejecutor, err := servidor.NuevoEjecutor(nucleoReal.Corrida, nil)
+	if err != nil {
+		return err
+	}
+
+	svc, err := servidor.Nuevo(cfg, servidor.Deps{Nucleo: nucleoReal.Nucleo, Ejecutor: ejecutor})
 	if err != nil {
 		return err
 	}
