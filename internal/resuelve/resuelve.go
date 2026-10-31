@@ -102,6 +102,10 @@ func (r *Resolutor) resuelveUna(ctx context.Context, c *contexto, m *modelo.Menc
 		m.Persona, m.Regla, m.Confianza = candidatos[0].Llave, "nombre_unico", 0.8
 		return nil
 	}
+	if llave, ok := unicoDelMaestro(candidatos); ok {
+		m.Persona, m.Regla, m.Confianza = llave, "maestro_sobre_tercero", 0.75
+		return nil
+	}
 	if len(candidatos) > 1 {
 		if llave, confianza, ok := r.desempata(ctx, c, m, candidatos); ok {
 			m.Persona, m.Regla, m.Confianza = llave, "desempate_modelo", confianza
@@ -382,4 +386,25 @@ func appendUnico(lista []string, valor string) []string {
 		}
 	}
 	return append(lista, valor)
+}
+
+// unicoDelMaestro elige a la única persona del maestro (cliente o empleado)
+// entre candidatos que, por lo demás, son terceros. Un tercero sale de una
+// mención dudosa y queda en la bóveda; si empata con un cliente, el empate crea
+// otro tercero y la corrida siguiente hereda más ambigüedad (CE-49).
+func unicoDelMaestro(candidatos []modelo.Persona) (string, bool) {
+	if len(candidatos) < 2 {
+		return "", false
+	}
+	llave := ""
+	for _, p := range candidatos {
+		if p.Rol != modelo.RolCliente && p.Rol != modelo.RolEmpleado {
+			continue
+		}
+		if llave != "" {
+			return "", false
+		}
+		llave = p.Llave
+	}
+	return llave, llave != ""
 }

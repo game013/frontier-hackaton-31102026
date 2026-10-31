@@ -296,3 +296,29 @@ func equalFold(a, b string) bool {
 	}
 	return true
 }
+
+// Un tercero guardado en la bóveda por una corrida anterior comparte una forma
+// con un cliente del maestro. El cliente gana sin consultar el modelo: si no,
+// el empate crea otro tercero, que la corrida siguiente vuelve a cargar, y la
+// ambigüedad crece sola (CE-49).
+func TestMaestroGanaATerceroDeLaBoveda(t *testing.T) {
+	indice := dosHomonimas(t)
+	indice.AgregaForma("p_cl_1", modelo.Forma{Tipo: modelo.FormaCorreo, Valor: "camila.a@mail.com"})
+	indice.AgregaPersona(modelo.Persona{Llave: "p_t_0123456789abcdef", Rol: modelo.RolDesconocido,
+		Formas: []modelo.Forma{{Tipo: modelo.FormaCorreo, Valor: "camila.a@mail.com"}}})
+	m := &falsoModelo{opcion: "A", riesgo: 0.4}
+	almacen := &falsoAlmacen{}
+	r := Nuevo(Opciones{Indice: indice, Modelo: m, Almacen: almacen})
+	out, err := r.Resuelve(context.Background(), []modelo.Registro{
+		modelo.ChatRecord{ID: "m1", Author: "Ana", Text: "escríbele a camila.a@mail.com"},
+	}, []modelo.Mencion{mencion("m1", "text", "camila.a@mail.com", modelo.FormaCorreo)})
+	if err != nil {
+		t.Fatalf("Resuelve: %v", err)
+	}
+	if out[0].Persona != "p_cl_1" {
+		t.Fatalf("mención = %+v, quiero el cliente del maestro", out[0])
+	}
+	if len(almacen.corpus) != 0 {
+		t.Fatalf("guardé %d personas nuevas, quiero 0", len(almacen.corpus))
+	}
+}
