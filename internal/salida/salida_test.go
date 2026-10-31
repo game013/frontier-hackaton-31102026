@@ -219,3 +219,21 @@ func TestPodaSeudonimosAusentes(t *testing.T) {
 		t.Fatalf("podé un nombre que sí está: %+v", ents[0].Pseudonyms)
 	}
 }
+
+// Un correo que en el registro solo está deletreado ("x arroba y punto co") no
+// aparece para el validador en su forma con @: no se declara (CE-47).
+func TestPodaCorreoDeletreado(t *testing.T) {
+	ents := []modelo.Entity{{
+		EntityID: "p_t_1", Type: modelo.EntidadPersona,
+		Pseudonyms: map[string]string{"name": "Sol", "email": "storo@etb.net.co"},
+		Records:    []string{"m1"},
+	}}
+	recs := []modelo.Registro{modelo.ChatRecord{ID: "m1", Author: "Bea", Text: "Sol: el correcto es storo arroba etb punto net punto co"}}
+	PodaAusentes(ents, recs)
+	if _, ok := ents[0].Pseudonyms["email"]; ok {
+		t.Fatalf("declaré un correo que solo está deletreado")
+	}
+	if ents[0].Pseudonyms["name"] != "Sol" {
+		t.Fatalf("podé el nombre: %+v", ents[0].Pseudonyms)
+	}
+}

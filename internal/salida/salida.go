@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/game013/frontier-hackaton-31102026/internal/detecta"
 	"github.com/game013/frontier-hackaton-31102026/internal/formas"
@@ -460,7 +461,7 @@ func PodaAusentes(ents []modelo.Entity, recs []modelo.Registro) {
 		for clave, valor := range e.Pseudonyms {
 			presente := false
 			for _, id := range e.Records {
-				if strings.Contains(textos[id], valor) || strings.Contains(norm.Norm(textos[id]), norm.Norm(valor)) {
+				if estaEn(textos[id], valor) {
 					presente = true
 					break
 				}
@@ -470,4 +471,15 @@ func PodaAusentes(ents []modelo.Entity, recs []modelo.Registro) {
 			}
 		}
 	}
+}
+
+// estaEn decide si un seudónimo está en el texto como lo vería el validador:
+// con letras, contiene() con bordes (un correo dentro de otro no cuenta); solo
+// dígitos y signos, coincidencia directa, porque la regla de dígitos de
+// contiene() descarta fechas y cédulas que sí están escritas tal cual.
+func estaEn(texto, valor string) bool {
+	if strings.IndexFunc(valor, unicode.IsLetter) >= 0 {
+		return norm.Contiene(texto, valor)
+	}
+	return strings.Contains(texto, valor)
 }
