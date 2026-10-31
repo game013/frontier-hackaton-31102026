@@ -106,6 +106,11 @@ C23 sigue `en curso` y le falta una sola cosa: las seis cifras de `DECISIONS.md`
 entrada y de salida, llamadas y aciertos de caché, dólares, segundos de `/run` y segundos del lote de 50 en
 `/anonymize`). El esqueleto, la tabla de comandos y el guion de demo ya están escritos.
 
+C24 se cierra con el respaldo encadenado a mano tras cada corrida: el volumen de Railway no empuja nada, así que el
+operador baja `almacen.db` a una carpeta local fuera de git y desde ahí corre `scripts/boveda.sh respaldo --datos
+<copia> --destino <disco local>`. El script no entra a Railway, no lanza corridas, no programa cron y no imprime
+formas reales; el detalle está en la cabecera de `scripts/boveda.sh`.
+
 ### Pista paralela · sin dependencias (lista desde ya)
 
 No dependen de la ola 1 y acortan la ola 2 o desbloquean hitos. Se cortan de `integracion/ola3` como cualquier
@@ -131,6 +136,10 @@ tarea (reglas 0–2). C25 hecha. Siguen C26 y C27 (y C29 para el esqueleto de `D
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 16:40 · C24 · worker · El respaldo queda encadenado tras cada corrida y escrito como lo que es: un jalado desde la
+  máquina del operador, porque el volumen de Railway no puede empujar nada. `scripts/boveda.sh` y la nota de C24 en
+  este tablero dicen la secuencia (job en `done`, copia local del volumen, respaldo al disco) y qué no hace el script:
+  no entra a Railway, no lanza corridas, no programa cron y no escribe dentro del repo.
 - 16:35 · C19 · worker · `CASO:` CE-38: una fecha de negocio detrás de un "desde" suelto se conservaba por casualidad.
   El año del texto ahora exige ancla de relación ("llevo con ustedes", "cliente desde", "vinculado desde", "con
   nosotros"); "Kipu Pay opera desde 2020" y "la empresa abrió desde 2019" se quedan. La puntuación no ASCII dejó de

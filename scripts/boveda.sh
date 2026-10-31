@@ -12,8 +12,21 @@
 #
 # No imprime formas ni nombres: solo rutas, tamaños, conteos y hashes.
 #
-# Enganchar tras una corrida, a mano o por cron:
-#   15 16 * * * cd /srv/frontier && scripts/boveda.sh respaldo --datos /data --destino ~/respaldos
+# Cómo se encadena tras cada corrida (C24, DISEÑO §7 D4). Es un jalado desde la
+# máquina del operador: el volumen de Railway no puede empujar nada hacia
+# afuera, así que el respaldo no lo dispara el servicio.
+#
+#   1. La corrida termina y el job queda done:
+#        curl -s "$URL/v1/run/$JOB" | jq -r .status
+#   2. La bóveda se trae del volumen a una carpeta local fuera de git. Esa copia
+#      la hace el operador con la consola del servicio en Railway (o usa el
+#      directorio local que le pasa a `cmd/pipeline --datos`).
+#   3. Se respalda esa copia, ya en el disco del operador:
+#        scripts/boveda.sh respaldo --datos <copia-local> --destino ~/respaldos
+#
+# Lo que el script NO hace: no entra a Railway ni baja nada del volumen, no lanza
+# corridas, no programa ni instala cron (eso es del operador), no escribe dentro
+# del repo — el destino se rechaza si está adentro — y no toca la bóveda en uso.
 #
 # Para no compilar en cada llamada, apunta BOVEDA_BINARIO al binario ya compilado
 # (go build -o /usr/local/bin/respaldo ./cmd/respaldo).
