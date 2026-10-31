@@ -98,6 +98,10 @@ func (r *Resolutor) resuelveUna(ctx context.Context, c *contexto, m *modelo.Menc
 		m.Persona, m.Regla, m.Confianza = llave, "contexto", 0.85
 		return nil
 	}
+	if llave, ok := c.porLinea(m, r.indice, candidatos); ok {
+		m.Persona, m.Regla, m.Confianza = llave, "linea", 0.85
+		return nil
+	}
 	if len(candidatos) == 1 {
 		m.Persona, m.Regla, m.Confianza = candidatos[0].Llave, "nombre_unico", 0.8
 		return nil
@@ -275,6 +279,9 @@ func nuevoContexto(recs []modelo.Registro, indice *registro.Indice) *contexto {
 			continue
 		}
 		if p, ok := indice.PorReferencia(tabla.ID); ok {
+			c.filas[tabla.ID] = p.Llave
+		} else if p, ok := indice.PorReferencia(tabla.Columns["cliente_id"]); ok && tabla.Table == "pqrs" {
+			// La fila de una queja es de su cliente (CE-52).
 			c.filas[tabla.ID] = p.Llave
 		}
 	}

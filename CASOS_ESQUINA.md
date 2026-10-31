@@ -85,6 +85,7 @@ bloquea la corrida oficial.
 | CE-48 | Forma de una persona de la bóveda sin mención      | `p_cl_15468` en la corrida tras el crecimiento | La compuerta pide el perfil a la fábrica (bóveda primero); la corrida no cae | J-CRE        |
 | CE-50 | Persona que se queda sin `name` tras la compuerta | Corrida oficial 2: `p_cl_34834` y `p_cl_57176` con nombre reescrito en el texto y el `name` viejo podado | Se declara el nombre que quedó en su fila de tabla, en la variante de más registros, nunca uno ajeno | J-CON |
 | CE-51 | Dos perfiles con el mismo nombre corto              | Corrida oficial 2: `p_cl_13198` y `p_cl_98093`, ambos «Sol Lozada» | La bóveda trata el nombre corto como ocupado y la fábrica avanza el intento | J-CON |
+| CE-52 | Mención por nombre corto de homónimos que la resolución manda a un tercero `p_t_` | Corrida oficial 2: 21 terceros con el nombre corto de un cliente o empleado homónimo (`0689bd77…` con «(CL-60315)», `pqrs:PQR-2026-0552`, `empleados:KP-006` en `reporta_a`) | Desempata el id del maestro en la misma línea, la fila de `pqrs` por su `cliente_id` y `reporta_a` como empleado; solo si queda un candidato | J-CON |
 | CE-34 | Test público `pub_04` pide dos entidades con una forma completa que solo tiene una fila | `fuentes/tests_public.json` `pub_04` | No se cumple declarando una forma que no es de la persona; el criterio propio es dos personas, dos seudónimos, separadas por uid | J-HOM        |
 
 ## Aceptados con motivo
