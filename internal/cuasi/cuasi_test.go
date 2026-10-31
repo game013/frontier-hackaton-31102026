@@ -21,14 +21,16 @@ func indice(t *testing.T, recs []modelo.Registro) *registro.Indice {
 	return i
 }
 
-// filaDeCliente es una fila del maestro inventada: ningún dato sale del corpus.
-func filaDeCliente(barrio string) modelo.TableRecord {
+// filaDeLaPersona es una fila del maestro inventada: ningún dato sale del
+// corpus. Es la fila que la heurística del jurado une con un registro de chat
+// (join_records).
+func filaDeLaPersona() modelo.TableRecord {
 	return modelo.TableRecord{
 		ID: "clientes:CL-10001", Table: "clientes",
 		Columns: map[string]string{
 			"cliente_id": "CL-10001", "nombre_completo": "Elena Perez Rojas",
-			"ciudad": "Cali", "barrio": barrio, "ocupacion": "fotógrafa",
-			"fecha_vinculacion": "2025-08-21", "notas": "Sin novedad.",
+			"ciudad": "Cali", "barrio": "Granada", "ocupacion": "fotógrafa",
+			"fecha_vinculacion": "2024-03-11", "notas": "Sin novedad.",
 		},
 	}
 }
@@ -36,7 +38,7 @@ func filaDeCliente(barrio string) modelo.TableRecord {
 // En la fila del maestro la ocupación va a su sector y el barrio a otro barrio
 // de la misma ciudad; el resto de las columnas queda igual (D9, DECISIONS §1.3).
 func TestGeneralizaFilaDelMaestro(t *testing.T) {
-	fila := filaDeCliente("Granada")
+	fila := filaDeLaPersona()
 	recs := []modelo.Registro{fila}
 	out, err := Generaliza(recs, indice(t, recs))
 	if err != nil {
@@ -49,7 +51,7 @@ func TestGeneralizaFilaDelMaestro(t *testing.T) {
 		"nombre_completo":   "Elena Perez Rojas",
 		"ciudad":            "Cali",
 		"ocupacion":         "profesional de las industrias creativas",
-		"fecha_vinculacion": "2025-08-21",
+		"fecha_vinculacion": "2024-03-11",
 		"notas":             "Sin novedad.",
 	}
 	for columna, valor := range quiero {
@@ -77,10 +79,11 @@ func TestGeneralizaFilaDelMaestro(t *testing.T) {
 // El barrio del maestro no depende del orden del lote ni del azar: la misma
 // persona recibe siempre el mismo barrio, sola o entre otras filas.
 func TestBarrioDelMaestroEsEstable(t *testing.T) {
-	granada := filaDeCliente("Granada")
-	otra := filaDeCliente("El Peñón")
+	granada := filaDeLaPersona()
+	otra := filaDeLaPersona()
 	otra.ID = "clientes:CL-10002"
 	otra.Columns["cliente_id"] = "CL-10002"
+	otra.Columns["barrio"] = "El Peñón"
 
 	sola := generaliza(t, []modelo.Registro{granada})
 	juntas := generaliza(t, []modelo.Registro{granada, otra})
@@ -145,19 +148,6 @@ func TestGeneralizaDescripcionDeAgente(t *testing.T) {
 	out := generaliza(t, []modelo.Registro{rec})
 	if got := textoDe(t, out[0]); got != quiero {
 		t.Fatalf("texto =\n %q\nquiero\n %q", got, quiero)
-	}
-}
-
-// filaDeLaPersona es la fila del maestro que la heurística del jurado une con un
-// registro de chat (join_records). Inventada, como el resto de las pruebas.
-func filaDeLaPersona() modelo.TableRecord {
-	return modelo.TableRecord{
-		ID: "clientes:CL-10001", Table: "clientes",
-		Columns: map[string]string{
-			"cliente_id": "CL-10001", "nombre_completo": "Elena Perez Rojas",
-			"ciudad": "Cali", "barrio": "Granada", "ocupacion": "fotógrafa",
-			"fecha_vinculacion": "2024-03-11", "notas": "Sin novedad.",
-		},
 	}
 }
 
