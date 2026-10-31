@@ -81,7 +81,7 @@ flowchart TD
     ING --> DET[3 · Detección · pasada 1 descubre<br/>a. formas conocidas · b. patrones<br/>c. nombres desconocidos · d. allowlist]
     REG --> DET
     DET -->|formas nuevas| REG
-    DET -->|residuo enmascarado| LLM{{Claude Haiku vía OpenRouter<br/>solo señala fragmentos<br/>riesgo de filtración declarado D15}}
+    DET -->|residuo enmascarado| LLM{{Jev 1.13 vía OpenRouter<br/>solo decisiones cerradas<br/>riesgo de filtración declarado D15}}
     LLM --> DET
     DET --> RES[4 · Resolución mención → persona<br/>ids duros > hilo/rol > nombre único<br/>> LLM desempate > persona nueva dudosa]
     RES --> DUD[(Cola de dudosos<br/>regla + confianza)]
@@ -124,7 +124,8 @@ sin tildes, minúsculas, dígitos sin separadores) con un mapa de offsets para v
 - b. **Patrones**: cédula (con contexto, para no atrapar montos ni el NIT), celular, correo, correo deletreado,
   placa, pasaporte, cuenta, dirección, fechas, URLs con usuario, tokens en nombres de archivo.
 - c. **Nombres desconocidos**: diccionario de nombres y apellidos colombianos más mayúscula inicial. Lo que queda
-  dudoso va a **Claude Haiku 5.5**, que devuelve fragmentos y tipo, nunca texto reescrito.
+  dudoso lo **proponen las reglas como candidato** y **Jev 1.13** lo clasifica con una pregunta cerrada (persona,
+  organización, lugar, marca, otro) y su confianza; nunca genera ni reescribe texto (D13).
 - d. **Allowlist** de entidades a conservar (≈30 vistas), con la regla de apellido-lugar, más reglas genéricas
   (sufijos `S.A.S.`, "Banco …", mayúscula sin nombre de pila delante) para lo que llegue con el crecimiento.
 - **Dos pasadas (D14).** La pasada 1 recorre todo el corpus y devuelve al registro las formas descubiertas en el texto
@@ -176,7 +177,7 @@ encuentra algo, lo reemplaza y lo registra. La corrida termina con 0 fugas conoc
 
 | Endpoint             | Implementación                                                                    |
 | -------------------- | --------------------------------------------------------------------------------- |
-| `GET /v1/health`     | `{status, team, version, models: ["anthropic/claude-haiku-5.5 vía OpenRouter"]}`                           |
+| `GET /v1/health`     | `{status, team, version, models: ["typesafe/jev-1.13 vía OpenRouter"]}`                           |
 | `POST /v1/run`       | Crea un job en SQLite y lo corre en una goroutine; idempotente si ya hay uno corriendo |
 | `GET /v1/run/{id}`   | Estado, conteos y costo (tokens de entrada y salida, segundos)                    |
 | `GET /v1/output/*`   | Sirve los archivos de la última corrida terminada desde el volumen                |
@@ -186,8 +187,11 @@ encuentra algo, lo reemplaza y lo registra. La corrida termina con 0 fugas conoc
 ### 6.3 Stack
 
 - **Go** (`net/http` con el `ServeMux` de Go ≥1.22: método y comodines en la ruta, sin router externo), **SQLite** con `modernc.org/sqlite` (sin cgo, imagen simple).
-- **LLM:** Claude Haiku 5.5 vía **OpenRouter** (`OPENROUTER_API_KEY`), API compatible con OpenAI llamada con un
-  cliente HTTP propio. Modelo configurable por `LLM_MODEL`; caché por hash de entrada en SQLite.
+- **Modelo:** **Jev 1.13** (`typesafe/jev-1.13`) vía **OpenRouter** (`OPENROUTER_API_KEY`), endpoint
+  `POST /api/alpha/decisions` con `state` y `questions` (`choice`, `noul`, `score`), llamado con un cliente HTTP propio.
+  Varias preguntas por llamada, respuestas con `confidence` y `probabilities`. Modelo configurable por `LLM_MODEL`;
+  caché por hash de entrada en SQLite. Medido con datos inventados: 0,23–0,5 s por llamada, ~US$0,00002 por
+  decisión, proveedor único TypeSafe, misma respuesta en llamadas repetidas, acepta `provider.data_collection: deny`.
 - **PDF:** las librerías de Go pierden espacios en celdas partidas. Decisión: un ayudante en Python con pdfplumber
   invocado como subproceso solo para extraer texto y metadata (ver D7).
 - **Railway** con Dockerfile y volumen montado en `/data` (bóveda, caché LLM, output). Configuración probada en la
@@ -221,7 +225,7 @@ Detalle en `analisis/05_reuso_10102026.md`.
 | D10| Homónimos se desempatan con evidencia de otra fuente      | Por ciudad o cargo junto al nombre              | El enunciado dice que no aparecen; los 8 pares tienen desempate en PQR, transacciones o adjuntos |
 | D11| Compuerta de fuga obligatoria al final                    | Confiar en la detección                         | Un falso negativo es fuga en cada registro de la persona; el barrido es barato               |
 | D12| SQLite en volumen                                          | Postgres gestionado / archivos JSON             | Un solo proceso, sin red extra; JSON no da transacciones si `/anonymize` y `/run` coinciden |
-| D13| Haiku 5.5 vía OpenRouter para el residuo                  | Sonnet / Opus                                   | La tarea es extraer fragmentos con contexto corto; Haiku basta y cabe en el límite de 60 s; OpenRouter es la llave disponible |
+| D13| Jev 1.13 vía OpenRouter (endpoint de decisiones) para todo lo que el pipeline delega: clasificar candidatos, desempatar, género. Confianza < 0,6 → dudoso o indeterminado | Claude Haiku 5.5 / `typesafe/jev-router` | Todas las preguntas son cerradas; Jev responde en 0,2–0,5 s con confianza calibrada y a ~1/50 del costo. `jev-router` reparte cada llamada a otro modelo y proveedor (2–4 s, costo ×30, más exposición). Haiku solo vuelve si un caso exige extraer texto libre que las reglas no propongan |
 | D14| Dos pasadas: descubrir y luego reemplazar                 | Una sola pasada                                 | Una forma descubierta en el registro 900 ya se habría escapado en el 12                       |
 | D15| Aceptar que el residuo llega al LLM, con enmascarado previo, ventana mínima, proveedor sin retención y caché | Sin LLM / modelo local | Sin LLM se pierden terceros y desempates; un modelo local no cabe en Railway ni en 60 s. **Riesgo declarado:** los datos reales que solo el LLM detecta o desempata salen hacia OpenRouter y su proveedor |
 | D16| Catálogo vivo de casos esquina con juez asignado          | Set dorado plano y fijo                         | Cada caso descubierto se vuelve regresión; mide por mecanismo, como los tests ocultos          |
@@ -237,6 +241,7 @@ Detalle en `analisis/05_reuso_10102026.md`.
 | D26| El LLM desempata con la mención enmascarada y fichas abstractas de candidatos (ids, ciudad, PQR, tx), respuesta cerrada `A`/`B`/`ninguna` | Mandar nombres reales / sin LLM en resolución | Los homónimos comparten nombre: lo que desempata es la evidencia, y así no viaja el nombre |
 | D27| Preguntas semánticas al modelo: solo `genero` (M/F/indeterminado → unisex) y `origen_del_nombre` | Etnia y edad | Ningún test las pide; inferir etnia es sensible y poco confiable; la edad sale de la fecha real |
 | D28| `/anonymize`: una llamada al modelo por lote (JSON con todas las preguntas), timeout 40 s, respaldo determinista, decisiones guardadas en caché y bóveda | Una llamada por mención | Cabe en 60 s y una decisión tomada no cambia en la corrida siguiente |
+| D29| Homónimos en vivo (`author` llega como nombre): evidencia dura del lote → participantes del `thread_id` conocido → candidato único sin evidencia en contra → dos registros con evidencia distinta son dos personas → Jev con fichas (D26) → D19 | Resolver por nombre del autor | Sin uid, el nombre solo no distingue; el jurado prueba ambos casos |
 
 ## 8. Plan para medir
 

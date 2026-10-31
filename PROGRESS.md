@@ -8,7 +8,7 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 - **Fase:** diseño cerrado (D1–D28). Arranca la ola 0.
 - **Próximo paso:** C0 (contratos). Al terminar C0 se abre toda la ola 1 en paralelo.
 - **Corrida 1:** 15:30 (Bogotá). El usuario la lanza con VALIDAR ENTRYPOINT; el agente solo la propone.
-- **Pendientes de decisión:** P1 y P2 (abajo). No bloquean la ola 0 ni la ola 1.
+- **Pendientes de decisión:** ninguno (P1 → D13, P2 → D29).
 - **Bloqueos:** ninguno.
 
 ## Hitos de hoy (Bogotá, UTC−5)
@@ -71,7 +71,7 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 | C7 | Ingesta de docs: MD con front matter; HTML → markdown con comentarios y `display:none`; PDF vía `tools/pdf/extraer.py` (pdfplumber cuerpo, pypdf metadata) como subproceso con timeout. Metadata con las mismas claves. | `internal/ingesta/docs/`, `tools/pdf/` | C0 | Sobre `sample/input`: mismas claves de metadata y similitud de `body` ≥ 0,9 con la salida ideal | — | espera | — |
 | C8 | Formas: un renderizador por tipo (completo, corto, pila, MAYÚSCULAS sin tildes, slug, usuario, correo, correo deletreado, cédula con y sin puntos, `CC<num>`, celular en 3 formatos, dirección, fecha ISO / en palabras / US, placa, pasaporte). Lo usan el registro (formas reales) y la fábrica (formas falsas). | `internal/formas/` | C0 | Cada renderizador probado contra ejemplos de `sample/expected_output` | — | espera | — |
 | C9 | Catálogos embebidos: nombres de pila colombianos por género, unisex y extranjeros; apellidos con tildes; dominios públicos; barrios por ciudad; ocupación → 13 sectores (D18). | `internal/catalogo/` | C0 | Conteos mínimos (≥300 por género, ≥400 apellidos) y sin ninguna forma real de `fuentes/` | — | espera | — |
-| C10 | Cliente del modelo: OpenRouter con salida estructurada, timeout, caché en SQLite por hash, contabilidad de tokens y costo, modelo por `LLM_MODEL`, enmascarado de formas conocidas (D15). | `internal/llm/` | C0 | Prueba con servidor falso: caché, timeout, JSON inválido; una prueba real opcional con datos inventados | — | espera | — |
+| C10 | Cliente de Jev 1.13: OpenRouter `POST /api/alpha/decisions` (`state`, `questions` `choice`/`noul`/`score`), varias preguntas por llamada, umbral de confianza 0,6, timeout, caché en SQLite por hash, contabilidad de tokens y costo, modelo por `LLM_MODEL`, enmascarado de formas conocidas (D15). | `internal/llm/` | C0 | Prueba con servidor falso: caché, timeout, JSON inválido; una prueba real opcional con datos inventados | — | espera | — |
 | C11 | Juez base: `cmd/juez` corre `validar.mjs`, los 13 tests de `tests_sample.json` y los 5 públicos por familia, J-GLO y J-DIC; imprime puntaje por juez. | `cmd/juez/`, `internal/juez/` | C0 | Sobre `sample/expected_output` da 13/13 y J-GLO 0 | — | espera | — |
 
 ### Ola 2 · pipeline
@@ -81,8 +81,8 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 | C12 | Registro de personas: maestro + empleados + users (`users.name` = parte local del correo; `@kipupay.co`), llaves `p_cl_`/`p_kp_`, todas las formas reales vía C8, índices exactos (cédula, correo, celular, `CL-`, `PQR-`, placa, uid, fecha+monto → tx). | `internal/registro/` | C3, C5, C6, C8 | Cada persona de la muestra tiene las `forms` de sus tests de consistencia | — | espera | — |
 | C13 | Fábrica de perfiles: `HMAC(secreto, llave)`, mismo género y estructura, unicidad, exclusión de toda forma real, bóveda primero (D4, D22). | `internal/perfil/` | C2, C8, C9 | Determinista con la misma llave; nunca coincide con una forma real; perfil guardado no cambia | — | espera | — |
 | C14 | Detección: Aho-Corasick en espacio normalizado, patrones con contexto (cédula, celular, correo, deletreado, placa, pasaporte, fechas, adjuntos), allowlist con reglas genéricas, candidatos a nombre desconocido; dos pasadas (D14). | `internal/detecta/` | C3, C12 | Casos CE-03, 04, 08, 14, 15, 16, 21, 22, 23 en verde | — | espera | — |
-| C15 | Residuo con modelo: candidatos dudosos de C14 → modelo (enmascarado) → fragmentos y tipo; género y origen (D27). | `internal/detecta/residuo/` | C10, C14 | Con un modelo falso: integra respuestas; con timeout cae a reglas | — | espera | — |
-| C16 | Resolución: ids duros → contexto (autor, hilo, handoff, "soy X") → nombre único → modelo con fichas abstractas (D26) → D19; regla y confianza por mención; dudosos; terceros (D22, D23). | `internal/resuelve/` | C10, C12, C14 | CE-01, 02, 17, 18, 19, 28 en verde | — | espera | — |
+| C15 | Residuo con Jev: candidatos dudosos de C14 → pregunta cerrada (persona, organización, lugar, marca, otro) con la mención enmascarada; género y origen (D27). | `internal/detecta/residuo/` | C10, C14 | Con un modelo falso: integra respuestas; con timeout cae a reglas | — | espera | — |
+| C16 | Resolución: ids duros → contexto (autor, hilo, handoff, "soy X") → nombre único → Jev con fichas abstractas (D26) → D19; en vivo, D29; regla y confianza por mención; dudosos; terceros (D22, D23). | `internal/resuelve/` | C10, C12, C14 | CE-01, 02, 17, 18, 19, 28 en verde | — | espera | — |
 | C17 | Reemplazo con estilo (derecha a izquierda, todos los strings del registro), compuerta (D25, hashes sin sal), salida (`*.jsonl`, `entities.json` con todas las formas). | `internal/reemplazo/`, `internal/compuerta/`, `internal/salida/` | C3, C13, C16 | Muestra: validador OK, 13/13, J-GLO 0 | — | espera | — |
 | C18 | Núcleo y cableado: `Anonymize` único para `/run` y `/anonymize` (D8, D24, D28); job de `/run` = fuentes → ingesta → núcleo → salida en `/data`; costo en `/run/{id}`. Corrida completa sobre `fuentes/`, despliegue y smoke test. | `internal/nucleo/`, cableado en `internal/servidor/` | C1, C4, C7, C15, C17 | `fuentes/`: validador OK, barrido 0, dos corridas idénticas, `/run` < 15 min en Railway | — | espera | — |
 
@@ -101,12 +101,13 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 
 | Id | Pregunta | Afecta | Estado |
 | --- | --- | --- | --- |
-| P1 | ¿Qué modelo usa C10? En OpenRouter solo existe `typesafe/jev-router`, que reparte cada petición a otro modelo (en la prueba: GPT-6 Luna y Sonnet 5.5, 2–4 s, costo variable ×30). Jev nativo (70–500 ms, $0,042/M) está en el API de TypeSafe con lista de espera. | C10, D13, D15 | abierta |
-| P2 | En `/anonymize`, `author` llega como **nombre**, no como uid: ¿cómo se separan dos homónimos en vivo sin uid? | C16, C18 | abierta |
+| P1 | ¿Qué modelo usa C10? | C10, D13, D15 | cerrada → D13: `typesafe/jev-1.13` por `/api/alpha/decisions` |
+| P2 | En `/anonymize`, `author` llega como nombre: ¿cómo se separan homónimos en vivo? | C16, C18 | cerrada → D29 |
 
 ## Bitácora
 
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 12:35 · — · claude · P1 cerrada (Jev 1.13, D13) y P2 cerrada (D29).
 - 12:20 · — · claude · Tablero creado; diseño cerrado en D1–D28; C0 lista.
