@@ -39,7 +39,7 @@ func Carga(getenv func(string) string) (Config, error) {
 		DatosDir:    or(getenv("DATA_DIR"), "var"),
 		Equipo:      or(getenv("TEAM"), "kipu-frontier"),
 		Version:     or(getenv("VERSION"), "dev"),
-		Modelos:     lista(getenv("MODELOS")),
+		Modelos:     lista(or(getenv("MODELOS"), getenv("LLM_MODEL"))),
 		PythonBin:   or(getenv("PYTHON_BIN"), "python3"),
 		AyudantePDF: or(getenv("PDF_HELPER"), filepath.Join("tools", "pdf", "extraer.py")),
 	}

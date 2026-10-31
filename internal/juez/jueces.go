@@ -47,10 +47,6 @@ func JuezGLO(s *Salida) Medicion {
 			continue
 		}
 		for _, original := range e.Originals {
-			if utf8.RuneCountInString(original) < 3 {
-				m.Detalles = append(m.Detalles, fmt.Sprintf("forma demasiado corta para barrer: %s (%s)", enmascara(original), e.EntityID))
-				continue
-			}
 			m.Total++
 			encontrados := 0
 			for i, texto := range textos {

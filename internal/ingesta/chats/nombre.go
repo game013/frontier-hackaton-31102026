@@ -5,12 +5,10 @@ import "strings"
 // NombreCorto devuelve la forma corta de un nombre completo: nombre(s) más
 // primer apellido, que es lo que pide output/ en author (nombre, nunca el uid).
 //
-// Es una regla posicional porque no hay otra señal: el corpus solo trae real_name
-// de 1, 2, 3 y 4 tokens (analisis/02_chats.md §2) y en él los de 3 son nombre +
-// dos apellidos ("Nombre Apellido Uno" → "Nombre Apellido") y los de 4 son nombre
-// + segundo nombre + dos apellidos ("Nombre Segundo Apellido Uno" → "Nombre
-// Segundo Apellido"). Con un catálogo de nombres de pila (C9) podría afinarse, y
-// la forma corta definitiva de una persona la fija el registro (C8, C12).
+// La regla es la misma de internal/formas: quitar el último apellido. El corpus
+// trae real_name de 1 a 4 tokens (analisis/02_chats.md §2) y así los de 3 son
+// nombre + dos apellidos y los de 4, nombre + segundo nombre + dos apellidos. La
+// forma corta definitiva de una persona la fija el registro (C8, C12).
 func NombreCorto(nombreCompleto string) string {
 	campos := strings.Fields(nombreCompleto)
 	switch {
@@ -19,6 +17,7 @@ func NombreCorto(nombreCompleto string) string {
 	case len(campos) == 3:
 		return strings.Join(campos[:2], " ")
 	default:
-		return strings.Join(campos[:3], " ")
+		// Igual que internal/formas: la forma corta quita el último apellido.
+		return strings.Join(campos[:len(campos)-1], " ")
 	}
 }

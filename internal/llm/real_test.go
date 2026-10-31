@@ -43,6 +43,9 @@ func TestPruebaReal(t *testing.T) {
 		t.Fatalf("clasificación: %v", err)
 	}
 	t.Logf("clasificación: opción %q P=%.2f (%v)", r.Opcion, r.Probabilidades[r.Opcion], err)
+	if r.Opcion != "person" {
+		t.Fatalf("clasificación = %q, se esperaba person", r.Opcion)
+	}
 
 	genero := modelo.Pregunta{
 		ID:       "genero",
