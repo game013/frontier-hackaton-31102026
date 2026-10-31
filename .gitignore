@@ -31,3 +31,6 @@ __pycache__/
 
 # Salida generada por el pipeline (contiene seudónimos y diccionario con formas reales)
 /output/
+
+# Binario compilado por run.sh
+/bin/

@@ -9,15 +9,15 @@ import (
 	"testing"
 )
 
-// muestra apunta a la salida ideal del dataset de muestra. Es un directorio
-// ignorado por git: si no está, la prueba se salta en vez de fallar.
-func muestra(t *testing.T, nombre string) string {
+// directorios devuelve los directorios con salida de referencia: la fixture
+// versionada (siempre) y la muestra completa si está en disco.
+func directorios(t *testing.T) []string {
 	t.Helper()
-	ruta := filepath.Join("..", "..", "sample", "expected_output", nombre)
-	if _, err := os.Stat(ruta); err != nil {
-		t.Skipf("sin muestra %s: %v", ruta, err)
+	dirs := []string{"testdata"}
+	if _, err := os.Stat(filepath.Join("..", "..", "sample", "expected_output")); err == nil {
+		dirs = append(dirs, filepath.Join("..", "..", "sample", "expected_output"))
 	}
-	return ruta
+	return dirs
 }
 
 // mismoJSON compara dos documentos por valor, sin importar el orden de claves.
@@ -53,70 +53,60 @@ func lineas(t *testing.T, ruta string) []string {
 	if err := sc.Err(); err != nil {
 		t.Fatalf("lee %s: %v", ruta, err)
 	}
+	if len(out) == 0 {
+		t.Fatalf("%s vacío", ruta)
+	}
 	return out
 }
 
-func TestChatRecordRoundTrip(t *testing.T) {
-	for _, linea := range lineas(t, muestra(t, "chats.jsonl")) {
-		var r ChatRecord
-		if err := json.Unmarshal([]byte(linea), &r); err != nil {
-			t.Fatalf("unmarshal chats: %v", err)
-		}
-		b, err := json.Marshal(r)
-		if err != nil {
-			t.Fatalf("marshal chats: %v", err)
-		}
-		mismoJSON(t, linea, string(b))
+// Cada registro sale igual que entró, en la fixture versionada y en la muestra.
+func TestRegistrosRoundTrip(t *testing.T) {
+	casos := []struct {
+		archivo string
+		nuevo   func() any
+	}{
+		{"chats.jsonl", func() any { return new(ChatRecord) }},
+		{"docs.jsonl", func() any { return new(DocRecord) }},
+		{"tables.jsonl", func() any { return new(TableRecord) }},
 	}
-}
-
-func TestDocRecordRoundTrip(t *testing.T) {
-	for _, linea := range lineas(t, muestra(t, "docs.jsonl")) {
-		var r DocRecord
-		if err := json.Unmarshal([]byte(linea), &r); err != nil {
-			t.Fatalf("unmarshal docs: %v", err)
+	for _, c := range casos {
+		for _, dir := range directorios(t) {
+			for _, linea := range lineas(t, filepath.Join(dir, c.archivo)) {
+				r := c.nuevo()
+				if err := json.Unmarshal([]byte(linea), r); err != nil {
+					t.Fatalf("%s: unmarshal %s: %v", dir, c.archivo, err)
+				}
+				b, err := json.Marshal(r)
+				if err != nil {
+					t.Fatalf("%s: marshal %s: %v", dir, c.archivo, err)
+				}
+				mismoJSON(t, linea, string(b))
+			}
 		}
-		b, err := json.Marshal(r)
-		if err != nil {
-			t.Fatalf("marshal docs: %v", err)
-		}
-		mismoJSON(t, linea, string(b))
-	}
-}
-
-func TestTableRecordRoundTrip(t *testing.T) {
-	for _, linea := range lineas(t, muestra(t, "tables.jsonl")) {
-		var r TableRecord
-		if err := json.Unmarshal([]byte(linea), &r); err != nil {
-			t.Fatalf("unmarshal tables: %v", err)
-		}
-		b, err := json.Marshal(r)
-		if err != nil {
-			t.Fatalf("marshal tables: %v", err)
-		}
-		mismoJSON(t, linea, string(b))
 	}
 }
 
 func TestEntityRoundTrip(t *testing.T) {
-	crudo, err := os.ReadFile(muestra(t, "entities.json"))
-	if err != nil {
-		t.Fatalf("lee entities: %v", err)
+	for _, dir := range directorios(t) {
+		crudo, err := os.ReadFile(filepath.Join(dir, "entities.json"))
+		if err != nil {
+			t.Fatalf("lee entities de %s: %v", dir, err)
+		}
+		var doc struct {
+			Entities []Entity `json:"entities"`
+		}
+		if err := json.Unmarshal(crudo, &doc); err != nil {
+			t.Fatalf("%s: unmarshal entities: %v", dir, err)
+		}
+		if len(doc.Entities) == 0 {
+			t.Fatalf("%s: entities.json sin entidades", dir)
+		}
+		b, err := json.Marshal(doc)
+		if err != nil {
+			t.Fatalf("%s: marshal entities: %v", dir, err)
+		}
+		mismoJSON(t, string(crudo), string(b))
 	}
-	var doc struct {
-		Entities []Entity `json:"entities"`
-	}
-	if err := json.Unmarshal(crudo, &doc); err != nil {
-		t.Fatalf("unmarshal entities: %v", err)
-	}
-	if len(doc.Entities) == 0 {
-		t.Fatal("entities.json sin entidades")
-	}
-	b, err := json.Marshal(doc)
-	if err != nil {
-		t.Fatalf("marshal entities: %v", err)
-	}
-	mismoJSON(t, string(crudo), string(b))
 }
 
 // La forma la exige el validador: los contenedores vacíos viajan como [] o {}

@@ -15,12 +15,12 @@ a `CASOS_ESQUINA.md`; aquí solo vive el **estado del trabajo**.
 
 ## Hitos de hoy (Bogotá, UTC−5)
 
-- [ ] 12:45 · C0 hecha: `go.mod`, paquetes y tipos compartidos en `integracion/c0-c11`.
-- [ ] 13:30 · Servicio en Railway con `/v1/health` y `/v1/anonymize` de eco (C1).
+- [x] 12:45 · C0 hecha: `go.mod`, paquetes y tipos compartidos en `integracion/c0-c11`.
+- [x] 13:30 · Servicio en Railway con `/v1/health` y `/v1/anonymize` de eco (C1): `frontier-31102026-production.up.railway.app`.
 - [ ] 14:15 · Pipeline completo sobre `sample/`: validador OK, 13/13 tests y J-REC 100 % (C17).
 - [ ] 14:45 · Pipeline sobre `fuentes/`: validador OK, barrido 0, dos corridas idénticas (C18).
 - [ ] 15:00 · **Congelar** y desplegar. Después de esta hora solo entran arreglos de C18.
-- [ ] 15:15 · Smoke test público: `/v1/health` y `/v1/anonymize` con un registro de la muestra.
+- [x] 15:15 · Smoke test público: `/v1/health` 200 y `/v1/anonymize` con un registro de la muestra, ya verificado en Railway.
 - [ ] 15:30 · **Corrida 1** (la lanza el usuario).
 - [ ] Tras el crecimiento: corridas 2 y 3 (las propone el agente; las lanza el usuario).
 
@@ -68,17 +68,17 @@ Estados: `espera` (dependencias abiertas) · `lista` · `en curso` · `bloqueada
 
 | Paso | Qué | Toca | Depende de | Hecha cuando | Responsable | Estado | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C1 | Servicio: `cmd/servidor`, rutas de `ServeMux` (`/v1/health`, `/run`, `/run/{id}`, `/output/{archivo}`, `/anonymize`, `/entities`), jobs en goroutine, apagado limpio, `WriteTimeout` ≥ 70 s, captura de requests (`internal/captura`, sin PII en stdout). Dockerfile multi-etapa Go + Python (`pdfplumber`, `pypdf` con versión fija; comprobación del ayudante al arrancar, fuera del healthcheck; D33), `run.sh`, Railway (volumen `/data`, una réplica, healthcheck). `/run` usa `sources_url` y `token` del cuerpo; `.env` solo en local. | `cmd/servidor/`, `internal/servidor/`, `internal/captura/`, `Dockerfile`, `run.sh`, `railway.json` | C0 | `/v1/health` responde en Railway; `/anonymize` devuelve eco válido con el contrato | — | lista | — |
-| C2 | Almacén SQLite: `Open()` con migraciones por `user_version` (reuso de `../10102026`); tablas `jobs`, `personas`, `formas`, `perfiles` (bóveda, solo agrega), `personas_vivo` (D24), `cache_modelo`, `dudosos`, `captura`. | `internal/almacen/` | C0 | Pruebas de reapertura y de "solo agrega" (un perfil no cambia) | — | lista | — |
-| C3 | Normalización: port exacto de `clean`, `quitarTildes`, `plegar`, `norm`, `digitosEn` y `contiene` de `docs/validar.mjs`, con mapa de offsets al texto original. | `internal/norm/` | C0 | Tabla de ≥40 casos que da el mismo resultado que `contiene()` de Node (fixture generado con `node`) | — | lista | — |
-| C4 | Cliente del API de fuentes: límite 600/min, timeout y reintentos, `ETag`/`If-None-Match`, descarga completa en memoria. | `internal/fuentes/` | C0 | Contra un servidor de prueba local: paginación por canal y fecha, 304, 429 con reintento | — | lista | — |
-| C5 | Ingesta de tablas: `clientes.csv` (Latin-1, `;`, CRLF, comillas), `transacciones.csv`, `pqrs.xml` (atributos + CDATA; comentario XML fuera), `empleados.xml`. Todo como texto, mismas columnas. | `internal/ingesta/tablas/` | C0 | Sobre `sample/input`: mismos ids y mismas claves de `columns` que `sample/expected_output/tables.jsonl` | — | lista | — |
-| C6 | Ingesta de chats: `users.json`, `channels.json`, mensajes → `ChatRecord` (`author` = nombre corto, `thread_id` = `canal:ts raíz`, adjuntos, editados); índice uid → usuario para el registro. | `internal/ingesta/chats/` | C0 | Sobre `sample/input`: mismos ids, `thread_id` y número de adjuntos que la salida ideal | — | lista | — |
-| C7 | Ingesta de docs: MD con front matter; HTML → markdown con comentarios y `display:none`; PDF vía `tools/pdf/extraer.py` (pdfplumber cuerpo, pypdf metadata) como subproceso con timeout; respaldo pypdf texto plano y luego `body` vacío, nunca se pierde el registro (D33). Metadata con las mismas claves. | `internal/ingesta/docs/`, `tools/pdf/` | C0 | Sobre `sample/input`: mismas claves de metadata y similitud de `body` ≥ 0,9 con la salida ideal | — | lista | — |
-| C8 | Formas: un renderizador por tipo (completo, corto, pila, MAYÚSCULAS sin tildes, slug, usuario, correo, correo deletreado, cédula con y sin puntos, `CC<num>`, celular en 3 formatos, dirección, fecha ISO / en palabras / US, placa, pasaporte). Lo usan el registro (formas reales) y la fábrica (formas falsas). | `internal/formas/` | C0 | Cada renderizador probado contra ejemplos de `sample/expected_output` | — | lista | — |
-| C9 | Catálogos embebidos: nombres de pila colombianos por género, unisex y extranjeros; apellidos con tildes; dominios públicos; barrios por ciudad; ocupación → 13 sectores (D18). | `internal/catalogo/` | C0 | Conteos mínimos (≥300 por género, ≥400 apellidos) y sin ninguna forma real de `fuentes/` | — | lista | — |
-| C10 | Cliente de Jev 1.14: OpenRouter `POST /api/alpha/decisions` (`state`, `questions` `choice`/`noul`/`score`), una llamada por mención con su propio `state`, en paralelo con tope de 16 (D28), umbrales sobre `probabilities` (D31), snapshot fijo `typesafe/jev-1.14-20261014` en la llave de caché (D32), timeout, caché en SQLite por hash, contabilidad de tokens y costo, modelo por `LLM_MODEL`, enmascarado de formas conocidas (D15). | `internal/llm/` | C0 | Prueba con servidor falso: caché, timeout, JSON inválido; una prueba real opcional con datos inventados | — | lista | — |
-| C11 | Juez base: `cmd/juez` corre `validar.mjs`, los 13 tests de `tests_sample.json` y los 5 públicos por familia, J-GLO, J-DIC y **J-REC** (cobertura de personas contra `sample/expected_output/entities.json`, D34); imprime puntaje por juez. | `cmd/juez/`, `internal/juez/` | C0 | Sobre `sample/expected_output` da 13/13, J-GLO 0 y J-REC 100 % | — | lista | — |
+| C1 | Servicio: `cmd/servidor`, rutas de `ServeMux` (`/v1/health`, `/run`, `/run/{id}`, `/output/{archivo}`, `/anonymize`, `/entities`), jobs en goroutine, apagado limpio, `WriteTimeout` ≥ 70 s, captura de requests (`internal/captura`, sin PII en stdout). Dockerfile multi-etapa Go + Python (`pdfplumber`, `pypdf` con versión fija; comprobación del ayudante al arrancar, fuera del healthcheck; D33), `run.sh`, Railway (volumen `/data`, una réplica, healthcheck). `/run` usa `sources_url` y `token` del cuerpo; `.env` solo en local. | `cmd/servidor/`, `internal/servidor/`, `internal/captura/`, `Dockerfile`, `run.sh`, `railway.json` | C0 | `/v1/health` responde en Railway; `/anonymize` devuelve eco válido con el contrato | orquestador | hecha | 1b88ec1 |
+| C2 | Almacén SQLite: `Open()` con migraciones por `user_version` (reuso de `../10102026`); tablas `jobs`, `personas`, `formas`, `perfiles` (bóveda, solo agrega), `personas_vivo` (D24), `cache_modelo`, `dudosos`, `captura`. | `internal/almacen/` | C0 | Pruebas de reapertura y de "solo agrega" (un perfil no cambia) | orquestador | hecha | 87e388f |
+| C3 | Normalización: port exacto de `clean`, `quitarTildes`, `plegar`, `norm`, `digitosEn` y `contiene` de `docs/validar.mjs`, con mapa de offsets al texto original. | `internal/norm/` | C0 | Tabla de ≥40 casos que da el mismo resultado que `contiene()` de Node (fixture generado con `node`) | orquestador | hecha | 2b7a176 |
+| C4 | Cliente del API de fuentes: límite 600/min, timeout y reintentos, `ETag`/`If-None-Match`, descarga completa en memoria. | `internal/fuentes/` | C0 | Contra un servidor de prueba local: paginación por canal y fecha, 304, 429 con reintento | orquestador | hecha | 91618a0 |
+| C5 | Ingesta de tablas: `clientes.csv` (Latin-1, `;`, CRLF, comillas), `transacciones.csv`, `pqrs.xml` (atributos + CDATA; comentario XML fuera), `empleados.xml`. Todo como texto, mismas columnas. | `internal/ingesta/tablas/` | C0 | Sobre `sample/input`: mismos ids y mismas claves de `columns` que `sample/expected_output/tables.jsonl` | orquestador | hecha | 46319d5 |
+| C6 | Ingesta de chats: `users.json`, `channels.json`, mensajes → `ChatRecord` (`author` = nombre corto, `thread_id` = `canal:ts raíz`, adjuntos, editados); índice uid → usuario para el registro. | `internal/ingesta/chats/` | C0 | Sobre `sample/input`: mismos ids, `thread_id` y número de adjuntos que la salida ideal | orquestador | hecha | 317468e |
+| C7 | Ingesta de docs: MD con front matter; HTML → markdown con comentarios y `display:none`; PDF vía `tools/pdf/extraer.py` (pdfplumber cuerpo, pypdf metadata) como subproceso con timeout; respaldo pypdf texto plano y luego `body` vacío, nunca se pierde el registro (D33). Metadata con las mismas claves. | `internal/ingesta/docs/`, `tools/pdf/` | C0 | Sobre `sample/input`: mismas claves de metadata y similitud de `body` ≥ 0,9 con la salida ideal | orquestador | hecha | 7ea36ff |
+| C8 | Formas: un renderizador por tipo (completo, corto, pila, MAYÚSCULAS sin tildes, slug, usuario, correo, correo deletreado, cédula con y sin puntos, `CC<num>`, celular en 3 formatos, dirección, fecha ISO / en palabras / US, placa, pasaporte). Lo usan el registro (formas reales) y la fábrica (formas falsas). | `internal/formas/` | C0 | Cada renderizador probado contra ejemplos de `sample/expected_output` | orquestador | hecha | 8b49233 |
+| C9 | Catálogos embebidos: nombres de pila colombianos por género, unisex y extranjeros; apellidos con tildes; dominios públicos; barrios por ciudad; ocupación → 13 sectores (D18). | `internal/catalogo/` | C0 | Conteos mínimos (≥300 por género, ≥400 apellidos) y sin ninguna forma real de `fuentes/` | orquestador | hecha | 4314456 |
+| C10 | Cliente de Jev 1.14: OpenRouter `POST /api/alpha/decisions` (`state`, `questions` `choice`/`noul`/`score`), una llamada por mención con su propio `state`, en paralelo con tope de 16 (D28), umbrales sobre `probabilities` (D31), snapshot fijo `typesafe/jev-1.14-20261014` en la llave de caché (D32), timeout, caché en SQLite por hash, contabilidad de tokens y costo, modelo por `LLM_MODEL`, enmascarado de formas conocidas (D15). | `internal/llm/` | C0 | Prueba con servidor falso: caché, timeout, JSON inválido; una prueba real opcional con datos inventados | orquestador | hecha | a2a21ec |
+| C11 | Juez base: `cmd/juez` corre `validar.mjs`, los 13 tests de `tests_sample.json` y los 5 públicos por familia, J-GLO, J-DIC y **J-REC** (cobertura de personas contra `sample/expected_output/entities.json`, D34); imprime puntaje por juez. | `cmd/juez/`, `internal/juez/` | C0 | Sobre `sample/expected_output` da 13/13, J-GLO 0 y J-REC 100 % | orquestador | hecha | 0d26441 |
 
 ### Ola 2 · pipeline
 
@@ -128,9 +128,18 @@ tarea (reglas 0–2). Orden sugerido: C25 primero (bloquea el hito de las 14:15)
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
-- 12:47 · — · claude · Pista paralela C25–C29 agregada en `lista` (sin dependencias). C20 y C23 ahora dependen de C27 y C29.
+- 14:20 · — · claude · Ola 1 cerrada: C1–C11 integradas y verdes. Juez sobre la muestra: validador OK, 13/13, J-GLO 0,
+  J-DIC y J-REC 100 %. Servicio desplegado en `frontier-31102026-production.up.railway.app` (health y `/anonymize`
+  de eco verificados). Faltan en el panel de Railway: variables (`LLM_MODEL`, `OPENROUTER_API_KEY`, secreto HMAC) y
+  volumen en `/data`; los pone el usuario.
+- 14:10 · — · claude · Ola 1 integrada: C1–C10 en `integracion/c0-c11` con `go build`/`go vet`/`go test`
+  en verde; smoke local de C1 (health, `/anonymize` de eco, 404 de `/output`). C11 sigue en curso.
+- 14:05 · C0 · claude · Revisión de C0 atendida: fixture versionada para la prueba de ida y vuelta, tags JSON de
+  `Resultado` y `Respuesta`, `internal/` en la tabla de `AGENTS.md`. Contratos de `Almacen` y `Modelo` se amplían
+  cuando C2 y C10 reporten su `CONTRATO:`.
 - 13:40 · — · claude · Alcance fijado: solo C0–C11. Trabajo sobre `integracion/c0-c11` (regla 0); las filas las
   cierra quien integra. C0 en curso.
 - 12:50 · — · claude · Ronda 4 del ataque cerrada: D28 corregida, D30–D34; Jev 1.14 con snapshot fijo.
+- 12:47 · — · claude · Pista paralela C25–C29 agregada en `lista` (sin dependencias). C20 y C23 ahora dependen de C27 y C29.
 - 12:35 · — · claude · P1 cerrada (Jev 1.14, D13) y P2 cerrada (D29).
 - 12:20 · — · claude · Tablero creado; diseño cerrado en D1–D28; C0 lista.

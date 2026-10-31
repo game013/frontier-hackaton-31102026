@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<empleados corte="2026-10-01" fuente="nomina">
+  <empleado id="KP-901" cargo="CEO" ciudad="Medellín" ingreso="2019" reporta_a="">
+    <nombre>Nicolás Arriaga Pardo</nombre>
+    <correo>nicolas.arriaga@kipupay.co</correo>
+    <celular>3001110001</celular>
+    <documento tipo="CC">19000001</documento>
+    <fecha_nacimiento>1975-06-17</fecha_nacimiento>
+  </empleado>
+  <empleado id="KP-902" cargo="CTO" ciudad="Medellín" ingreso="2019" reporta_a="Nicolás Arriaga">
+    <nombre>Farid Ospina Gómez</nombre>
+    <correo>farid.ospina@kipupay.co</correo>
+    <celular>3001110002</celular>
+    <documento tipo="CE">1099000002</documento>
+    <fecha_nacimiento>1999-06-07</fecha_nacimiento>
+  </empleado>
+</empleados>
