@@ -304,6 +304,12 @@ func (i *Indice) cliente(r modelo.TableRecord) error {
 	if perfil.Nombre == "" {
 		return fmt.Errorf("registro: cliente %s sin nombre", id)
 	}
+	// Un cliente migrado (PG-…) con la cédula de un cliente que ya está en el
+	// maestro es la misma persona: la identidad sale de la cédula, no del id.
+	// Conserva la llave vieja, que es la que tiene seudónimo en la bóveda (CE-45).
+	if previa, ok := i.clientePorCedula(perfil.Cedula); ok {
+		llave = previa
+	}
 	i.agregaPersona(llave, modelo.RolCliente, perfil, col(r, "ciudad"), col(r, "ocupacion"), []string{
 		id, r.ID, perfil.Cedula, perfil.Correo, perfil.Celular,
 	})
@@ -335,6 +341,22 @@ func (i *Indice) empleado(r modelo.TableRecord) error {
 	return nil
 }
 
+// clientePorCedula devuelve la llave del cliente que ya tiene esa cédula.
+func (i *Indice) clientePorCedula(cedula string) (string, bool) {
+	if cedula == "" {
+		return "", false
+	}
+	llave, ok := i.porRef[norm.Norm(cedula)]
+	if !ok {
+		return "", false
+	}
+	p, ok := i.personas[llave]
+	if !ok || p.Rol != modelo.RolCliente {
+		return "", false
+	}
+	return llave, true
+}
+
 // transaccion no crea personas: une el id de la transacción con su cliente y
 // deja la fecha y el monto como evidencia para desempatar homónimos (CE-01).
 func (i *Indice) transaccion(r modelo.TableRecord) {
@@ -358,6 +380,9 @@ func (i *Indice) pqr(r modelo.TableRecord) {
 	llave := ""
 	if cliente != "" {
 		llave = llaveCliente(cliente)
+		if p, ok := i.PorReferencia(cliente); ok {
+			llave = p.Llave
+		}
 		if _, existe := i.personas[llave]; !existe && cedula != "" {
 			perfil := modelo.Perfil{Cedula: cedula}
 			i.agregaPersona(llave, modelo.RolCliente, perfil, col(r, "ciudad"), "", []string{cliente, cedula})

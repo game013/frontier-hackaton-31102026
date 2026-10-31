@@ -296,3 +296,40 @@ func TestFusionaConservaOrden(t *testing.T) {
 		t.Fatalf("llaves = %v, quiero 2", llaves)
 	}
 }
+
+// Un cliente migrado de Págalo con la cédula de un cliente de Kipu es la misma
+// persona: conserva la llave vieja (y con ella su seudónimo en la bóveda), y el
+// id PG- de clientes, transacciones y PQR resuelve a esa persona (CE-45).
+func TestClienteMigradoConLaMismaCedulaEsLaMismaPersona(t *testing.T) {
+	fila := func(id string) modelo.TableRecord {
+		return modelo.TableRecord{ID: "clientes:" + id, Table: "clientes", Columns: map[string]string{
+			"cliente_id": id, "nombre_completo": "Rosa Elvira Quintana", "tipo_doc": "CC",
+			"num_doc": "52.111.222", "correo": "rquintana@mail.com", "celular": "3001112233",
+		}}
+	}
+	indice, err := Construye([]modelo.Registro{
+		fila("CL-10001"),
+		fila("PG-2001"),
+		modelo.TableRecord{ID: "transacciones:TX-1", Table: "transacciones", Columns: map[string]string{
+			"tx_id": "TX-1", "cliente_id": "PG-2001",
+		}},
+		modelo.TableRecord{ID: "pqrs:PQR-1", Table: "pqrs", Columns: map[string]string{
+			"radicado": "PQR-1", "cliente_id": "PG-2001", "cedula": "52111222",
+		}},
+	}, Opciones{})
+	if err != nil {
+		t.Fatalf("Construye: %v", err)
+	}
+	if _, ok := indice.Persona("p_cl_pg-2001"); ok {
+		t.Fatalf("creé una segunda persona para el cliente migrado")
+	}
+	for _, ref := range []string{"PG-2001", "TX-1", "PQR-1", "CL-10001"} {
+		p, ok := indice.PorReferencia(ref)
+		if !ok || p.Llave != "p_cl_10001" {
+			t.Errorf("%s resuelve a %q, quiero p_cl_10001", ref, p.Llave)
+		}
+	}
+	if dueños := indice.Busca("Rosa Elvira Quintana"); len(dueños) != 1 {
+		t.Errorf("el nombre tiene %d dueños, quiero 1", len(dueños))
+	}
+}
