@@ -128,6 +128,11 @@ tarea (reglas 0–2). Orden sugerido: C25 primero (bloquea el hito de las 14:15)
 Una línea por evento, la más nueva arriba: `HH:MM · Cn · agente · qué pasó`. Prefijos: `CONTRATO:`, `DECISIÓN:`,
 `BLOQUEO:`, `CASO:`.
 
+- 14:28 · — · claude · Revisión de la ola atendida: fuera del repo las identidades reales que quedaban en tests y
+  fixtures (inventadas en su lugar), detalle del juez enmascarado, `Close` del lector con error, y la caché de
+  `internal/llm` alineada con la tabla `cache_modelo` de C2. Queda anotado: la tabla `captura` de C2 admite cuerpos
+  con PII (decidir en C18), las pruebas de PDF se saltan sin `PDF_PYTHON`, y los 5 tests públicos se omiten contra
+  la muestra hasta tener `output/` real.
 - 14:20 · — · claude · Ola 1 cerrada: C1–C11 integradas y verdes. Juez sobre la muestra: validador OK, 13/13, J-GLO 0,
   J-DIC y J-REC 100 %. Servicio desplegado en `frontier-31102026-production.up.railway.app` (health y `/anonymize`
   de eco verificados). Faltan en el panel de Railway: variables (`LLM_MODEL`, `OPENROUTER_API_KEY`, secreto HMAC) y
