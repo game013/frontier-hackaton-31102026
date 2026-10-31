@@ -47,15 +47,24 @@ tabla, actualízala ahí en el mismo commit.
 | ------------- | ---------------------------------------------------------------------------------------- |
 | `docs/`       | Material del reto: enunciado, contratos OpenAPI, `validar.mjs`. Solo lectura.            |
 | `docs/agents/` | Configuración de los skills de agente (tracker, triage, dominio). Excepción a la regla de solo lectura de `docs/`. |
+| `docs/demo/`  | `guion-demo.md`: el guion de cinco minutos del Demo day. Excepción a la regla de solo lectura de `docs/`. |
 | `analisis/`   | Meta-análisis: `00_resumen.md` primero; chats, docs, tablas e identidad, reuso de 10102026. |
 | `DISEÑO.md`   | Diseño, supuestos, decisiones, plan para medir. Entregable de Systems design.            |
 | `CASOS_ESQUINA.md` | Catálogo vivo de casos esquina, cada uno con su juez. Todo caso descubierto se agrega aquí. |
 | `PROGRESS.md` | Tablero de implementación para varios agentes: tareas, dependencias, estado y reglas de coordinación. Léelo antes de tomar trabajo. |
 | `RUBRICA.md`  | Rúbrica de la hackathon y pesos.                                                         |
-| `cmd/`        | Binarios: `servidor/` (servicio HTTP), `juez/` (validador, tests, J-GLO, J-DIC, J-REC) y `respaldo/` (respaldo y restauración de la bóveda). |
+| `cmd/`        | Binarios del servicio y las herramientas locales.                                        |
+| `cmd/servidor/` | El servicio HTTP del contrato (`/v1/health`, `/v1/run`, `/v1/output`, `/v1/anonymize`, `/v1/entities`). |
+| `cmd/pipeline/` | Corre el núcleo sobre un corpus ya descargado y escribe `output/`: ensaya la corrida sin gastar una corrida oficial. |
+| `cmd/juez/`   | Juez propio: `validar.mjs`, los 13 tests de la muestra, los públicos por familia, J-GLO, J-DIC y J-REC. |
+| `cmd/monitor/` | Una pasada sobre `/record_index` con `If-None-Match`: avisa cuando el corpus crece. Sale con 0 sin cambios, 1 si cambió y 2 si falla. |
+| `cmd/respaldo/` | Respaldo y restauración de la bóveda (`VACUUM INTO`), que usa `scripts/boveda.sh`.      |
 | `tools/pdf/`  | Ayudante Python: pdfplumber para el cuerpo del PDF y pypdf para metadata y respaldo.     |
 | `internal/`   | Código del pipeline: contratos, normalización, ingesta, detección, resolución y salida.  |
 | `internal/catalogo/` | Catálogos embebidos de la fábrica de seudónimos: nombres de pila, apellidos, dominios públicos, barrios por ciudad y ocupación → sector. Datos en `datos/*.json` con `go:embed`. |
+| `internal/cuasi/` | Generalización de cuasi-identificadores (D9): ocupación → sector y barrio alterno en `clientes`, barrio → ciudad y año de la relación → "hace unos años" en el texto. |
+| `internal/juez/` | Los jueces base (J-GLO, J-DIC, J-REC, J-IND…) como código, con sus mediciones por familia. |
+| `internal/respaldo/` | Copia coherente de la bóveda con `VACUUM INTO`, con hash y verificación al restaurar. |
 | `scripts/`    | Utilidades; `descargar_fuentes.py` baja el API completo a `fuentes/` y `boveda.sh` respalda la bóveda a un disco local fuera de git. |
 | `fuentes/`    | Corpus real descargado. Ignorado por git.                                                |
 | `sample/`     | Dataset de muestra con su salida ideal y 13 tests. Ignorado por git.                     |
